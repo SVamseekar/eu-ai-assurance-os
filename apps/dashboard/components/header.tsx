@@ -15,26 +15,24 @@ export function Header({ title, subtitle, onExportPack, onRunControls }: HeaderP
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="flex justify-between items-center gap-6 mb-7">
+    <header className="flex justify-between items-start gap-6 mb-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        {subtitle && <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-lg">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
+      <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
+        <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           aria-label="Toggle theme"
-          className="text-muted-foreground hover:text-foreground"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
-        <Button variant="outline" size="sm" onClick={onExportPack}>
+        </button>
+        <Button variant="outline" size="sm" className="h-8 text-xs font-medium" onClick={onExportPack}>
           <Download className="h-3.5 w-3.5 mr-1.5" />
           Export pack
         </Button>
-        <Button size="sm" onClick={onRunControls}>
+        <Button size="sm" className="h-8 text-xs font-medium" onClick={onRunControls}>
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
           Refresh
         </Button>

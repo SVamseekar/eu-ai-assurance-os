@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ContractCard } from "@/components/contract-card";
 import { LineageGraph } from "@/components/lineage-graph";
 import { useContracts } from "@/hooks/use-contracts";
@@ -25,7 +24,7 @@ export default function ContractsPage() {
   const allDriftEvents: DriftEvent[] = driftQueries.flatMap((q) => q.data ?? []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
         {contracts.map((contract) => {
           const events = allDriftEvents.filter((e) => e.contractId === contract.id);
@@ -33,17 +32,17 @@ export default function ContractsPage() {
         })}
       </div>
 
-      <Card>
-        <CardHeader className="pb-0">
-          <CardTitle className="text-base">Data Lineage</CardTitle>
-          <p className="text-sm text-muted-foreground mt-0.5">
+      <div className="bg-card rounded-2xl border border-border">
+        <div className="px-5 pt-5 pb-4 border-b border-border">
+          <p className="text-sm font-semibold">Data Lineage</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Data sources → contracts → AI systems. Animated edges indicate active drift.
           </p>
-        </CardHeader>
-        <CardContent className="pt-4">
+        </div>
+        <div className="p-5">
           <LineageGraph systems={systems} contracts={contracts} />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

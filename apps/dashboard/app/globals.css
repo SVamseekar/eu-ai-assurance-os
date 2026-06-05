@@ -137,8 +137,18 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
   }
+}
+
+/* Card shadow — matches PrimeStay/Invoice Autopilot subtle elevation */
+.bg-card {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 6px -1px rgb(0 0 0 / 0.04);
+}
+.dark .bg-card {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 6px -1px rgb(0 0 0 / 0.2);
 }

@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useTheme } from "next-themes";
 import type { AiSystem } from "@/lib/types";
 import { normaliseDecision } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
-const RISK_COLORS: Record<string, string> = {
-  high: "#b42318",
-  limited: "#b54708",
-  minimal: "#057a55",
-  prohibited: "#7f1d1d",
+const RISK_BAR_COLOR: Record<string, string> = {
+  high: "bg-red-500",
+  limited: "bg-amber-500",
+  minimal: "bg-emerald-500",
+  prohibited: "bg-red-800",
+};
+
+const DECISION_DOT: Record<string, string> = {
+  Pass: "bg-emerald-500",
+  Review: "bg-amber-500",
+  Blocked: "bg-red-500",
 };
 
 interface RiskTopologyProps {
@@ -18,80 +23,83 @@ interface RiskTopologyProps {
 }
 
 export function RiskTopology({ systems, filter }: RiskTopologyProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { resolvedTheme } = useTheme();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const filtered = systems.filter((s) => filter === "all" || s.riskClass === filter);
-    const dark = resolvedTheme === "dark";
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = dark ? "#111318" : "#f9fafb";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = dark ? "#313846" : "#d7dce3";
-    ctx.lineWidth = 1;
-    for (let x = 100; x < canvas.width; x += 150) {
-      ctx.beginPath();
-      ctx.moveTo(x, 30);
-      ctx.lineTo(x, canvas.height - 40);
-      ctx.stroke();
-    }
-    for (let y = 75; y < canvas.height; y += 75) {
-      ctx.beginPath();
-      ctx.moveTo(40, y);
-      ctx.lineTo(canvas.width - 30, y);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = dark ? "#a7b0bf" : "#667085";
-    ctx.font = "13px system-ui";
-    ctx.fillText("Lower release readiness", 44, 24);
-    ctx.fillText("Higher release readiness", canvas.width - 190, 24);
-    ctx.save();
-    ctx.translate(18, canvas.height - 70);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Risk and data criticality", 0, 0);
-    ctx.restore();
-
-    filtered.forEach((system, index) => {
-      const x = 130 + (system.evidenceCoverage / 100) * 650 + (index % 2) * 18;
-      const y =
-        295 -
-        (system.evalScore / 100) * 230 +
-        (system.riskClass === "high" ? -18 : system.riskClass === "limited" ? 10 : 24);
-      const decision = normaliseDecision(system.releaseDecision);
-      const radius = decision === "Blocked" ? 20 : 15;
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = RISK_COLORS[system.riskClass] ?? "#667085";
-      ctx.globalAlpha = 0.9;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = dark ? "#f2f4f7" : "#ffffff";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = dark ? "#f2f4f7" : "#111827";
-      ctx.font = "12px system-ui";
-      const label = system.name.length > 22 ? `${system.name.slice(0, 21)}…` : system.name;
-      ctx.fillText(label, x + radius + 7, y + 4);
-    });
-  }, [systems, filter, resolvedTheme]);
+  const filtered = systems.filter((s) => filter === "all" || s.riskClass === filter);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={900}
-      height={360}
-      className="block w-full h-auto rounded-lg border border-border bg-muted/20"
-      aria-label="AI system risk topology"
-    />
+    <div className="space-y-1">
+      {/* Column headers */}
+      <div className="grid grid-cols-[1fr_100px_80px_80px_90px] gap-3 px-3 pb-2 border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground">System</span>
+        <span className="text-xs font-medium text-muted-foreground">Evidence</span>
+        <span className="text-xs font-medium text-muted-foreground text-right">Eval</span>
+        <span className="text-xs font-medium text-muted-foreground text-right">Risk</span>
+        <span className="text-xs font-medium text-muted-foreground text-right">Decision</span>
+      </div>
+
+      {filtered.map((system) => {
+        const decision = normaliseDecision(system.releaseDecision);
+        const barColor = RISK_BAR_COLOR[system.riskClass] ?? "bg-muted-foreground";
+        const dotColor = DECISION_DOT[decision] ?? "bg-muted-foreground";
+
+        return (
+          <div
+            key={system.id}
+            className="grid grid-cols-[1fr_100px_80px_80px_90px] gap-3 items-center px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
+          >
+            {/* System name */}
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{system.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 capitalize">{system.riskClass}-risk</p>
+            </div>
+
+            {/* Evidence bar */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={cn("h-full rounded-full", barColor)}
+                  style={{ width: `${system.evidenceCoverage}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-8 text-right flex-shrink-0">
+                {system.evidenceCoverage}%
+              </span>
+            </div>
+
+            {/* Eval score */}
+            <div className="text-right">
+              <span
+                className={cn(
+                  "text-sm font-semibold",
+                  system.evalScore >= 85
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : system.evalScore >= 70
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-red-600 dark:text-red-400"
+                )}
+              >
+                {system.evalScore}%
+              </span>
+            </div>
+
+            {/* Risk class */}
+            <div className="text-right">
+              <span className="text-xs text-muted-foreground capitalize">{system.riskClass}</span>
+            </div>
+
+            {/* Decision */}
+            <div className="flex items-center justify-end gap-1.5">
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", dotColor)} />
+              <span className="text-xs font-medium">{decision}</span>
+            </div>
+          </div>
+        );
+      })}
+
+      {filtered.length === 0 && (
+        <div className="py-10 text-center text-sm text-muted-foreground">
+          No systems match this filter.
+        </div>
+      )}
+    </div>
   );
 }

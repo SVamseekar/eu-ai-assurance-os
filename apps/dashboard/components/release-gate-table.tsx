@@ -1,8 +1,7 @@
 import { RiskBadge } from "./risk-badge";
 import { DecisionBadge } from "./decision-badge";
-import { normaliseDecision } from "@/lib/utils";
+import { normaliseDecision, cn } from "@/lib/utils";
 import type { AiSystem } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 interface ReleaseGateTableProps {
   systems: AiSystem[];
@@ -10,76 +9,57 @@ interface ReleaseGateTableProps {
 
 export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
+    <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-muted/40 border-b border-border">
-            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              System
-            </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Risk class
-            </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Evidence
-            </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Eval score
-            </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Data contract
-            </th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Decision
-            </th>
+          <tr className="border-b border-border">
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">System</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Risk</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Evidence</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Eval</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Contract</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground">Decision</th>
           </tr>
         </thead>
-        <tbody>
-          {systems.map((system, i) => {
+        <tbody className="divide-y divide-border">
+          {systems.map((system) => {
             const decision = normaliseDecision(system.releaseDecision);
             return (
-              <tr
-                key={system.id}
-                className={cn(
-                  "border-b border-border last:border-0 hover:bg-muted/30 transition-colors",
-                  i % 2 === 0 ? "bg-card" : "bg-muted/10"
-                )}
-              >
-                <td className="px-4 py-3.5">
-                  <p className="font-semibold text-sm">{system.name}</p>
+              <tr key={system.id} className="hover:bg-muted/30 transition-colors">
+                <td className="py-3.5 pr-4">
+                  <p className="font-medium text-sm">{system.name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{system.owner}</p>
                 </td>
-                <td className="px-4 py-3.5">
+                <td className="py-3.5 pr-4">
                   <RiskBadge risk={system.riskClass} />
-                  {system.riskBasis && (
-                    <p className="text-xs text-muted-foreground mt-1 max-w-40 truncate">{system.riskBasis}</p>
-                  )}
                 </td>
-                <td className="px-4 py-3.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                <td className="py-3.5 pr-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-20 h-1 rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-full rounded-full bg-primary"
                         style={{ width: `${system.evidenceCoverage}%` }}
                       />
                     </div>
-                    <span className="text-sm font-medium">{system.evidenceCoverage}%</span>
+                    <span className="text-xs text-muted-foreground">{system.evidenceCoverage}%</span>
                   </div>
                 </td>
-                <td className="px-4 py-3.5">
+                <td className="py-3.5 pr-4">
                   <span
                     className={cn(
-                      "font-semibold",
-                      system.evalScore >= 85 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                      "text-sm font-medium",
+                      system.evalScore >= 85
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-600 dark:text-amber-400"
                     )}
                   >
                     {system.evalScore}%
                   </span>
                 </td>
-                <td className="px-4 py-3.5">
+                <td className="py-3.5 pr-4">
                   <span
                     className={cn(
-                      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                      "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
                       system.dataContractStatus === "BREACH" &&
                         "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
                       system.dataContractStatus === "WARNING" &&
@@ -91,7 +71,7 @@ export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
                     {system.dataContractStatus}
                   </span>
                 </td>
-                <td className="px-4 py-3.5">
+                <td className="py-3.5">
                   <DecisionBadge decision={decision} />
                 </td>
               </tr>

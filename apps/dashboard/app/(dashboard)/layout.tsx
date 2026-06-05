@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background">
       <Sidebar blockedCount={blockedCount} />
-      <main className="ml-60 px-8 py-7">
+      <main className="ml-56 px-8 py-7">
         <Header
           title={meta.title}
           subtitle={meta.subtitle}

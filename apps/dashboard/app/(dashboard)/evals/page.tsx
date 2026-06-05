@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,12 +14,11 @@ import { useEvalOperations } from "@/hooks/use-eval-runs";
 import { api } from "@/lib/api";
 import { MOCK_SYSTEMS } from "@/lib/mock-data";
 import type { EvalRun } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-const DATASETS = [
-  "golden-eu-claims-v4",
-  "hr-candidate-screening-v2",
-  "customer-support-rag-v8",
-];
+const DATASETS = ["golden-eu-claims-v4", "hr-candidate-screening-v2", "customer-support-rag-v8"];
+const LABEL = "text-xs font-medium text-muted-foreground mb-1.5 block";
+const INPUT = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-shadow";
 
 export default function EvalsPage() {
   const { data: systems = MOCK_SYSTEMS } = useSystems();
@@ -32,7 +30,7 @@ export default function EvalsPage() {
   const [consoleLines, setConsoleLines] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
 
-  async function handleRun(e: React.FormEvent) {
+  async function handleRun(e: React.SyntheticEvent) {
     e.preventDefault();
     setRunning(true);
     const system = systems.find((s) => s.id === selectedSystemId) ?? systems[0];
@@ -80,106 +78,97 @@ export default function EvalsPage() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-base">Eval Gate Runner</CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+        {/* Runner */}
+        <div className="bg-card rounded-2xl border border-border">
+          <div className="px-5 pt-5 pb-4 border-b border-border">
+            <p className="text-sm font-semibold">Eval Gate Runner</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               LLM-as-judge, RAG faithfulness, safety refusal, latency, and cost guardrails.
             </p>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleRun} className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-muted-foreground">System</label>
+          </div>
+          <div className="p-5">
+            <form onSubmit={handleRun} className="space-y-4">
+              <div>
+                <label className={LABEL}>System</label>
                 <Select value={selectedSystemId} onValueChange={(v) => v && setSelectedSystemId(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {systems.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Dataset</label>
+              <div>
+                <label className={LABEL}>Dataset</label>
                 <Select value={dataset} onValueChange={(v) => v && setDataset(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {DATASETS.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-muted-foreground">
-                  Threshold
-                </label>
+              <div>
+                <label className={LABEL}>Pass threshold (%)</label>
                 <input
-                  type="number"
-                  min={70}
-                  max={98}
+                  type="number" min={70} max={98}
                   value={threshold}
                   onChange={(e) => setThreshold(Number(e.target.value))}
-                  className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background"
+                  className={INPUT}
                 />
               </div>
-              <Button type="submit" disabled={running}>
+              <Button type="submit" disabled={running} size="sm">
                 {running ? "Running…" : "Run eval gate"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-base">Gate Console</CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">Worker output with release decision.</p>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="min-h-72 max-h-96 overflow-auto rounded-lg bg-gray-950 text-emerald-300 font-mono text-sm p-4 leading-relaxed">
+        {/* Console */}
+        <div className="bg-card rounded-2xl border border-border">
+          <div className="px-5 pt-5 pb-4 border-b border-border">
+            <p className="text-sm font-semibold">Gate Console</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Worker output with release decision.</p>
+          </div>
+          <div className="p-5">
+            <div className="min-h-60 max-h-80 overflow-auto rounded-xl bg-zinc-950 text-emerald-400 font-mono text-xs p-4 leading-relaxed">
               {consoleLines.length === 0 ? (
-                <span className="text-gray-600">Awaiting eval run…</span>
+                <span className="text-zinc-600">Awaiting eval run…</span>
               ) : (
                 consoleLines.map((line, i) => <div key={i}>{line}</div>)
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
+      {/* Operations */}
       {operations && (
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-base">Operations</CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
+        <div className="bg-card rounded-2xl border border-border">
+          <div className="px-5 pt-5 pb-4 border-b border-border">
+            <p className="text-sm font-semibold">Worker Operations</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               Queued, running, retryable, and failed eval runs.
             </p>
-          </CardHeader>
-          <CardContent className="pt-4">
+          </div>
+          <div className="p-5">
             <div className="grid grid-cols-4 gap-3">
               {[
                 { label: "Queued", count: operations.queued.length, color: "text-foreground" },
-                { label: "Running", count: operations.running.length, color: "text-indigo-600 dark:text-indigo-400" },
+                { label: "Running", count: operations.running.length, color: "text-primary" },
                 { label: "Retryable", count: operations.retryable.length, color: "text-amber-600 dark:text-amber-400" },
                 { label: "Dead Letter", count: operations.deadLetter.length, color: "text-red-600 dark:text-red-400" },
               ].map((op) => (
-                <div key={op.label} className="bg-muted/30 rounded-lg px-4 py-3">
-                  <p className={`text-2xl font-bold ${op.color}`}>{op.count}</p>
-                  <p className="text-xs text-muted-foreground font-medium mt-0.5">{op.label}</p>
+                <div key={op.label} className="bg-muted/40 rounded-xl px-4 py-3.5">
+                  <p className={cn("text-2xl font-bold", op.color)}>{op.count}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{op.label}</p>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

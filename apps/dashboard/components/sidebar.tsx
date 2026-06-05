@@ -10,11 +10,11 @@ import {
   FlaskConical,
   GitBranch,
   ScrollText,
-  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/command", label: "Command", icon: LayoutDashboard },
+  { href: "/command", label: "Dashboard", icon: LayoutDashboard },
   { href: "/systems", label: "AI Systems", icon: Server },
   { href: "/evidence", label: "Evidence", icon: FileSearch },
   { href: "/evals", label: "Eval Gates", icon: FlaskConical },
@@ -30,21 +30,18 @@ export function Sidebar({ blockedCount }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-60 border-r border-border bg-card flex flex-col z-10">
+    <aside className="fixed inset-y-0 left-0 w-56 border-r border-border bg-card flex flex-col z-10">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
-        <div className="w-8 h-8 rounded-lg bg-primary grid place-items-center flex-shrink-0">
-          <ShieldAlert className="w-4 h-4 text-primary-foreground" />
+      <div className="flex items-center gap-2.5 px-5 h-14 border-b border-border flex-shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-primary grid place-items-center flex-shrink-0">
+          <ShieldCheck className="w-3.5 h-3.5 text-primary-foreground" />
         </div>
-        <div className="min-w-0">
-          <p className="font-semibold text-sm leading-tight truncate">EU AI Assurance</p>
-          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">Governance OS</p>
-        </div>
+        <span className="font-semibold text-sm">EU AI Assurance</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-0.5 px-3 py-4 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-2">
+      <nav className="flex flex-col px-3 py-4 flex-1 overflow-y-auto">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-2 mb-2">
           Navigation
         </p>
         {NAV_ITEMS.map((item) => {
@@ -55,54 +52,35 @@ export function Sidebar({ blockedCount }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                "flex items-center gap-2.5 px-2.5 py-2 text-sm rounded-lg transition-colors mb-0.5",
                 active
-                  ? "bg-accent text-primary font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60 font-medium"
+                  ? "bg-accent text-primary font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-normal"
               )}
             >
-              <Icon
-                className={cn("w-4 h-4 flex-shrink-0", active ? "text-primary" : "text-muted-foreground")}
-              />
+              <Icon className={cn("w-4 h-4 flex-shrink-0", active ? "text-primary" : "text-muted-foreground/70")} />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      {/* Release gate status */}
-      <div className="px-3 pb-4">
+      {/* Bottom status */}
+      <div className="px-3 pb-4 flex-shrink-0">
         <div
           className={cn(
-            "rounded-xl px-4 py-3 border",
+            "rounded-xl p-3.5 border text-xs",
             blockedCount > 0
-              ? "bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800"
-              : "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800"
+              ? "bg-red-50 border-red-100 dark:bg-red-950/30 dark:border-red-900"
+              : "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900"
           )}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={cn(
-                "inline-block w-2 h-2 rounded-full flex-shrink-0",
-                blockedCount > 0 ? "bg-red-500" : "bg-emerald-500"
-              )}
-            />
-            <span
-              className={cn(
-                "text-xs font-semibold",
-                blockedCount > 0 ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"
-              )}
-            >
-              Release Gate
-            </span>
-          </div>
-          {blockedCount > 0 ? (
-            <p className="text-sm font-bold text-red-800 dark:text-red-300">
-              {blockedCount} system{blockedCount !== 1 ? "s" : ""} blocked
-            </p>
-          ) : (
-            <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">All systems clear</p>
-          )}
+          <p className={cn("font-medium mb-0.5", blockedCount > 0 ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400")}>
+            Release Gate
+          </p>
+          <p className={cn("font-semibold text-sm", blockedCount > 0 ? "text-red-800 dark:text-red-300" : "text-emerald-800 dark:text-emerald-300")}>
+            {blockedCount > 0 ? `${blockedCount} system${blockedCount !== 1 ? "s" : ""} blocked` : "All clear"}
+          </p>
         </div>
       </div>
     </aside>
