@@ -8,10 +8,10 @@ export function ApiStatusPill({ online }: ApiStatusPillProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
         online
-          ? "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400"
-          : "border-border text-muted-foreground"
+          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+          : "bg-muted text-muted-foreground"
       )}
     >
       <span

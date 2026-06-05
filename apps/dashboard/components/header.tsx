@@ -2,42 +2,41 @@
 
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, Download, Play } from "lucide-react";
+import { Moon, Sun, Download, RefreshCw } from "lucide-react";
 
 interface HeaderProps {
+  title: string;
+  subtitle?: string;
   onExportPack: () => void;
   onRunControls: () => void;
 }
 
-export function Header({ onExportPack, onRunControls }: HeaderProps) {
+export function Header({ title, subtitle, onExportPack, onRunControls }: HeaderProps) {
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="flex justify-between items-start gap-6 mb-6">
+    <header className="flex justify-between items-center gap-6 mb-7">
       <div>
-        <p className="text-xs font-black uppercase tracking-wider text-cyan-700 dark:text-cyan-400 mb-1.5">
-          EU AI Act + GDPR + operational controls
-        </p>
-        <h1 className="text-3xl font-bold leading-tight">
-          Assure high-risk AI systems before they reach production.
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+      <div className="flex items-center gap-2 flex-shrink-0">
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           aria-label="Toggle theme"
+          className="text-muted-foreground hover:text-foreground"
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
-        <Button variant="outline" onClick={onExportPack}>
-          <Download className="h-4 w-4 mr-2" />
-          Export evidence pack
+        <Button variant="outline" size="sm" onClick={onExportPack}>
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          Export pack
         </Button>
-        <Button onClick={onRunControls}>
-          <Play className="h-4 w-4 mr-2" />
-          Run controls
+        <Button size="sm" onClick={onRunControls}>
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+          Refresh
         </Button>
       </div>
     </header>

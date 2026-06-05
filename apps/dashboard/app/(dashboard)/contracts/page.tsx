@@ -26,32 +26,21 @@ export default function ContractsPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Data Contract Monitor</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Schema drift and lineage breaches are treated as AI control failures.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            {contracts.map((contract) => {
-              const events = allDriftEvents.filter((e) => e.contractId === contract.id);
-              return <ContractCard key={contract.id} contract={contract} driftEvents={events} />;
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-4">
+        {contracts.map((contract) => {
+          const events = allDriftEvents.filter((e) => e.contractId === contract.id);
+          return <ContractCard key={contract.id} contract={contract} driftEvents={events} />;
+        })}
+      </div>
 
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Data Lineage</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Directed graph showing data sources → contracts → AI systems. Animated edges indicate
-            active drift. Drag nodes to rearrange. Node colour reflects health status.
+        <CardHeader className="pb-0">
+          <CardTitle className="text-base">Data Lineage</CardTitle>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Data sources → contracts → AI systems. Animated edges indicate active drift.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <LineageGraph systems={systems} contracts={contracts} />
         </CardContent>
       </Card>

@@ -81,13 +81,13 @@ export default function EvalsPage() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Eval Gate Runner</CardTitle>
-            <p className="text-sm text-muted-foreground">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Eval Gate Runner</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
               LLM-as-judge, RAG faithfulness, safety refusal, latency, and cost guardrails.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleRun} className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-muted-foreground">System</label>
@@ -140,11 +140,11 @@ export default function EvalsPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Gate Console</CardTitle>
-            <p className="text-sm text-muted-foreground">Worker output with release decision.</p>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Gate Console</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">Worker output with release decision.</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="min-h-72 max-h-96 overflow-auto rounded-lg bg-gray-950 text-emerald-300 font-mono text-sm p-4 leading-relaxed">
               {consoleLines.length === 0 ? (
                 <span className="text-gray-600">Awaiting eval run…</span>
@@ -158,30 +158,25 @@ export default function EvalsPage() {
 
       {operations && (
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Operations</CardTitle>
-            <p className="text-sm text-muted-foreground">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Operations</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Queued, running, retryable, and failed eval runs.
             </p>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold">{operations.queued.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Queued</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{operations.running.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Running</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-amber-600">{operations.retryable.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Retryable</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-red-600">{operations.deadLetter.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold">Dead letter</p>
-              </div>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: "Queued", count: operations.queued.length, color: "text-foreground" },
+                { label: "Running", count: operations.running.length, color: "text-indigo-600 dark:text-indigo-400" },
+                { label: "Retryable", count: operations.retryable.length, color: "text-amber-600 dark:text-amber-400" },
+                { label: "Dead Letter", count: operations.deadLetter.length, color: "text-red-600 dark:text-red-400" },
+              ].map((op) => (
+                <div key={op.label} className="bg-muted/30 rounded-lg px-4 py-3">
+                  <p className={`text-2xl font-bold ${op.color}`}>{op.count}</p>
+                  <p className="text-xs text-muted-foreground font-medium mt-0.5">{op.label}</p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

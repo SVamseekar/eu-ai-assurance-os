@@ -90,13 +90,13 @@ export default function EvidencePage() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Compliance Evidence RAG</CardTitle>
-            <p className="text-sm text-muted-foreground">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Compliance Evidence RAG</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Ask against policies, DPIAs, model cards, vendor docs, and EU control mappings.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleQuery} className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-muted-foreground">System</label>
@@ -125,13 +125,13 @@ export default function EvidencePage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Grounded Answer</CardTitle>
-            <p className="text-sm text-muted-foreground">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Grounded Answer</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Every answer includes confidence, source clauses, and reviewer action.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {ragResponse ? (
               <div className="space-y-3">
                 <p className="text-xs font-bold uppercase text-muted-foreground">Question</p>
@@ -177,13 +177,13 @@ export default function EvidencePage() {
 
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Index Evidence</CardTitle>
-            <p className="text-sm text-muted-foreground">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Index Evidence</CardTitle>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Upload extracted text from a policy, DPIA, model card, or vendor document.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleIndex} className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-muted-foreground">Type</label>
@@ -237,17 +237,17 @@ export default function EvidencePage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3 flex-row items-center justify-between">
+          <CardHeader className="pb-0 flex-row items-center justify-between">
             <div>
-              <CardTitle>Indexed Documents</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <CardTitle className="text-base">Indexed Documents</CardTitle>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Documents available for cited retrieval on{" "}
                 {selectedSystem?.name ?? "selected system"}.
               </p>
             </div>
             <ApiStatusPill online={apiOnline} />
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             {documents.length === 0 ? (
               <div className="border border-dashed border-border rounded-lg min-h-32 grid place-items-center text-sm text-muted-foreground">
                 No indexed documents loaded.

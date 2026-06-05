@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { RiskClass } from "@/lib/types";
 
@@ -9,22 +8,21 @@ interface RiskBadgeProps {
 
 export function RiskBadge({ risk, className }: RiskBadgeProps) {
   return (
-    <Badge
-      variant="outline"
+    <span
       className={cn(
-        "font-bold capitalize",
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize",
         risk === "high" &&
-          "border-red-300 text-red-700 dark:border-red-700 dark:text-red-400",
+          "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400",
         risk === "limited" &&
-          "border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400",
+          "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
         risk === "minimal" &&
-          "border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400",
+          "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
         risk === "prohibited" &&
-          "border-red-500 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300",
+          "bg-red-100 text-red-900 dark:bg-red-900/60 dark:text-red-200",
         className
       )}
     >
       {risk}
-    </Badge>
+    </span>
   );
 }
