@@ -107,8 +107,10 @@ Response:
 ```
 
 The `content` field is optional and backward compatible with metadata-only
-uploads. When provided, the API strips prompt-injection-like document lines,
-chunks the remaining text, embeds each chunk, and stores the index for cited
+uploads. When provided, the API validates allowed source URI schemes, checksum
+shape, content length, metadata shape, and chunk size; strips
+prompt-injection-like document lines; stores chunk SHA-256 hashes and embedding
+provider provenance; embeds each chunk; and stores the index for cited
 retrieval. Metadata-only uploads are indexed with a generated placeholder text
 until object-store extraction is wired in.
 

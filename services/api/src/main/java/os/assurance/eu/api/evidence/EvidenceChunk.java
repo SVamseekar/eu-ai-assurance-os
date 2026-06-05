@@ -9,6 +9,8 @@ public record EvidenceChunk(
     int ordinal,
     String sectionRef,
     String content,
+    String contentSha256,
     String embedding,
+    String embeddingProvider,
     Map<String, Object> metadata) {
 }

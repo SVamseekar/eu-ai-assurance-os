@@ -27,8 +27,14 @@ public class EvidenceChunkEntity {
   @Column(nullable = false)
   private String content;
 
+  @Column
+  private String contentSha256;
+
   @Column(nullable = false)
   private String embedding;
+
+  @Column(nullable = false)
+  private String embeddingProvider;
 
   @Convert(converter = JsonMapConverter.class)
   @Column(name = "metadata_json", nullable = false)
@@ -43,11 +49,13 @@ public class EvidenceChunkEntity {
     this.ordinal = chunk.ordinal();
     this.sectionRef = chunk.sectionRef();
     this.content = chunk.content();
+    this.contentSha256 = chunk.contentSha256();
     this.embedding = chunk.embedding();
+    this.embeddingProvider = chunk.embeddingProvider();
     this.metadata = chunk.metadata();
   }
 
   public EvidenceChunk toDomain() {
-    return new EvidenceChunk(id, documentId, ordinal, sectionRef, content, embedding, metadata);
+    return new EvidenceChunk(id, documentId, ordinal, sectionRef, content, contentSha256, embedding, embeddingProvider, metadata);
   }
 }

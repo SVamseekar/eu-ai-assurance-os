@@ -73,6 +73,7 @@ Mitigations:
 
 - Tenant-scoped retrieval.
 - Evidence chunk source validation.
+- Evidence upload limits, allowed URI schemes, checksum validation, metadata shape validation, chunk hashes, and embedding-provider provenance.
 - Citation-required answer generation.
 - Reviewer approval workflows.
 - Immutable audit events.

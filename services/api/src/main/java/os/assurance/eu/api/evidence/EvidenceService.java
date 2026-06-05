@@ -20,38 +20,43 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EvidenceService {
-  private static final double MIN_RETRIEVAL_SCORE = 0.20;
-
   private final EvidenceRepository repository;
   private final EvidenceQueryJpaRepository queries;
   private final TextExtractionService textExtractionService;
   private final PromptInjectionGuard promptInjectionGuard;
+  private final EvidenceIngestionGuard evidenceGuard;
   private final EvidenceChunker chunker;
   private final EvidenceEmbeddingService embeddingService;
   private final AuditService auditService;
   private final TenantContext tenantContext;
+  private final EvidenceProperties properties;
 
   public EvidenceService(
       EvidenceRepository repository,
       EvidenceQueryJpaRepository queries,
       TextExtractionService textExtractionService,
       PromptInjectionGuard promptInjectionGuard,
+      EvidenceIngestionGuard evidenceGuard,
       EvidenceChunker chunker,
       EvidenceEmbeddingService embeddingService,
       AuditService auditService,
-      TenantContext tenantContext) {
+      TenantContext tenantContext,
+      EvidenceProperties properties) {
     this.repository = repository;
     this.queries = queries;
     this.textExtractionService = textExtractionService;
     this.promptInjectionGuard = promptInjectionGuard;
+    this.evidenceGuard = evidenceGuard;
     this.chunker = chunker;
     this.embeddingService = embeddingService;
     this.auditService = auditService;
     this.tenantContext = tenantContext;
+    this.properties = properties;
   }
 
   @Transactional
   public EvidenceDocumentResponse ingest(CreateEvidenceDocumentRequest request) {
+    evidenceGuard.validateDocumentRequest(request);
     String extracted = textExtractionService.extract(request);
     SanitizedText sanitized = promptInjectionGuard.sanitizeDocumentText(extracted);
     List<ChunkDraft> chunkDrafts = chunker.chunk(sanitized.text());
@@ -70,7 +75,8 @@ public class EvidenceService {
         chunkDrafts.size(),
         sanitized.removedLines().isEmpty() ? "indexed" : "indexed_with_warnings",
         now));
-    repository.saveChunks(toChunks(saved, chunkDrafts, request.metadata(), sanitized.removedLines()));
+    Map<String, Object> metadata = evidenceGuard.sanitizeMetadata(request.metadata());
+    repository.saveChunks(toChunks(saved, chunkDrafts, metadata, sanitized.removedLines()));
     auditService.append(
         saved.systemId(),
         "evidence.document_indexed",
@@ -80,6 +86,7 @@ public class EvidenceService {
             "title", saved.title(),
             "type", saved.type(),
             "chunkCount", saved.chunkCount(),
+            "embeddingProvider", embeddingService.providerName(),
             "removedPromptInjectionLines", sanitized.removedLines().size()));
     return saved.toResponse();
   }
@@ -93,7 +100,7 @@ public class EvidenceService {
 
   @Transactional
   public EvidenceQueryResponse answer(AiSystem system, String question) {
-    String sanitizedQuestion = promptInjectionGuard.sanitizeQuestion(question);
+    String sanitizedQuestion = evidenceGuard.validateQuestion(promptInjectionGuard.sanitizeQuestion(question));
     String questionEmbedding = embeddingService.embed(sanitizedQuestion);
     List<EvidenceDocument> documents = repository.findDocumentsBySystemId(system.id());
     Map<UUID, EvidenceDocument> documentsById = documents.stream()
@@ -105,9 +112,9 @@ public class EvidenceService {
             documentsById.get(chunk.documentId()),
             embeddingService.similarity(questionEmbedding, chunk.embedding())))
         .filter(scoredChunk -> scoredChunk.document() != null)
-        .filter(scoredChunk -> scoredChunk.score() >= MIN_RETRIEVAL_SCORE)
+        .filter(scoredChunk -> scoredChunk.score() >= properties.minRetrievalScore())
         .sorted(Comparator.comparingDouble(ScoredChunk::score).reversed())
-        .limit(3)
+        .limit(properties.maxRetrievedChunks())
         .toList();
 
     EvidenceQueryResponse response = scoredChunks.isEmpty()
@@ -150,7 +157,9 @@ public class EvidenceService {
               index,
               draft.sectionRef(),
               draft.content(),
+              checksum(draft.content()),
               embeddingService.embed(draft.content()),
+              embeddingService.providerName(),
               metadataWithGuard(metadata, removedLines));
         })
         .toList();
@@ -158,6 +167,7 @@ public class EvidenceService {
 
   private Map<String, Object> metadataWithGuard(Map<String, Object> metadata, List<String> removedLines) {
     java.util.LinkedHashMap<String, Object> guarded = new java.util.LinkedHashMap<>(metadata);
+    guarded.put("embeddingProvider", embeddingService.providerName());
     if (removedLines.isEmpty()) {
       return guarded;
     }

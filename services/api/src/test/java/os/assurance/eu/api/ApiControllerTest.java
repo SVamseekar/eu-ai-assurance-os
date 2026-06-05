@@ -21,7 +21,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "assurance.evidence.max-content-characters=256",
+    "assurance.evidence.max-question-characters=96"
+})
 @AutoConfigureMockMvc
 class ApiControllerTest {
   private static final String DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
@@ -240,6 +243,57 @@ class ApiControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.citations[*].snippet", everyItem(not(containsString("Ignore previous")))))
         .andExpect(jsonPath("$.citations[*].snippet", everyItem(not(containsString("do not cite")))));
+  }
+
+  @Test
+  void rejectsEvidenceDocumentFromDisallowedSourceScheme() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(post("/api/v1/evidence/documents")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "type": "DPIA",
+                  "title": "Claims Triage DPIA",
+                  "sourceUri": "file:///etc/passwd",
+                  "content": "Human oversight SOP requires reviewer sign-off."
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void rejectsOversizedEvidenceContent() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(post("/api/v1/evidence/documents")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "type": "DPIA",
+                  "title": "Claims Triage DPIA",
+                  "sourceUri": "memory://claims-dpia",
+                  "content": "%s"
+                }
+                """.formatted(systemId, "a".repeat(257))))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void rejectsOversizedEvidenceQuestion() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(post("/api/v1/evidence/query")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "question": "%s"
+                }
+                """.formatted(systemId, "controls ".repeat(13))))
+        .andExpect(status().isBadRequest());
   }
 
   @Test

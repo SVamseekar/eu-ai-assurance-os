@@ -26,18 +26,20 @@ Status: complete.
 
 ## Phase 2: Evidence and RAG
 
-Status: MVP complete.
+Status: production-hardened foundation complete.
 
 - Evidence document upload metadata: implemented.
 - Text extraction pipeline: implemented for provided text with metadata fallback.
 - Chunking and embedding: implemented with deterministic local embeddings.
-- pgvector similarity search: local cosine search implemented; production pgvector index remains.
+- Embedding provider seam: implemented with local deterministic provider and profile-based provider selection.
+- pgvector similarity search: local cosine search implemented; PostgreSQL profile includes pgvector/HNSW migration path.
 - Citation-required answer generation: implemented.
 - Prompt injection safeguards for evidence documents: implemented.
+- Upload/query guardrails: implemented for source URI scheme, checksum, content length, metadata shape, query length, chunk size, provider provenance, and content hashing.
 - Static web app upload/list/query flow: implemented with API fallback to demo mode.
 
-Production hardening remains: external object-store extraction, provider-backed
-embeddings, and PostgreSQL pgvector/HNSW indexing.
+Deployment integrations remain: object-store/PDF extraction, non-local embedding
+provider implementation, production auth/RBAC, and operational monitoring.
 
 ## Phase 3: Eval Gates
 

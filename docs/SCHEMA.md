@@ -76,7 +76,9 @@ create table evidence_chunks (
   ordinal int not null,
   section_ref text,
   content text not null,
+  content_sha256 text,
   embedding text not null,
+  embedding_provider text not null default 'local-hash',
   metadata_json text not null default '{}'
 );
 
@@ -93,10 +95,12 @@ create table evidence_queries (
 );
 ```
 
-The Phase 2 MVP stores deterministic local embedding vectors as text so the
-same migrations validate against H2 and PostgreSQL. The production path should
-replace `evidence_chunks.embedding` with `vector(1536)` and add an IVFFlat or
-HNSW pgvector index once the embedding provider is selected.
+The portable schema stores deterministic local embeddings as text so the same
+core migrations validate against H2 and PostgreSQL. The PostgreSQL profile adds
+a `pgvector` migration path with `embedding_vector vector(64)` and an HNSW
+cosine index for production deployments using the local-hash provider. A
+non-local embedding provider should ship its own matching vector dimension
+migration.
 
 ## Eval Tables
 

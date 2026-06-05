@@ -2,7 +2,7 @@
 
 EU AI Assurance OS is a governance control plane for teams shipping AI systems in the European market. It validates AI releases against EU-focused controls by combining system inventory, risk classification, cited compliance evidence, evaluation gates, data-contract drift monitoring, approval workflows, and audit-ready evidence packs.
 
-This repo starts with a verified static product prototype and a production-oriented Spring Boot backend foundation. The current MVP includes persistence, tenant-scoped APIs, audit trails, release gates, eval run records, data-contract drift simulation, and API-backed evidence RAG retrieval.
+This repo starts with a verified static product prototype and a production-oriented Spring Boot backend foundation. The current MVP includes persistence, tenant-scoped APIs, audit trails, release gates, eval run records, data-contract drift simulation, and production-hardened evidence RAG foundations.
 
 ## Why This Project
 
@@ -83,10 +83,10 @@ Compliance:
 
 ## Next Milestone
 
-Harden the MVP for production-like operation:
+Continue production hardening beyond Phase 2:
 
-1. Replace deterministic local embeddings with a provider-backed embedding adapter.
-2. Add PostgreSQL pgvector/HNSW indexing for evidence chunks.
-3. Wire object-store document extraction for PDFs and office documents.
-4. Add authentication, RBAC, and request-scoped actor resolution.
-5. Move eval and drift workflows onto async workers.
+1. Implement a non-local embedding provider adapter behind the existing provider seam.
+2. Wire object-store document extraction for PDFs and office documents.
+3. Add authentication, RBAC, and request-scoped actor resolution.
+4. Move eval and drift workflows onto async workers.
+5. Add production monitoring for RAG faithfulness, latency, cost, refusal behavior, and citation quality.

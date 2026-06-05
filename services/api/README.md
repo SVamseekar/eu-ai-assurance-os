@@ -75,6 +75,21 @@ The service allows local browser clients from common development ports,
 including `localhost:8000`, `localhost:4173`, and Vite defaults, for the
 static web prototype's evidence upload/query workflow.
 
+Evidence/RAG hardening knobs:
+
+- `assurance.evidence.embedding-provider`
+- `assurance.evidence.max-content-characters`
+- `assurance.evidence.max-metadata-entries`
+- `assurance.evidence.max-metadata-value-characters`
+- `assurance.evidence.max-question-characters`
+- `assurance.evidence.max-retrieved-chunks`
+- `assurance.evidence.min-retrieval-score`
+- `assurance.evidence.allowed-source-schemes`
+
+The default profile uses portable text embeddings for H2 validation. The
+`postgres` profile also loads `classpath:db/postgresql`, including the pgvector
+HNSW index migration for deployments with the `vector` extension installed.
+
 Run against PostgreSQL:
 
 ```bash
