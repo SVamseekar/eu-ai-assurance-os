@@ -2,13 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK_DIR="/tmp/eu-ai-pg-smoke"
+WORK_DIR="/tmp/eu-ai-pg-concurrency"
 DATA_DIR="$WORK_DIR/data"
 SOCKET_DIR="$WORK_DIR/socket"
 LOG_FILE="$WORK_DIR/postgres.log"
-PORT="${POSTGRES_SMOKE_PORT:-55432}"
-DB_NAME="${POSTGRES_SMOKE_DB:-eu_ai_assurance_smoke}"
-DB_USER="${POSTGRES_SMOKE_USER:-eu_ai_assurance}"
+PORT="${POSTGRES_CONCURRENCY_PORT:-55433}"
+DB_NAME="${POSTGRES_CONCURRENCY_DB:-eu_ai_assurance_concurrency}"
+DB_USER="${POSTGRES_CONCURRENCY_USER:-eu_ai_assurance}"
 
 rm -rf "$WORK_DIR"
 mkdir -p "$DATA_DIR" "$SOCKET_DIR"
@@ -36,8 +36,9 @@ psql -h "$SOCKET_DIR" -p "$PORT" -U "$DB_USER" -d postgres -tc "select 1" >/dev/
 createdb -h "$SOCKET_DIR" -p "$PORT" -U "$DB_USER" "$DB_NAME"
 
 cd "$ROOT_DIR"
-RUN_POSTGRES_SMOKE=true \
+RUN_POSTGRES_CONCURRENCY=true \
 DATABASE_URL="jdbc:postgresql://localhost:$PORT/$DB_NAME" \
 DATABASE_USERNAME="$DB_USER" \
 DATABASE_PASSWORD="" \
-mvn test -Dtest=PostgresProfileSmokeTest
+EVAL_CALLBACK_SECRET=test-eval-callback-secret \
+mvn test -Dtest=PostgresEvalRunConcurrencyTest

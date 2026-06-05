@@ -38,4 +38,8 @@ public class UserEntity {
     this.role = role;
     this.createdAt = createdAt;
   }
+
+  public UserRole role() {
+    return role;
+  }
 }

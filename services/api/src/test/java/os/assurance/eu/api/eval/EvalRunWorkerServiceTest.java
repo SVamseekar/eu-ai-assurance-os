@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,7 +25,19 @@ class EvalRunWorkerServiceTest {
       mock(EvalDatasetRepository.class),
       evalRuns,
       mock(EvalRunCompletionService.class),
-      mock(AuditService.class));
+      mock(AuditService.class),
+      mock(EvalRunMetrics.class));
+
+  @Test
+  void callbackVerifierFailsFastWhenSecretIsMissing() {
+    EvalCallbackSignatureVerifier verifier = new EvalCallbackSignatureVerifier(
+        "",
+        300,
+        Clock.systemUTC(),
+        mock(EvalRunMetrics.class));
+
+    assertThrows(IllegalStateException.class, verifier::validateConfiguration);
+  }
 
   @Test
   void retryableFailureReturnsRunToQueueWithBackoffMetadata() {
@@ -59,7 +72,7 @@ class EvalRunWorkerServiceTest {
   @Test
   void legacyQueuedRunWithoutDatasetIdBecomesTerminalFailure() {
     UUID runId = UUID.fromString("00000000-0000-0000-0000-000000000201");
-    when(evalRuns.findById(runId)).thenReturn(Optional.of(queuedRunWithoutDataset()));
+    when(evalRuns.claimQueuedForExecution(runId)).thenReturn(Optional.of(new EvalRunClaim(claimedRunWithoutDataset(), true)));
     when(evalRuns.save(any(EvalRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     assertThrows(ResponseStatusException.class, () -> workerService.execute(runId));
@@ -70,7 +83,7 @@ class EvalRunWorkerServiceTest {
     assertThat(failed.status()).isEqualTo("failed");
     assertThat(failed.datasetId()).isNull();
     assertThat(failed.workerAttempts()).isEqualTo(1);
-    assertThat(failed.startedAt()).isNull();
+    assertThat(failed.startedAt()).isNotNull();
     assertThat(failed.failedAt()).isNotNull();
     assertThat(failed.failureReason()).isEqualTo("Eval dataset is not registered");
   }
@@ -100,14 +113,14 @@ class EvalRunWorkerServiceTest {
         null);
   }
 
-  private EvalRun queuedRunWithoutDataset() {
+  private EvalRun claimedRunWithoutDataset() {
     Instant createdAt = Instant.parse("2026-06-05T10:00:00Z");
     Instant queuedAt = Instant.parse("2026-06-05T10:01:00Z");
     return new EvalRun(
         UUID.fromString("00000000-0000-0000-0000-000000000201"),
         UUID.fromString("00000000-0000-0000-0000-000000000301"),
         null,
-        "queued",
+        "running",
         "legacy-dataset-name",
         "claims-triage-worker",
         "claims-routing-worker",
@@ -116,10 +129,10 @@ class EvalRunWorkerServiceTest {
         ReleaseDecision.REVIEW,
         createdAt,
         queuedAt,
+        Instant.parse("2026-06-05T10:02:00Z"),
         null,
         null,
-        null,
-        0,
+        1,
         3,
         null);
   }

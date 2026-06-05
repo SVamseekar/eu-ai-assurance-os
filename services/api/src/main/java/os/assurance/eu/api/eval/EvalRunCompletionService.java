@@ -3,6 +3,7 @@ package os.assurance.eu.api.eval;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import os.assurance.eu.api.audit.AuditService;
 import os.assurance.eu.api.system.AiSystem;
@@ -23,24 +24,33 @@ public class EvalRunCompletionService {
   private final EvalRunRepository evalRuns;
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
+  private final EvalRunMetrics evalRunMetrics;
 
   public EvalRunCompletionService(
       AiSystemRepository systems,
       EvalRunRepository evalRuns,
       ReleaseGateService releaseGateService,
-      AuditService auditService) {
+      AuditService auditService,
+      EvalRunMetrics evalRunMetrics) {
     this.systems = systems;
     this.evalRuns = evalRuns;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
+    this.evalRunMetrics = evalRunMetrics;
   }
 
   @Transactional
   public EvalRun complete(UUID runId, Map<String, Object> metrics, String source) {
-    EvalRun existing = evalRuns.findById(runId)
+    EvalRun existing = evalRuns.findByIdForUpdate(runId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Eval run not found"));
     if ("completed".equals(existing.status())) {
+      if (Objects.equals(existing.metrics(), metrics)) {
+        return existing;
+      }
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Eval run is already completed");
+    }
+    if ("failed".equals(existing.status())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Eval run has failed");
     }
     AiSystem system = systems.findById(existing.systemId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
@@ -78,6 +88,7 @@ public class EvalRunCompletionService {
             "evalScore", evalScore,
             "runDecision", completed.releaseDecision(),
             "releaseDecision", updated.releaseDecision()));
+    evalRunMetrics.completed(source);
     return completed;
   }
 

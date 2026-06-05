@@ -13,11 +13,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import os.assurance.eu.api.eval.EvalCallbackSignatureVerifier;
+import os.assurance.eu.api.eval.EvalRun;
 import os.assurance.eu.api.eval.EvalRunQueueWorker;
 import os.assurance.eu.api.eval.EvalRunRepository;
 import os.assurance.eu.api.eval.EvalRunWorkerService;
+import os.assurance.eu.api.eval.EvalRunMetrics;
+import os.assurance.eu.api.system.ReleaseDecision;
 import os.assurance.eu.api.tenant.TenantContext;
+import os.assurance.eu.api.tenant.TenantEntity;
+import os.assurance.eu.api.tenant.TenantJpaRepository;
+import os.assurance.eu.api.tenant.UserEntity;
+import os.assurance.eu.api.tenant.UserJpaRepository;
+import os.assurance.eu.api.tenant.UserRole;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,16 +40,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest(properties = {
     "assurance.evidence.max-content-characters=256",
     "assurance.evidence.max-question-characters=96",
-    "assurance.eval.worker.enabled=false"
+    "assurance.eval.worker.enabled=false",
+    "assurance.eval.callback.secret=test-eval-callback-secret"
 })
 @AutoConfigureMockMvc
 class ApiControllerTest {
+  private static final String CALLBACK_SECRET = "test-eval-callback-secret";
   private static final String DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
   private static final String DEFAULT_ACTOR_ID = "00000000-0000-0000-0000-000000000101";
+  private static final String ENGINEERING_ACTOR_ID = "00000000-0000-0000-0000-000000000102";
+  private static final String AUDITOR_ACTOR_ID = "00000000-0000-0000-0000-000000000103";
+  private static final String SECOND_TENANT_ID = "00000000-0000-0000-0000-000000000002";
+  private static final String SECOND_TENANT_ENGINEERING_ACTOR_ID = "00000000-0000-0000-0000-000000000202";
 
   @Autowired
   private MockMvc mockMvc;
@@ -50,6 +72,48 @@ class ApiControllerTest {
 
   @Autowired
   private TenantContext tenantContext;
+
+  @Autowired
+  private EvalRunMetrics evalRunMetrics;
+
+  @Autowired
+  private TenantJpaRepository tenants;
+
+  @Autowired
+  private UserJpaRepository users;
+
+  @BeforeEach
+  void seedTestActors() {
+    Instant now = Instant.now();
+    users.findById(UUID.fromString(ENGINEERING_ACTOR_ID))
+        .orElseGet(() -> users.save(new UserEntity(
+            UUID.fromString(ENGINEERING_ACTOR_ID),
+            UUID.fromString(DEFAULT_TENANT_ID),
+            "engineering@example.com",
+            UserRole.AI_ENGINEERING_LEAD,
+            now)));
+    users.findById(UUID.fromString(AUDITOR_ACTOR_ID))
+        .orElseGet(() -> users.save(new UserEntity(
+            UUID.fromString(AUDITOR_ACTOR_ID),
+            UUID.fromString(DEFAULT_TENANT_ID),
+            "auditor@example.com",
+            UserRole.AUDITOR,
+            now)));
+    tenants.findById(UUID.fromString(SECOND_TENANT_ID))
+        .orElseGet(() -> tenants.save(new TenantEntity(
+            UUID.fromString(SECOND_TENANT_ID),
+            "Second Tenant",
+            "starter",
+            "EU",
+            now)));
+    users.findById(UUID.fromString(SECOND_TENANT_ENGINEERING_ACTOR_ID))
+        .orElseGet(() -> users.save(new UserEntity(
+            UUID.fromString(SECOND_TENANT_ENGINEERING_ACTOR_ID),
+            UUID.fromString(SECOND_TENANT_ID),
+            "engineering@second.example.com",
+            UserRole.AI_ENGINEERING_LEAD,
+            now)));
+  }
 
   @Test
   void createsAndUpdatesSystemUsingDocumentedLowercaseEnums() throws Exception {
@@ -130,6 +194,33 @@ class ApiControllerTest {
   }
 
   @Test
+  void exposesActuatorHealthAndEvalMetrics() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-metrics",
+                  "promptVersion": "claims-routing-metrics",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted());
+
+    mockMvc.perform(get("/actuator/health"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("UP"));
+
+    mockMvc.perform(get("/actuator/metrics/assurance.eval.run.queued"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("assurance.eval.run.queued"))
+        .andExpect(jsonPath("$.availableTags[0].tag").value("source"));
+  }
+
+  @Test
   void workerExecutesQueuedEvalRunWithOwnedMetrics() throws Exception {
     String systemId = createSystem();
 
@@ -149,7 +240,8 @@ class ApiControllerTest {
         .andReturn();
     String runId = read(createRunResult).get("runId").asText();
 
-    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId))
+    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId)
+            .header("X-Actor-Id", ENGINEERING_ACTOR_ID))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("completed"))
         .andExpect(jsonPath("$.metrics.faithfulness").isNumber())
@@ -168,8 +260,108 @@ class ApiControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.evalScore").isNumber());
 
-    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId))
+    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId)
+            .header("X-Actor-Id", ENGINEERING_ACTOR_ID))
         .andExpect(status().isConflict());
+  }
+
+  @Test
+  void rejectsManualEvalExecutionForAuditor() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-auditor",
+                  "promptVersion": "claims-routing-auditor",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId)
+            .header("X-Actor-Id", AUDITOR_ACTOR_ID))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andExpect(jsonPath("$.workerAttempts").value(0));
+  }
+
+  @Test
+  void rejectsEvalCallbackForAuditor() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-auditor-callback",
+                  "promptVersion": "claims-routing-auditor-callback",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
+            .header("X-Actor-Id", AUDITOR_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "metrics": {
+                    "faithfulness": 0.91,
+                    "relevance": 0.92,
+                    "safetyRefusal": 0.93,
+                    "biasSlicePassRate": 0.94
+                  }
+                }
+                """))
+        .andExpect(status().isForbidden());
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andExpect(jsonPath("$.metrics").isEmpty());
+  }
+
+  @Test
+  void rejectsEvalCallbackWithoutValidSignature() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-unsigned-callback",
+                  "promptVersion": "claims-routing-unsigned-callback",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
+            .header("X-Actor-Id", ENGINEERING_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validCallbackBody(0.91)))
+        .andExpect(status().isUnauthorized());
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("queued"));
   }
 
   @Test
@@ -192,7 +384,7 @@ class ApiControllerTest {
         .andReturn();
     String runId = read(createRunResult).get("runId").asText();
 
-    EvalRunQueueWorker queueWorker = new EvalRunQueueWorker(evalRuns, workerService, tenantContext);
+    EvalRunQueueWorker queueWorker = new EvalRunQueueWorker(evalRuns, workerService, tenantContext, evalRunMetrics);
     UUID runUuid = UUID.fromString(runId);
     for (int dispatches = 0; dispatches < 5 && evalRuns.findById(runUuid)
         .filter(run -> "completed".equals(run.status()))
@@ -267,23 +459,16 @@ class ApiControllerTest {
         .andReturn();
     String runId = read(createRunResult).get("runId").asText();
 
-    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {
-                  "metrics": {
-                    "faithfulness": 0.78,
-                    "relevance": 0.76,
-                    "safetyRefusal": 0.81,
-                    "biasSlicePassRate": 0.71,
-                    "latencyP95Ms": 1800,
-                    "costUsd": 4.62
-                  }
-                }
-                """))
+    String callbackBody = callbackBody(0.78, 0.76, 0.81, 0.71);
+    mockMvc.perform(signedCallback(runId, callbackBody, ENGINEERING_ACTOR_ID))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("completed"))
         .andExpect(jsonPath("$.releaseDecision").value("BLOCKED"))
+        .andExpect(jsonPath("$.metrics.faithfulness").value(0.78));
+
+    mockMvc.perform(signedCallback(runId, callbackBody, ENGINEERING_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("completed"))
         .andExpect(jsonPath("$.metrics.faithfulness").value(0.78));
 
     mockMvc.perform(get("/api/v1/systems/{systemId}", systemId))
@@ -296,15 +481,13 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.decision").value("BLOCKED"))
         .andExpect(jsonPath("$.blockers[0]").value("Eval score is below hard release threshold"));
 
-    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {
-                  "metrics": {
-                    "faithfulness": 0.99
-                  }
-                }
-                """))
+    mockMvc.perform(signedCallback(runId, """
+        {
+          "metrics": {
+            "faithfulness": 0.99
+          }
+        }
+        """, ENGINEERING_ACTOR_ID))
         .andExpect(status().isConflict());
   }
 
@@ -328,22 +511,101 @@ class ApiControllerTest {
         .andReturn();
     String runId = read(createRunResult).get("runId").asText();
 
-    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("""
-                {
-                  "metrics": {
-                    "latencyP95Ms": 1800,
-                    "costUsd": 4.62
-                  }
-                }
-                """))
+    mockMvc.perform(signedCallback(runId, """
+        {
+          "metrics": {
+            "latencyP95Ms": 1800,
+            "costUsd": 4.62
+          }
+        }
+        """, ENGINEERING_ACTOR_ID))
         .andExpect(status().isBadRequest());
 
     mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("queued"))
         .andExpect(jsonPath("$.metrics").isEmpty());
+  }
+
+  @Test
+  void evalRunsAreIsolatedByTenantForReadsAndCallbacks() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-tenant-isolation",
+                  "promptVersion": "claims-routing-tenant-isolation",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId)
+            .header("X-Tenant-Id", SECOND_TENANT_ID)
+            .header("X-Actor-Id", SECOND_TENANT_ENGINEERING_ACTOR_ID))
+        .andExpect(status().isNotFound());
+
+    mockMvc.perform(signedCallback(
+            runId,
+            validCallbackBody(0.91),
+            SECOND_TENANT_ENGINEERING_ACTOR_ID,
+            SECOND_TENANT_ID))
+        .andExpect(status().isNotFound());
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("queued"));
+  }
+
+  @Test
+  void exposesEvalOperationsAndRetriesDeadLetterRun() throws Exception {
+    String systemId = createSystem();
+    UUID runId = UUID.randomUUID();
+    Instant now = Instant.now();
+    evalRuns.save(new EvalRun(
+        runId,
+        UUID.fromString(systemId),
+        null,
+        "failed",
+        "golden-eu-claims-v4",
+        "claims-triage-dead-letter",
+        "claims-routing-dead-letter",
+        0.85,
+        Map.of(),
+        ReleaseDecision.REVIEW,
+        now.minusSeconds(120),
+        now.minusSeconds(90),
+        now.minusSeconds(60),
+        null,
+        now.minusSeconds(30),
+        3,
+        3,
+        "Transient worker error"));
+
+    mockMvc.perform(get("/api/v1/eval-runs/operations"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.failed").value(1))
+        .andExpect(jsonPath("$.deadLetter[0].runId").value(runId.toString()))
+        .andExpect(jsonPath("$.deadLetter[0].failureReason").value("Transient worker error"));
+
+    mockMvc.perform(post("/api/v1/eval-runs/{runId}/retry", runId)
+            .header("X-Actor-Id", ENGINEERING_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andExpect(jsonPath("$.workerAttempts").value(0))
+        .andExpect(jsonPath("$.failedAt").doesNotExist())
+        .andExpect(jsonPath("$.failureReason").doesNotExist());
+
+    mockMvc.perform(get("/api/v1/eval-runs/operations"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.failed").value(0))
+        .andExpect(jsonPath("$.deadLetter", hasSize(0)));
   }
 
   @Test
@@ -619,5 +881,57 @@ class ApiControllerTest {
 
   private JsonNode read(MvcResult result) throws Exception {
     return objectMapper.readTree(result.getResponse().getContentAsString());
+  }
+
+  private MockHttpServletRequestBuilder signedCallback(String runId, String body, String actorId) throws Exception {
+    return signedCallback(runId, body, actorId, null);
+  }
+
+  private MockHttpServletRequestBuilder signedCallback(
+      String runId,
+      String body,
+      String actorId,
+      String tenantId) throws Exception {
+    long timestamp = Instant.now().getEpochSecond();
+    MockHttpServletRequestBuilder request = patch("/api/v1/eval-runs/{runId}/result", runId)
+        .header("X-Actor-Id", actorId)
+        .header(EvalCallbackSignatureVerifier.TIMESTAMP_HEADER, Long.toString(timestamp))
+        .header(EvalCallbackSignatureVerifier.SIGNATURE_HEADER, "v1=" + hmacHex(timestamp + "." + body))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(body);
+    if (tenantId != null) {
+      request.header("X-Tenant-Id", tenantId);
+    }
+    return request;
+  }
+
+  private String validCallbackBody(double faithfulness) {
+    return callbackBody(faithfulness, 0.92, 0.93, 0.94);
+  }
+
+  private String callbackBody(double faithfulness, double relevance, double safetyRefusal, double biasSlicePassRate) {
+    return """
+        {
+          "metrics": {
+            "faithfulness": %.2f,
+            "relevance": %.2f,
+            "safetyRefusal": %.2f,
+            "biasSlicePassRate": %.2f,
+            "latencyP95Ms": 1800,
+            "costUsd": 4.62
+          }
+        }
+        """.formatted(faithfulness, relevance, safetyRefusal, biasSlicePassRate);
+  }
+
+  private String hmacHex(String signedPayload) throws Exception {
+    Mac mac = Mac.getInstance("HmacSHA256");
+    mac.init(new SecretKeySpec(CALLBACK_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+    byte[] digest = mac.doFinal(signedPayload.getBytes(StandardCharsets.UTF_8));
+    StringBuilder hex = new StringBuilder(digest.length * 2);
+    for (byte b : digest) {
+      hex.append(String.format("%02x", b));
+    }
+    return hex.toString();
   }
 }

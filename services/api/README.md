@@ -53,6 +53,8 @@ Implemented MVP endpoints:
 - `GET /api/v1/eval-runs/{id}`
 - `PATCH /api/v1/eval-runs/{id}/result`
 - `POST /api/v1/eval-runs/{id}/execute`
+- `GET /api/v1/eval-runs/operations`
+- `POST /api/v1/eval-runs/{id}/retry`
 - `POST /api/v1/data-contracts/{id}/drift-events`
 - `GET /api/v1/audit-events`
 - `POST /api/v1/audit-events`
@@ -94,10 +96,34 @@ Eval worker knobs:
 
 - `assurance.eval.worker.enabled`
 - `assurance.eval.worker.poll-interval-ms`
+- `assurance.eval.callback.secret`
+- `assurance.eval.callback.signature-tolerance-seconds`
+
+`EVAL_CALLBACK_SECRET` must be set in every runnable environment. Callback
+requests to `PATCH /api/v1/eval-runs/{id}/result` must include
+`X-Eval-Timestamp` and `X-Eval-Signature`, where the signature is
+`v1=<hex hmac sha256>` over `<timestamp>.<raw request body>`.
+
+Operational endpoints:
+
+- `/actuator/health`
+- `/actuator/info`
+- `/actuator/metrics`
+
+Eval metrics include:
+
+- `assurance.eval.run.queued`
+- `assurance.eval.run.claimed`
+- `assurance.eval.run.completed`
+- `assurance.eval.run.failed`
+- `assurance.eval.run.retried`
+- `assurance.eval.callback.signature.rejected`
 
 The default profile uses portable text embeddings for H2 validation. The
 `postgres` profile also loads `classpath:db/postgresql`, including the pgvector
-HNSW index migration for deployments with the `vector` extension installed.
+HNSW index migration. If the `vector` extension is not installed on the
+PostgreSQL server, the migration logs a notice and skips the optional vector
+index while preserving the text embedding storage path.
 
 Run against PostgreSQL:
 
@@ -105,6 +131,7 @@ Run against PostgreSQL:
 DATABASE_URL=jdbc:postgresql://localhost:5432/eu_ai_assurance \
 DATABASE_USERNAME=eu_ai_assurance \
 DATABASE_PASSWORD=eu_ai_assurance \
+EVAL_CALLBACK_SECRET=replace-with-secret-manager-value \
 mvn spring-boot:run -Dspring-boot.run.profiles=postgres
 ```
 
@@ -112,4 +139,22 @@ Run the PostgreSQL smoke test with a temporary local database:
 
 ```bash
 bash scripts/postgres-smoke.sh
+```
+
+Run Postgres eval claim concurrency validation against a configured Postgres
+profile database:
+
+```bash
+bash scripts/postgres-concurrency.sh
+```
+
+Or point the concurrency validation at an existing Postgres database:
+
+```bash
+RUN_POSTGRES_CONCURRENCY=true \
+DATABASE_URL=jdbc:postgresql://localhost:5432/eu_ai_assurance \
+DATABASE_USERNAME=eu_ai_assurance \
+DATABASE_PASSWORD=eu_ai_assurance \
+EVAL_CALLBACK_SECRET=test-eval-callback-secret \
+mvn test -Dtest=PostgresEvalRunConcurrencyTest
 ```

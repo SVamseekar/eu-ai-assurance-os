@@ -16,93 +16,88 @@ public class EvalRunWorkerService {
   private final EvalRunRepository evalRuns;
   private final EvalRunCompletionService completionService;
   private final AuditService auditService;
+  private final EvalRunMetrics metrics;
 
   public EvalRunWorkerService(
       EvalDatasetRepository datasets,
       EvalRunRepository evalRuns,
       EvalRunCompletionService completionService,
-      AuditService auditService) {
+      AuditService auditService,
+      EvalRunMetrics metrics) {
     this.datasets = datasets;
     this.evalRuns = evalRuns;
     this.completionService = completionService;
     this.auditService = auditService;
+    this.metrics = metrics;
   }
 
   public EvalRun execute(UUID runId) {
-    EvalRun queued = evalRuns.findById(runId)
+    EvalRunClaim claim = evalRuns.claimQueuedForExecution(runId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Eval run not found"));
-    if ("completed".equals(queued.status())) {
+    EvalRun run = claim.run();
+    if (!claim.claimed() && "completed".equals(run.status())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Eval run is already completed");
     }
-    if (!"queued".equals(queued.status())) {
+    if (!claim.claimed()) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Eval run is not queued");
     }
-    if (queued.datasetId() == null) {
-      EvalRun failed = recordTerminalFailure(queued, "Eval dataset is not registered");
+    metrics.claimed("manual");
+    return executeClaimed(run);
+  }
+
+  EvalRun executeClaimed(EvalRun running) {
+    if (!"running".equals(running.status())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Eval run is not running");
+    }
+    if (running.datasetId() == null) {
+      EvalRun failed = recordTerminalFailure(running, "Eval dataset is not registered");
       auditService.append(
           failed.systemId(),
           "eval_run.failed",
           "eval_run",
-          runId.toString(),
+          running.runId().toString(),
           Map.of(
               "attempts", failed.workerAttempts(),
               "maxAttempts", failed.maxAttempts(),
               "failureReason", failed.failureReason()));
+      metrics.failed("dataset_not_registered");
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Eval dataset is not registered");
     }
-    EvalDataset dataset = datasets.findById(queued.datasetId())
+    EvalDataset dataset = datasets.findById(running.datasetId())
         .orElseGet(() -> {
-          EvalRun failed = recordTerminalFailure(queued, "Eval dataset is not registered");
+          EvalRun failed = recordTerminalFailure(running, "Eval dataset is not registered");
           auditService.append(
               failed.systemId(),
               "eval_run.failed",
               "eval_run",
-              runId.toString(),
+              running.runId().toString(),
               Map.of(
                   "attempts", failed.workerAttempts(),
                   "maxAttempts", failed.maxAttempts(),
                   "failureReason", failed.failureReason()));
+          metrics.failed("dataset_not_registered");
           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Eval dataset is not registered");
         });
-    Instant now = Instant.now();
-    EvalRun running = evalRuns.save(new EvalRun(
-        queued.runId(),
-        queued.systemId(),
-        queued.datasetId(),
-        "running",
-        queued.dataset(),
-        queued.modelVersion(),
-        queued.promptVersion(),
-        queued.threshold(),
-        queued.metrics(),
-        ReleaseDecision.REVIEW,
-        queued.createdAt(),
-        queued.queuedAt(),
-        now,
-        null,
-        null,
-        queued.workerAttempts() + 1,
-        queued.maxAttempts(),
-        null));
     auditService.append(
         running.systemId(),
         "eval_run.running",
         "eval_run",
-        runId.toString(),
+        running.runId().toString(),
         Map.of("dataset", dataset.name(), "datasetVersion", dataset.version(), "sampleCount", dataset.sampleCount()));
     try {
-      return completionService.complete(runId, calculateMetrics(running, dataset), "worker");
+      return completionService.complete(running.runId(), calculateMetrics(running, dataset), "worker");
     } catch (RuntimeException exception) {
       EvalRun failed = recordFailure(running, exception);
       auditService.append(
           failed.systemId(),
           "eval_run.failed",
           "eval_run",
-          runId.toString(),
+          running.runId().toString(),
           Map.of(
               "attempts", failed.workerAttempts(),
               "maxAttempts", failed.maxAttempts(),
               "failureReason", failed.failureReason()));
+      metrics.failed(failed.status());
       throw exception;
     }
   }
@@ -149,7 +144,7 @@ public class EvalRunWorkerService {
         queued.startedAt(),
         null,
         now,
-        queued.workerAttempts() + 1,
+        queued.workerAttempts(),
         queued.maxAttempts(),
         failureReason));
   }

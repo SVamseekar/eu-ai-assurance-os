@@ -17,25 +17,29 @@ public class EvalRunQueueWorker {
   private final EvalRunRepository evalRuns;
   private final EvalRunWorkerService workerService;
   private final TenantContext tenantContext;
+  private final EvalRunMetrics metrics;
 
   public EvalRunQueueWorker(
       EvalRunRepository evalRuns,
       EvalRunWorkerService workerService,
-      TenantContext tenantContext) {
+      TenantContext tenantContext,
+      EvalRunMetrics metrics) {
     this.evalRuns = evalRuns;
     this.workerService = workerService;
     this.tenantContext = tenantContext;
+    this.metrics = metrics;
   }
 
   @Scheduled(fixedDelayString = "${assurance.eval.worker.poll-interval-ms:5000}")
   public void dispatchNextQueuedRun() {
-    Optional<EvalRunEntity> dispatchable = evalRuns.findNextDispatchable();
+    Optional<EvalRunEntity> dispatchable = evalRuns.claimNextDispatchable();
     if (dispatchable.isEmpty()) {
       return;
     }
     EvalRunEntity run = dispatchable.get();
+    metrics.claimed("scheduler");
     try {
-      tenantContext.withTenant(run.tenantId(), () -> workerService.execute(run.id()));
+      tenantContext.withTenant(run.tenantId(), () -> workerService.executeClaimed(run.toDomain()));
     } catch (ResponseStatusException exception) {
       LOGGER.warn("Eval run {} dispatch failed with status {}", run.id(), exception.getStatusCode());
     } catch (RuntimeException exception) {

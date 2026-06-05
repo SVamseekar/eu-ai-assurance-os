@@ -1,7 +1,10 @@
 package os.assurance.eu.api.eval;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import os.assurance.eu.api.system.ReleaseDecision;
 import os.assurance.eu.api.tenant.TenantContext;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +31,74 @@ public class EvalRunRepository {
   }
 
   @Transactional(readOnly = true)
-  public Optional<EvalRunEntity> findNextDispatchable() {
-    return repository.findFirstByStatusAndQueuedAtLessThanEqualOrderByQueuedAtAsc("queued", java.time.Instant.now());
+  public long countByStatus(String status) {
+    return repository.countByTenantIdAndStatus(tenantContext.tenantId(), status);
+  }
+
+  @Transactional(readOnly = true)
+  public List<EvalRun> findQueuedRetryable() {
+    return repository.findAllByTenantIdAndStatusOrderByQueuedAtAsc(tenantContext.tenantId(), "queued").stream()
+        .filter(run -> run.toDomain().workerAttempts() > 0)
+        .map(EvalRunEntity::toDomain)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<EvalRun> findDeadLetter() {
+    return repository.findAllByTenantIdAndStatusOrderByFailedAtDesc(tenantContext.tenantId(), "failed").stream()
+        .map(EvalRunEntity::toDomain)
+        .toList();
+  }
+
+  @Transactional
+  Optional<EvalRun> findByIdForUpdate(UUID runId) {
+    return repository.findByTenantIdAndIdForUpdate(tenantContext.tenantId(), runId)
+        .map(EvalRunEntity::toDomain);
+  }
+
+  @Transactional
+  Optional<EvalRunClaim> claimQueuedForExecution(UUID runId) {
+    Optional<EvalRunEntity> existing = repository.findByTenantIdAndIdForUpdate(tenantContext.tenantId(), runId);
+    if (existing.isEmpty()) {
+      return Optional.empty();
+    }
+    EvalRun run = existing.get().toDomain();
+    if (!"queued".equals(run.status())) {
+      return Optional.of(new EvalRunClaim(run, false));
+    }
+    return Optional.of(new EvalRunClaim(saveClaimed(existing.get().tenantId(), run), true));
+  }
+
+  @Transactional
+  Optional<EvalRunEntity> claimNextDispatchable() {
+    return repository.findDispatchableForUpdate(Instant.now()).stream()
+        .findFirst()
+        .map(entity -> repository.save(new EvalRunEntity(entity.tenantId(), claimed(entity.toDomain()))));
+  }
+
+  private EvalRun saveClaimed(UUID tenantId, EvalRun queued) {
+    return repository.save(new EvalRunEntity(tenantId, claimed(queued))).toDomain();
+  }
+
+  private EvalRun claimed(EvalRun queued) {
+    return new EvalRun(
+        queued.runId(),
+        queued.systemId(),
+        queued.datasetId(),
+        "running",
+        queued.dataset(),
+        queued.modelVersion(),
+        queued.promptVersion(),
+        queued.threshold(),
+        queued.metrics(),
+        ReleaseDecision.REVIEW,
+        queued.createdAt(),
+        queued.queuedAt(),
+        Instant.now(),
+        null,
+        null,
+        queued.workerAttempts() + 1,
+        queued.maxAttempts(),
+        null);
   }
 }

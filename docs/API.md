@@ -216,6 +216,13 @@ Response:
 PATCH /eval-runs/{runId}/result
 ```
 
+Required headers:
+
+```http
+X-Eval-Timestamp: 1780689600
+X-Eval-Signature: v1=<hex hmac sha256>
+```
+
 Request:
 
 ```json
@@ -234,8 +241,10 @@ Request:
 The result callback requires numeric `faithfulness`, `relevance`,
 `safetyRefusal`, and `biasSlicePassRate` metrics. It marks the run `completed`,
 stores the metrics, derives the system eval score from scored metrics, and
-recalculates the system release gate. Completing a run that is already
-`completed` returns `409 Conflict`.
+recalculates the system release gate. The signature is computed over
+`<timestamp>.<raw request body>` using `assurance.eval.callback.secret`.
+Callbacks with identical metrics are idempotent; conflicting replays return
+`409 Conflict`.
 
 ```http
 POST /eval-runs/{runId}/execute
@@ -249,6 +258,20 @@ cost, completes the run, stores metrics, and recalculates the system release
 gate. Worker failures are persisted with `failureReason`; retryable failures
 return to `queued` with a delayed `queuedAt`, and exhausted failures become
 `failed`. Re-executing a completed run returns `409 Conflict`.
+
+```http
+GET /eval-runs/operations
+```
+
+Returns tenant-scoped operational visibility for queued, running, retryable,
+and failed eval runs.
+
+```http
+POST /eval-runs/{runId}/retry
+```
+
+Requeues a failed eval run, clears terminal failure metadata, resets
+`workerAttempts` to zero, and appends an audit event.
 
 ```http
 GET /eval-runs/{runId}

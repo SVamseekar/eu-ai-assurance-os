@@ -29,6 +29,9 @@ Controls:
 - SSO/SAML or OIDC for production.
 - RBAC for system edits, approvals, exports, and audit access.
 - Service accounts for CI/CD and eval workers.
+- Eval callback and manual execution endpoints require Admin or AI Engineering Lead actors.
+- Eval operations visibility is limited to Admin, AI Engineering Lead, and Compliance Officer actors.
+- External eval callbacks require timestamped HMAC signatures over the raw request body.
 
 ## Sensitive Data
 
@@ -65,6 +68,7 @@ Primary risks:
 - Prompt injection in evidence documents.
 - Incomplete or fabricated citations.
 - Unauthorized release approval.
+- Forged or replayed eval callbacks.
 - Missing audit trail for high-risk decision.
 - PII leakage to model providers.
 - Data-contract drift causing unvalidated model behavior.
@@ -77,6 +81,8 @@ Mitigations:
 - Citation-required answer generation.
 - Reviewer approval workflows.
 - Immutable audit events.
+- Short-window callback signatures with no default production secret.
+- Pessimistic eval run claims with Postgres `FOR UPDATE SKIP LOCKED` for multi-worker safety.
 - PII detection and redaction.
 - Release gate calculation that blocks on critical missing controls.
 
