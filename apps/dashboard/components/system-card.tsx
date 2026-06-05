@@ -11,7 +11,7 @@ export function SystemCard({ system }: SystemCardProps) {
   const decision = normaliseDecision(system.releaseDecision);
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="rounded-xl border border-border p-4 bg-muted/30">
       {/* Top row */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">

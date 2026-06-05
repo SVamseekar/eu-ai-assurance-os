@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -12,21 +13,19 @@ import { RiskTopology } from "@/components/risk-topology";
 import { ReleaseGateTable } from "@/components/release-gate-table";
 import { useSystems } from "@/hooks/use-systems";
 import { MOCK_SYSTEMS } from "@/lib/mock-data";
-import { normaliseDecision } from "@/lib/utils";
+import { normaliseDecision, cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default function CommandPage() {
   const { data: systems = MOCK_SYSTEMS } = useSystems();
   const [riskFilter, setRiskFilter] = useState<"all" | "high" | "limited" | "minimal">("all");
 
   const blocked = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Blocked").length;
-  const review = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Review").length;
+  const review  = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Review").length;
   const highRisk = systems.filter((s) => s.riskClass === "high").length;
   const totalGaps = systems.reduce((sum, s) => sum + s.openGaps.length, 0);
   const avgEval = Math.round(systems.reduce((sum, s) => sum + s.evalScore, 0) / systems.length);
   const avgEvidence = Math.round(systems.reduce((sum, s) => sum + s.evidenceCoverage, 0) / systems.length);
-  const auditCompleteness = Math.min(98, avgEvidence + 5);
 
   const metrics = [
     {
@@ -49,7 +48,7 @@ export default function CommandPage() {
     },
     {
       label: "Audit Completeness",
-      value: `${auditCompleteness}%`,
+      value: `${Math.min(98, avgEvidence + 5)}%`,
       sub: `${review} systems under review`,
       trend: "up" as const,
     },
@@ -57,42 +56,42 @@ export default function CommandPage() {
 
   return (
     <div className="space-y-5">
-      {/* Metric cards — PrimeStay/Invoice Autopilot style */}
+      {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {metrics.map((m) => (
-          <div key={m.label} className="bg-card rounded-2xl border border-border p-5">
-            <p className="text-xs text-muted-foreground mb-2">{m.label}</p>
-            <p className="text-2xl font-bold tracking-tight mb-1.5">{m.value}</p>
-            <div className="flex items-center gap-1.5">
-              {m.trend === "up" && <TrendingUp className="w-3 h-3 text-emerald-500" />}
-              {m.trend === "down" && <TrendingDown className="w-3 h-3 text-red-500" />}
-              {m.trend === "neutral" && <Minus className="w-3 h-3 text-muted-foreground" />}
-              <p
-                className={cn(
+          <Card key={m.label}>
+            <CardContent className="pt-5 pb-4">
+              <p className="text-xs text-muted-foreground mb-3">{m.label}</p>
+              <p className="text-2xl font-bold tracking-tight mb-2">{m.value}</p>
+              <div className="flex items-center gap-1.5">
+                {m.trend === "up"      && <TrendingUp   className="w-3 h-3 text-emerald-500 shrink-0" />}
+                {m.trend === "down"    && <TrendingDown  className="w-3 h-3 text-red-500 shrink-0" />}
+                {m.trend === "neutral" && <Minus         className="w-3 h-3 text-muted-foreground shrink-0" />}
+                <p className={cn(
                   "text-xs",
-                  m.trend === "up" && "text-emerald-600 dark:text-emerald-400",
-                  m.trend === "down" && "text-red-600 dark:text-red-400",
+                  m.trend === "up"      && "text-emerald-600 dark:text-emerald-400",
+                  m.trend === "down"    && "text-red-600 dark:text-red-400",
                   m.trend === "neutral" && "text-muted-foreground"
-                )}
-              >
-                {m.sub}
-              </p>
-            </div>
-          </div>
+                )}>
+                  {m.sub}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Risk readiness section */}
-      <div className="bg-card rounded-2xl border border-border">
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
+      {/* Release readiness */}
+      <Card>
+        <CardHeader className="flex-row items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold">Release Readiness</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <CardTitle>Release Readiness</CardTitle>
+            <CardDescription className="mt-0.5">
               Evidence coverage, eval score, and release decision per system.
-            </p>
+            </CardDescription>
           </div>
           <Select value={riskFilter} onValueChange={(v) => v && setRiskFilter(v as typeof riskFilter)}>
-            <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectTrigger className="w-32 h-8 text-xs shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -102,24 +101,24 @@ export default function CommandPage() {
               <SelectItem value="minimal">Minimal-risk</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="px-2 py-2">
+        </CardHeader>
+        <CardContent>
           <RiskTopology systems={systems} filter={riskFilter} />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Release gate table */}
-      <div className="bg-card rounded-2xl border border-border">
-        <div className="px-5 pt-5 pb-4 border-b border-border">
-          <p className="text-sm font-semibold">Release Gate</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+      <Card>
+        <CardHeader>
+          <CardTitle>Release Gate</CardTitle>
+          <CardDescription>
             Combined compliance evidence, eval regression, data drift, and human oversight.
-          </p>
-        </div>
-        <div className="p-5">
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <ReleaseGateTable systems={systems} />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

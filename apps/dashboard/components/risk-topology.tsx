@@ -1,21 +1,9 @@
 "use client";
 
 import type { AiSystem } from "@/lib/types";
-import { normaliseDecision } from "@/lib/utils";
-import { cn } from "@/lib/utils";
-
-const RISK_BAR_COLOR: Record<string, string> = {
-  high: "bg-red-500",
-  limited: "bg-amber-500",
-  minimal: "bg-emerald-500",
-  prohibited: "bg-red-800",
-};
-
-const DECISION_DOT: Record<string, string> = {
-  Pass: "bg-emerald-500",
-  Review: "bg-amber-500",
-  Blocked: "bg-red-500",
-};
+import { normaliseDecision, cn } from "@/lib/utils";
+import { RiskBadge } from "@/components/risk-badge";
+import { DecisionBadge } from "@/components/decision-badge";
 
 interface RiskTopologyProps {
   systems: AiSystem[];
@@ -26,41 +14,45 @@ export function RiskTopology({ systems, filter }: RiskTopologyProps) {
   const filtered = systems.filter((s) => filter === "all" || s.riskClass === filter);
 
   return (
-    <div className="space-y-1">
+    <div>
       {/* Column headers */}
-      <div className="grid grid-cols-[1fr_100px_80px_80px_90px] gap-3 px-3 pb-2 border-b border-border">
+      <div className="grid grid-cols-[1fr_180px_72px_80px_90px] gap-4 px-3 pb-2.5 border-b border-border mb-1">
         <span className="text-xs font-medium text-muted-foreground">System</span>
-        <span className="text-xs font-medium text-muted-foreground">Evidence</span>
+        <span className="text-xs font-medium text-muted-foreground">Evidence coverage</span>
         <span className="text-xs font-medium text-muted-foreground text-right">Eval</span>
-        <span className="text-xs font-medium text-muted-foreground text-right">Risk</span>
-        <span className="text-xs font-medium text-muted-foreground text-right">Decision</span>
+        <span className="text-xs font-medium text-muted-foreground">Risk</span>
+        <span className="text-xs font-medium text-muted-foreground">Decision</span>
       </div>
 
       {filtered.map((system) => {
         const decision = normaliseDecision(system.releaseDecision);
-        const barColor = RISK_BAR_COLOR[system.riskClass] ?? "bg-muted-foreground";
-        const dotColor = DECISION_DOT[decision] ?? "bg-muted-foreground";
+        const barColor =
+          system.riskClass === "high"
+            ? "bg-red-500"
+            : system.riskClass === "limited"
+            ? "bg-amber-500"
+            : "bg-emerald-500";
 
         return (
           <div
             key={system.id}
-            className="grid grid-cols-[1fr_100px_80px_80px_90px] gap-3 items-center px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
+            className="grid grid-cols-[1fr_180px_72px_80px_90px] gap-4 items-center px-3 py-3 rounded-lg hover:bg-muted/30 transition-colors"
           >
             {/* System name */}
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{system.name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">{system.riskClass}-risk</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{system.owner}</p>
             </div>
 
-            {/* Evidence bar */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+            {/* Evidence bar + % */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className={cn("h-full rounded-full", barColor)}
                   style={{ width: `${system.evidenceCoverage}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground w-8 text-right flex-shrink-0">
+              <span className="text-xs font-medium text-muted-foreground w-8 text-right flex-shrink-0">
                 {system.evidenceCoverage}%
               </span>
             </div>
@@ -81,15 +73,14 @@ export function RiskTopology({ systems, filter }: RiskTopologyProps) {
               </span>
             </div>
 
-            {/* Risk class */}
-            <div className="text-right">
-              <span className="text-xs text-muted-foreground capitalize">{system.riskClass}</span>
+            {/* Risk badge */}
+            <div>
+              <RiskBadge risk={system.riskClass} />
             </div>
 
             {/* Decision */}
-            <div className="flex items-center justify-end gap-1.5">
-              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", dotColor)} />
-              <span className="text-xs font-medium">{decision}</span>
+            <div>
+              <DecisionBadge decision={decision} />
             </div>
           </div>
         );

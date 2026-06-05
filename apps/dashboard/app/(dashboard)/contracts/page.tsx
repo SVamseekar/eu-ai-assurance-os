@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ContractCard } from "@/components/contract-card";
 import { LineageGraph } from "@/components/lineage-graph";
 import { useContracts } from "@/hooks/use-contracts";
@@ -32,17 +33,17 @@ export default function ContractsPage() {
         })}
       </div>
 
-      <div className="bg-card rounded-2xl border border-border">
-        <div className="px-5 pt-5 pb-4 border-b border-border">
-          <p className="text-sm font-semibold">Data Lineage</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Lineage</CardTitle>
+          <CardDescription>
             Data sources → contracts → AI systems. Animated edges indicate active drift.
-          </p>
-        </div>
-        <div className="p-5">
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <LineageGraph systems={systems} contracts={contracts} />
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

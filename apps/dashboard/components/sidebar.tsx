@@ -66,20 +66,20 @@ export function Sidebar({ blockedCount }: SidebarProps) {
       </nav>
 
       {/* Bottom status */}
-      <div className="px-3 pb-4 flex-shrink-0">
+      <div className="px-3 pb-5 flex-shrink-0">
         <div
           className={cn(
-            "rounded-xl p-3.5 border text-xs",
+            "rounded-xl p-3 border",
             blockedCount > 0
               ? "bg-red-50 border-red-100 dark:bg-red-950/30 dark:border-red-900"
               : "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900"
           )}
         >
-          <p className={cn("font-medium mb-0.5", blockedCount > 0 ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400")}>
+          <p className={cn("text-[11px] font-medium", blockedCount > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400")}>
             Release Gate
           </p>
-          <p className={cn("font-semibold text-sm", blockedCount > 0 ? "text-red-800 dark:text-red-300" : "text-emerald-800 dark:text-emerald-300")}>
-            {blockedCount > 0 ? `${blockedCount} system${blockedCount !== 1 ? "s" : ""} blocked` : "All clear"}
+          <p className={cn("text-xs font-semibold mt-0.5 truncate", blockedCount > 0 ? "text-red-800 dark:text-red-300" : "text-emerald-800 dark:text-emerald-300")}>
+            {blockedCount > 0 ? `${blockedCount} blocked` : "All systems clear"}
           </p>
         </div>
       </div>
