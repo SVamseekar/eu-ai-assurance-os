@@ -3,11 +3,16 @@ package os.assurance.eu.api.system;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import os.assurance.eu.api.audit.AuditEvent;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.contract.DataContract;
+import os.assurance.eu.api.contract.DataContractService;
+import os.assurance.eu.api.contract.DriftEvent;
+import os.assurance.eu.api.contract.DriftStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,14 +30,17 @@ public class AiSystemController {
   private final AiSystemRepository repository;
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
+  private final DataContractService dataContractService;
 
   public AiSystemController(
       AiSystemRepository repository,
       ReleaseGateService releaseGateService,
-      AuditService auditService) {
+      AuditService auditService,
+      DataContractService dataContractService) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
+    this.dataContractService = dataContractService;
   }
 
   @GetMapping
@@ -171,6 +179,9 @@ public class AiSystemController {
         system.id().toString(),
         Map.of("decision", releaseGate.decision()));
     List<AuditEvent> auditEvents = auditService.findBySystemId(system.id());
+    List<Map<String, Object>> dataContracts = dataContractService.listContracts(system.id()).stream()
+        .map(contract -> contractEvidence(system, contract))
+        .toList();
     return new EvidencePackResponse(
         system.id(),
         Instant.now(),
@@ -185,9 +196,51 @@ public class AiSystemController {
         List.of(Map.of(
             "latestScore", system.evalScore(),
             "releaseDecision", system.releaseDecision())),
-        List.of(Map.of("status", system.dataContractStatus())),
+        dataContracts,
         List.of(),
         auditEvents);
+  }
+
+  private Map<String, Object> contractEvidence(AiSystem system, DataContract contract) {
+    List<DriftEvent> driftEvents = dataContractService.listDriftEvents(contract.id());
+    List<Map<String, Object>> drift = driftEvents.stream()
+        .map(this::driftEvidence)
+        .toList();
+    List<UUID> openDriftEventIds = driftEvents.stream()
+        .filter(event -> event.status() == DriftStatus.OPEN)
+        .map(DriftEvent::id)
+        .toList();
+    Map<String, Object> lineage = new LinkedHashMap<>();
+    lineage.put("systemId", system.id());
+    lineage.put("systemName", system.name());
+    lineage.put("contractId", contract.id());
+    lineage.put("contractName", contract.name());
+    lineage.put("owner", contract.owner());
+    lineage.put("version", contract.version());
+    lineage.put("openDriftEventIds", openDriftEventIds);
+
+    Map<String, Object> evidence = new LinkedHashMap<>();
+    evidence.put("id", contract.id());
+    evidence.put("name", contract.name());
+    evidence.put("owner", contract.owner());
+    evidence.put("version", contract.version());
+    evidence.put("status", contract.status());
+    evidence.put("coverage", contract.coverage());
+    evidence.put("lineage", lineage);
+    evidence.put("driftEvents", drift);
+    return evidence;
+  }
+
+  private Map<String, Object> driftEvidence(DriftEvent event) {
+    Map<String, Object> drift = new LinkedHashMap<>();
+    drift.put("id", event.id());
+    drift.put("severity", event.severity());
+    drift.put("field", event.field());
+    drift.put("description", event.description());
+    drift.put("status", event.status());
+    drift.put("createdAt", event.createdAt());
+    drift.put("updatedAt", event.updatedAt());
+    return drift;
   }
 
   private AiSystem saveWithCalculatedDecision(AiSystem draft) {

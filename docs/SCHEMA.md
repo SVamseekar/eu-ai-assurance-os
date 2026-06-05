@@ -155,21 +155,29 @@ create table data_contracts (
   name text not null,
   owner text not null,
   version text not null,
-  status text not null check (status in ('healthy', 'warning', 'breach')),
-  coverage numeric not null,
-  created_at timestamptz not null default now()
+  status text not null check (status in ('HEALTHY', 'WARNING', 'BREACH')),
+  coverage int not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (tenant_id, system_id, name, version)
 );
 
 create table drift_events (
   id uuid primary key,
+  tenant_id uuid not null references tenants(id),
   contract_id uuid not null references data_contracts(id),
-  severity text not null check (severity in ('info', 'warning', 'breach')),
+  severity text not null check (severity in ('INFO', 'WARNING', 'BREACH')),
   field text,
   description text not null,
-  status text not null check (status in ('open', 'acknowledged', 'resolved')),
-  created_at timestamptz not null default now()
+  status text not null check (status in ('OPEN', 'ACKNOWLEDGED', 'RESOLVED')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 ```
+
+Phase 4 persists tenant-scoped contracts and drift events. Open warning or
+breach drift recalculates the mapped contract status; mapped contract statuses
+roll up to `ai_systems.data_contract_status` and then into the release gate.
 
 ## Workflow and Audit Tables
 

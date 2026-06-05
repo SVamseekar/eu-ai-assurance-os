@@ -609,6 +609,138 @@ class ApiControllerTest {
   }
 
   @Test
+  void managesDataContractsAndDriftEventsThroughReleaseGate() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createContractResult = mockMvc.perform(post("/api/v1/data-contracts")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "name": "Claims Input Schema",
+                  "owner": "Data Platform",
+                  "version": "2026-06",
+                  "status": "healthy",
+                  "coverage": 96
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.systemId").value(systemId))
+        .andExpect(jsonPath("$.status").value("HEALTHY"))
+        .andReturn();
+    String contractId = read(createContractResult).get("id").asText();
+
+    mockMvc.perform(get("/api/v1/data-contracts").param("systemId", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(contractId));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dataContractStatus").value("HEALTHY"))
+        .andExpect(jsonPath("$.releaseDecision").value("PASS"));
+
+    MvcResult driftResult = mockMvc.perform(post("/api/v1/data-contracts/{contractId}/drift-events", contractId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "severity": "breach",
+                  "field": "claim_amount",
+                  "description": "Null rate exceeded the approved contract threshold"
+                }
+                """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.status").value("OPEN"))
+        .andReturn();
+    String eventId = read(driftResult).get("id").asText();
+
+    mockMvc.perform(get("/api/v1/data-contracts/{contractId}", contractId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("BREACH"));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}/release-gate", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision").value("BLOCKED"))
+        .andExpect(jsonPath("$.blockers[0]").value("Data contract breach is open"));
+
+    mockMvc.perform(patch("/api/v1/data-contracts/{contractId}/drift-events/{eventId}", contractId, eventId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "status": "resolved"
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("RESOLVED"));
+
+    mockMvc.perform(get("/api/v1/data-contracts/{contractId}/drift-events", contractId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(eventId))
+        .andExpect(jsonPath("$[0].status").value("RESOLVED"));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.dataContractStatus").value("HEALTHY"))
+        .andExpect(jsonPath("$.releaseDecision").value("PASS"));
+  }
+
+  @Test
+  void dataContractsAreIsolatedByTenant() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createContractResult = mockMvc.perform(post("/api/v1/data-contracts")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "name": "Tenant Contract",
+                  "owner": "Data Platform",
+                  "version": "2026-06"
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isCreated())
+        .andReturn();
+    String contractId = read(createContractResult).get("id").asText();
+
+    mockMvc.perform(get("/api/v1/data-contracts/{contractId}", contractId)
+            .header("X-Tenant-Id", SECOND_TENANT_ID)
+            .header("X-Actor-Id", SECOND_TENANT_ENGINEERING_ACTOR_ID))
+        .andExpect(status().isNotFound());
+
+    mockMvc.perform(post("/api/v1/data-contracts")
+            .header("X-Tenant-Id", SECOND_TENANT_ID)
+            .header("X-Actor-Id", SECOND_TENANT_ENGINEERING_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "name": "Cross Tenant Contract",
+                  "owner": "Data Platform",
+                  "version": "2026-06"
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void rejectsDuplicateDataContractVersionsOnUpdate() throws Exception {
+    String systemId = createSystem();
+    String firstContractId = createDataContract(systemId, "Claims Input Schema", "2026-06");
+    createDataContract(systemId, "Claims Output Schema", "2026-06");
+
+    mockMvc.perform(patch("/api/v1/data-contracts/{contractId}", firstContractId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "Claims Output Schema",
+                  "version": "2026-06"
+                }
+                """))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
   void exportsEvidencePackWithAuditTrail() throws Exception {
     String systemId = createSystem();
 
@@ -874,6 +1006,22 @@ class ApiControllerTest {
                   "openGaps": []
                 }
                 """))
+        .andExpect(status().isCreated())
+        .andReturn();
+    return read(result).get("id").asText();
+  }
+
+  private String createDataContract(String systemId, String name, String version) throws Exception {
+    MvcResult result = mockMvc.perform(post("/api/v1/data-contracts")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "name": "%s",
+                  "owner": "Data Platform",
+                  "version": "%s"
+                }
+                """.formatted(systemId, name, version)))
         .andExpect(status().isCreated())
         .andReturn();
     return read(result).get("id").asText();

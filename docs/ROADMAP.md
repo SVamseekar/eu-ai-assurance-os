@@ -54,11 +54,11 @@ Status: API slice plus durable MVP worker queue implemented.
 
 ## Phase 4: Data Contracts
 
-- Data contract CRUD.
-- Drift event ingestion.
-- Contract-to-system mapping.
+- Data contract CRUD: implemented for create/list/read/update with tenant scope.
+- Drift event ingestion: implemented with open, acknowledged, and resolved states.
+- Contract-to-system mapping: implemented through persisted `system_id`.
 - Lineage display.
-- Release gate integration.
+- Release gate integration: implemented for warning and breach rollups.
 
 ## Phase 5: Workflow
 

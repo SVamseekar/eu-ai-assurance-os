@@ -55,7 +55,13 @@ Implemented MVP endpoints:
 - `POST /api/v1/eval-runs/{id}/execute`
 - `GET /api/v1/eval-runs/operations`
 - `POST /api/v1/eval-runs/{id}/retry`
+- `POST /api/v1/data-contracts`
+- `GET /api/v1/data-contracts`
+- `GET /api/v1/data-contracts/{id}`
+- `PATCH /api/v1/data-contracts/{id}`
+- `GET /api/v1/data-contracts/{id}/drift-events`
 - `POST /api/v1/data-contracts/{id}/drift-events`
+- `PATCH /api/v1/data-contracts/{id}/drift-events/{eventId}`
 - `GET /api/v1/audit-events`
 - `POST /api/v1/audit-events`
 

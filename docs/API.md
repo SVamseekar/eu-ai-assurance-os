@@ -312,11 +312,30 @@ Response:
 ## Data Contracts
 
 ```http
-GET /systems/{systemId}/data-contracts
+POST /data-contracts
+GET /data-contracts
+GET /data-contracts?systemId={systemId}
+GET /data-contracts/{contractId}
+PATCH /data-contracts/{contractId}
+GET /data-contracts/{contractId}/drift-events
 POST /data-contracts/{contractId}/drift-events
+PATCH /data-contracts/{contractId}/drift-events/{eventId}
 ```
 
-Request:
+Create contract request:
+
+```json
+{
+  "systemId": "sys_001",
+  "name": "Claims Input Schema",
+  "owner": "Data Platform",
+  "version": "2026-06",
+  "status": "healthy",
+  "coverage": 96
+}
+```
+
+Drift event request:
 
 ```json
 {
@@ -325,6 +344,17 @@ Request:
   "description": "New field is not mapped to fairness monitoring."
 }
 ```
+
+Open `breach` drift marks the contract and mapped system as `BREACH`, causing
+the release gate to block. Resolving the event with:
+
+```json
+{
+  "status": "resolved"
+}
+```
+
+recalculates the contract, system data-contract status, and release decision.
 
 ## Release Gate
 
