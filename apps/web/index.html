@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EU AI Assurance OS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark">EA</div>
+      <div>
+        <strong>EU AI Assurance</strong>
+        <span>Governance control plane</span>
+      </div>
+    </div>
+    <nav>
+      <button class="nav active" data-view="command" title="Command center"><span>01</span>Command</button>
+      <button class="nav" data-view="systems" title="AI systems"><span>02</span>Systems</button>
+      <button class="nav" data-view="evidence" title="Evidence RAG"><span>03</span>Evidence</button>
+      <button class="nav" data-view="evals" title="Evaluation gates"><span>04</span>Evals</button>
+      <button class="nav" data-view="contracts" title="Data contracts"><span>05</span>Contracts</button>
+      <button class="nav" data-view="audit" title="Audit ledger"><span>06</span>Audit</button>
+    </nav>
+    <div class="rail-card">
+      <span class="pulse"></span>
+      <p>Release gate active</p>
+      <strong id="releaseGate">2 blocked</strong>
+    </div>
+  </aside>
+
+  <main>
+    <header class="top">
+      <div>
+        <p class="eyebrow">EU AI Act + GDPR + operational controls</p>
+        <h1>Assure high-risk AI systems before they reach production.</h1>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">◐</button>
+        <button class="secondary" id="exportPack">Export evidence pack</button>
+        <button class="primary" id="runControls">Run controls</button>
+      </div>
+    </header>
+
+    <section id="command" class="view active">
+      <div class="metrics">
+        <article>
+          <span>AI systems</span>
+          <strong id="systemsCount">8</strong>
+          <em id="highRiskCount">3 high-risk</em>
+        </article>
+        <article>
+          <span>Open control gaps</span>
+          <strong id="gapCount">7</strong>
+          <em class="bad">2 release blockers</em>
+        </article>
+        <article>
+          <span>Eval gate pass rate</span>
+          <strong id="passRate">74%</strong>
+          <em class="warn">below 85 target</em>
+        </article>
+        <article>
+          <span>Audit completeness</span>
+          <strong id="auditRate">91%</strong>
+          <em class="good">ready for review</em>
+        </article>
+      </div>
+
+      <div class="grid wide-left">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Risk Topology</h2>
+              <p>Controls are grouped by system risk, data criticality, and release readiness.</p>
+            </div>
+            <select id="riskFilter" aria-label="Risk filter">
+              <option value="all">All systems</option>
+              <option value="high">High-risk</option>
+              <option value="limited">Limited-risk</option>
+              <option value="minimal">Minimal-risk</option>
+            </select>
+          </div>
+          <canvas id="riskCanvas" width="900" height="360" aria-label="AI system risk topology"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Control Inbox</h2>
+              <p>Workflows use staged approvals and compensating actions.</p>
+            </div>
+          </div>
+          <div id="controlInbox" class="inbox"></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Release Gate</h2>
+            <p>Combined view of compliance evidence, eval regression, data drift, and human oversight.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>System</th>
+                <th>Risk class</th>
+                <th>Evidence</th>
+                <th>Eval score</th>
+                <th>Data contract</th>
+                <th>Decision</th>
+              </tr>
+            </thead>
+            <tbody id="gateRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section id="systems" class="view">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>AI System Registry</h2>
+            <p>Inventory for providers, deployers, owners, use purpose, and risk basis.</p>
+          </div>
+          <button class="secondary" id="addSystem">Add sample system</button>
+        </div>
+        <div id="systemCards" class="cards"></div>
+      </section>
+    </section>
+
+    <section id="evidence" class="view">
+      <div class="grid split">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Compliance Evidence RAG</h2>
+              <p>Ask against policies, DPIAs, model cards, vendor docs, and EU control mappings.</p>
+            </div>
+          </div>
+          <form id="evidenceForm" class="ask">
+            <label>
+              Question
+              <textarea id="evidenceQuestion" rows="5">Which controls block the Claims Triage AI release, and what evidence is missing?</textarea>
+            </label>
+            <button class="primary" type="submit">Ask with citations</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Grounded Answer</h2>
+              <p>Every answer includes confidence, source clauses, and reviewer action.</p>
+            </div>
+          </div>
+          <div id="ragAnswer" class="answer empty">Run a cited compliance query.</div>
+        </section>
+      </div>
+    </section>
+
+    <section id="evals" class="view">
+      <div class="grid split">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Eval Gate Runner</h2>
+              <p>LLM-as-judge, RAG faithfulness, safety refusal, latency, and cost guardrails.</p>
+            </div>
+          </div>
+          <form id="evalForm" class="form">
+            <label>
+              System
+              <select id="evalSystem"></select>
+            </label>
+            <label>
+              Dataset
+              <select id="evalDataset">
+                <option>golden-eu-claims-v4</option>
+                <option>hr-candidate-screening-v2</option>
+                <option>customer-support-rag-v8</option>
+              </select>
+            </label>
+            <label>
+              Threshold
+              <input id="evalThreshold" type="number" min="70" max="98" value="85">
+            </label>
+            <button class="primary" type="submit">Run eval gate</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Gate Console</h2>
+              <p>Simulated worker output with release decision.</p>
+            </div>
+          </div>
+          <div id="evalConsole" class="console"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="contracts" class="view">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Data Contract Monitor</h2>
+            <p>Schema drift and lineage breaches are treated as AI control failures.</p>
+          </div>
+          <button class="primary" id="simulateDrift">Simulate drift</button>
+        </div>
+        <div id="contractCards" class="contract-grid"></div>
+      </section>
+    </section>
+
+    <section id="audit" class="view">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Immutable Audit Ledger</h2>
+            <p>Append-only entries for evidence checks, approvals, overrides, and release decisions.</p>
+          </div>
+        </div>
+        <ol id="auditList" class="timeline"></ol>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

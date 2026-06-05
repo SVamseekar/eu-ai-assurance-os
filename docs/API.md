@@ -1,0 +1,221 @@
+# API Contract
+
+Base path:
+
+```text
+/api/v1
+```
+
+## AI Systems
+
+```http
+POST /systems
+```
+
+Request:
+
+```json
+{
+  "name": "Claims Triage AI",
+  "owner": "Insurance Ops",
+  "purpose": "Prioritize and route insurance claims",
+  "riskClass": "high",
+  "riskBasis": "Access to essential private services",
+  "deploymentRegion": "EU"
+}
+```
+
+Response:
+
+```json
+{
+  "id": "sys_001",
+  "releaseDecision": "blocked",
+  "createdAt": "2026-06-05T10:00:00Z"
+}
+```
+
+```http
+GET /systems
+GET /systems/{systemId}
+PATCH /systems/{systemId}
+```
+
+## Risk Classification
+
+```http
+POST /systems/{systemId}/risk-classification
+```
+
+Request:
+
+```json
+{
+  "riskClass": "high",
+  "basis": "Supports access decisions for essential services",
+  "affectedUsers": ["claimants", "reviewers"],
+  "humanOversightRequired": true
+}
+```
+
+## Evidence
+
+```http
+POST /evidence/documents
+```
+
+Request:
+
+```json
+{
+  "systemId": "sys_001",
+  "type": "DPIA",
+  "title": "Claims Triage DPIA",
+  "sourceUri": "s3://tenant-a/dpia/claims.pdf"
+}
+```
+
+```http
+POST /evidence/query
+```
+
+Request:
+
+```json
+{
+  "systemId": "sys_001",
+  "question": "Which controls block this release?"
+}
+```
+
+Response:
+
+```json
+{
+  "answer": "The release is blocked because human oversight evidence and bias evaluation are incomplete.",
+  "confidence": 0.82,
+  "citations": [
+    {
+      "documentId": "doc_123",
+      "title": "Claims Triage DPIA",
+      "section": "Human oversight",
+      "snippet": "Reviewer override must include purpose, affected cohort, appeal route, and owner sign-off."
+    }
+  ]
+}
+```
+
+## Eval Gates
+
+```http
+POST /eval-runs
+```
+
+Request:
+
+```json
+{
+  "systemId": "sys_001",
+  "dataset": "golden-eu-claims-v4",
+  "modelVersion": "claims-triage-2026-06-05",
+  "promptVersion": "claims-routing-v12",
+  "threshold": 0.85
+}
+```
+
+Response:
+
+```json
+{
+  "runId": "eval_001",
+  "status": "queued"
+}
+```
+
+```http
+GET /eval-runs/{runId}
+```
+
+Response:
+
+```json
+{
+  "runId": "eval_001",
+  "status": "completed",
+  "metrics": {
+    "faithfulness": 0.78,
+    "biasSlicePassRate": 0.74,
+    "safetyRefusal": 0.91,
+    "latencyP95Ms": 1800,
+    "costUsd": 4.62
+  },
+  "releaseDecision": "blocked"
+}
+```
+
+## Data Contracts
+
+```http
+GET /systems/{systemId}/data-contracts
+POST /data-contracts/{contractId}/drift-events
+```
+
+Request:
+
+```json
+{
+  "severity": "breach",
+  "field": "denial_reason_category",
+  "description": "New field is not mapped to fairness monitoring."
+}
+```
+
+## Release Gate
+
+```http
+GET /systems/{systemId}/release-gate
+```
+
+Response:
+
+```json
+{
+  "systemId": "sys_001",
+  "decision": "blocked",
+  "blockers": [
+    "Human oversight SOP missing",
+    "Bias eval below threshold",
+    "claims_events.v4 data contract breach"
+  ]
+}
+```
+
+## Evidence Pack
+
+```http
+GET /systems/{systemId}/evidence-pack
+```
+
+Response:
+
+```json
+{
+  "systemId": "sys_001",
+  "generatedAt": "2026-06-05T10:30:00Z",
+  "decision": "blocked",
+  "riskClassification": {},
+  "evidence": [],
+  "evalRuns": [],
+  "dataContracts": [],
+  "approvals": [],
+  "auditEvents": []
+}
+```
+
+## Audit
+
+```http
+GET /audit-events?systemId=sys_001
+```
+
+Audit events are append-only and cannot be modified through public APIs.
