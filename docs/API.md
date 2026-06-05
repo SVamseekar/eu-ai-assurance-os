@@ -6,6 +6,16 @@ Base path:
 /api/v1
 ```
 
+MVP tenant context headers:
+
+```http
+X-Tenant-Id: 00000000-0000-0000-0000-000000000001
+X-Actor-Id: 00000000-0000-0000-0000-000000000101
+```
+
+If omitted, the backend uses the bootstrapped MVP tenant and actor. If provided,
+both headers must refer to known records.
+
 ## AI Systems
 
 ```http
@@ -216,6 +226,24 @@ Response:
 
 ```http
 GET /audit-events?systemId=sys_001
+```
+
+```http
+POST /audit-events
+```
+
+Request:
+
+```json
+{
+  "systemId": "sys_001",
+  "eventType": "approval.override_requested",
+  "resourceType": "approval",
+  "resourceId": "approval_001",
+  "payload": {
+    "reason": "Manual compliance review required"
+  }
+}
 ```
 
 Audit events are append-only and cannot be modified through public APIs.

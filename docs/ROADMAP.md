@@ -14,6 +14,8 @@ Status: complete.
 
 ## Phase 1: Backend Foundation
 
+Status: complete.
+
 - Choose backend stack: Spring Boot 3 recommended for this project.
 - Add PostgreSQL schema with Flyway.
 - Implement tenant, user, and role model.
