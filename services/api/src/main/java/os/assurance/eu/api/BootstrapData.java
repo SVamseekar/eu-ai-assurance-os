@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import os.assurance.eu.api.eval.EvalDataset;
+import os.assurance.eu.api.eval.EvalDatasetEntity;
+import os.assurance.eu.api.eval.EvalDatasetJpaRepository;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemJpaRepository;
 import os.assurance.eu.api.system.AiSystemRepository;
@@ -27,6 +30,7 @@ public class BootstrapData implements CommandLineRunner {
   private final UserJpaRepository users;
   private final AiSystemJpaRepository systemStore;
   private final AiSystemRepository systems;
+  private final EvalDatasetJpaRepository evalDatasets;
   private final ReleaseGateService releaseGateService;
 
   public BootstrapData(
@@ -34,11 +38,13 @@ public class BootstrapData implements CommandLineRunner {
       UserJpaRepository users,
       AiSystemJpaRepository systemStore,
       AiSystemRepository systems,
+      EvalDatasetJpaRepository evalDatasets,
       ReleaseGateService releaseGateService) {
     this.tenants = tenants;
     this.users = users;
     this.systemStore = systemStore;
     this.systems = systems;
+    this.evalDatasets = evalDatasets;
     this.releaseGateService = releaseGateService;
   }
 
@@ -60,6 +66,20 @@ public class BootstrapData implements CommandLineRunner {
             "compliance@example.com",
             UserRole.COMPLIANCE_OFFICER,
             now)));
+    if (!evalDatasets.existsByTenantIdAndNameAndVersion(
+        TenantContext.DEFAULT_TENANT_ID,
+        "golden-eu-claims-v4",
+        "2026-06")) {
+      evalDatasets.save(new EvalDatasetEntity(
+          TenantContext.DEFAULT_TENANT_ID,
+          new EvalDataset(
+              UUID.randomUUID(),
+              "golden-eu-claims-v4",
+              "2026-06",
+              240,
+              true,
+              now)));
+    }
 
     if (systemStore.existsByTenantId(TenantContext.DEFAULT_TENANT_ID)) {
       return;

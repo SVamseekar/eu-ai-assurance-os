@@ -111,24 +111,39 @@ create table eval_datasets (
   name text not null,
   version text not null,
   sample_count int not null,
-  is_golden boolean not null default false,
-  created_at timestamptz not null default now()
+  golden boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (tenant_id, name, version)
 );
 
 create table eval_runs (
   id uuid primary key,
   tenant_id uuid not null references tenants(id),
   system_id uuid not null references ai_systems(id),
-  dataset_id uuid not null references eval_datasets(id),
+  dataset_id uuid references eval_datasets(id),
+  dataset text not null,
   model_version text not null,
   prompt_version text not null,
   threshold numeric not null,
-  metrics jsonb not null default '{}',
+  metrics_json text not null default '{}',
   status text not null check (status in ('queued', 'running', 'completed', 'failed')),
-  release_decision text not null check (release_decision in ('pass', 'review', 'blocked')),
-  created_at timestamptz not null default now()
+  release_decision text not null check (release_decision in ('PASS', 'REVIEW', 'BLOCKED')),
+  created_at timestamptz not null default now(),
+  queued_at timestamptz not null default now(),
+  started_at timestamptz,
+  completed_at timestamptz,
+  failed_at timestamptz,
+  worker_attempts int not null default 0,
+  max_attempts int not null default 3,
+  failure_reason text
 );
 ```
+
+The first Phase 3 migration keeps the legacy `dataset` text on `eval_runs` for
+API compatibility and adds nullable `dataset_id` for registry-backed runs. New
+runs are created against a registered dataset name. `queued_at`,
+`worker_attempts`, `max_attempts`, and failure timestamps make the eval worker
+queue durable enough to resume background dispatch after process restarts.
 
 ## Data Contract Tables
 

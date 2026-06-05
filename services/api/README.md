@@ -47,8 +47,12 @@ Implemented MVP endpoints:
 - `POST /api/v1/evidence/documents`
 - `GET /api/v1/evidence/systems/{id}/documents`
 - `POST /api/v1/evidence/query`
+- `POST /api/v1/eval-datasets`
+- `GET /api/v1/eval-datasets`
 - `POST /api/v1/eval-runs`
 - `GET /api/v1/eval-runs/{id}`
+- `PATCH /api/v1/eval-runs/{id}/result`
+- `POST /api/v1/eval-runs/{id}/execute`
 - `POST /api/v1/data-contracts/{id}/drift-events`
 - `GET /api/v1/audit-events`
 - `POST /api/v1/audit-events`
@@ -85,6 +89,11 @@ Evidence/RAG hardening knobs:
 - `assurance.evidence.max-retrieved-chunks`
 - `assurance.evidence.min-retrieval-score`
 - `assurance.evidence.allowed-source-schemes`
+
+Eval worker knobs:
+
+- `assurance.eval.worker.enabled`
+- `assurance.eval.worker.poll-interval-ms`
 
 The default profile uses portable text embeddings for H2 validation. The
 `postgres` profile also loads `classpath:db/postgresql`, including the pgvector

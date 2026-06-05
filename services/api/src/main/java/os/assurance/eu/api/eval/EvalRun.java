@@ -8,6 +8,7 @@ import os.assurance.eu.api.system.ReleaseDecision;
 public record EvalRun(
     UUID runId,
     UUID systemId,
+    UUID datasetId,
     String status,
     String dataset,
     String modelVersion,
@@ -15,5 +16,12 @@ public record EvalRun(
     double threshold,
     Map<String, Object> metrics,
     ReleaseDecision releaseDecision,
-    Instant createdAt) {
+    Instant createdAt,
+    Instant queuedAt,
+    Instant startedAt,
+    Instant completedAt,
+    Instant failedAt,
+    int workerAttempts,
+    int maxAttempts,
+    String failureReason) {
 }

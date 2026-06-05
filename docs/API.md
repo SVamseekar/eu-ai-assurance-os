@@ -151,8 +151,45 @@ Response:
 ## Eval Gates
 
 ```http
+POST /eval-datasets
+```
+
+Request:
+
+```json
+{
+  "name": "golden-eu-claims-v4",
+  "version": "2026-06",
+  "sampleCount": 240,
+  "golden": true
+}
+```
+
+Response:
+
+```json
+{
+  "id": "dataset_001",
+  "name": "golden-eu-claims-v4",
+  "version": "2026-06",
+  "sampleCount": 240,
+  "golden": true,
+  "createdAt": "2026-06-05T10:00:00Z"
+}
+```
+
+```http
+GET /eval-datasets
+```
+
+```http
 POST /eval-runs
 ```
+
+The `dataset` value must reference a registered eval dataset name. When multiple
+versions share a name, new runs use the latest registered version. The MVP
+bootstrap registers `golden-eu-claims-v4`. Created runs enter a durable
+`queued` state and are eligible for the background eval worker.
 
 Request:
 
@@ -176,6 +213,44 @@ Response:
 ```
 
 ```http
+PATCH /eval-runs/{runId}/result
+```
+
+Request:
+
+```json
+{
+  "metrics": {
+    "faithfulness": 0.78,
+    "relevance": 0.76,
+    "safetyRefusal": 0.91,
+    "biasSlicePassRate": 0.74,
+    "latencyP95Ms": 1800,
+    "costUsd": 4.62
+  }
+}
+```
+
+The result callback requires numeric `faithfulness`, `relevance`,
+`safetyRefusal`, and `biasSlicePassRate` metrics. It marks the run `completed`,
+stores the metrics, derives the system eval score from scored metrics, and
+recalculates the system release gate. Completing a run that is already
+`completed` returns `409 Conflict`.
+
+```http
+POST /eval-runs/{runId}/execute
+```
+
+Manually executes a queued eval run immediately with the same backend-owned
+worker path used by background dispatch. The durable worker records
+`running`, increments `workerAttempts`, generates deterministic MVP metrics for
+faithfulness, relevance, safety refusal, bias slice pass rate, latency, and
+cost, completes the run, stores metrics, and recalculates the system release
+gate. Worker failures are persisted with `failureReason`; retryable failures
+return to `queued` with a delayed `queuedAt`, and exhausted failures become
+`failed`. Re-executing a completed run returns `409 Conflict`.
+
+```http
 GET /eval-runs/{runId}
 ```
 
@@ -184,15 +259,30 @@ Response:
 ```json
 {
   "runId": "eval_001",
+  "systemId": "sys_001",
+  "datasetId": "dataset_001",
   "status": "completed",
+  "dataset": "golden-eu-claims-v4",
+  "modelVersion": "claims-triage-2026-06-05",
+  "promptVersion": "claims-routing-v12",
+  "threshold": 0.85,
   "metrics": {
     "faithfulness": 0.78,
+    "relevance": 0.76,
     "biasSlicePassRate": 0.74,
     "safetyRefusal": 0.91,
     "latencyP95Ms": 1800,
     "costUsd": 4.62
   },
-  "releaseDecision": "blocked"
+  "releaseDecision": "BLOCKED",
+  "createdAt": "2026-06-05T10:00:00Z",
+  "queuedAt": "2026-06-05T10:00:00Z",
+  "startedAt": "2026-06-05T10:00:03Z",
+  "completedAt": "2026-06-05T10:00:04Z",
+  "failedAt": null,
+  "workerAttempts": 1,
+  "maxAttempts": 3,
+  "failureReason": null
 }
 ```
 

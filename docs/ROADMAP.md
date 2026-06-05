@@ -43,11 +43,14 @@ provider implementation, production auth/RBAC, and operational monitoring.
 
 ## Phase 3: Eval Gates
 
-- Eval dataset registry.
-- Eval run creation and status tracking.
-- Async worker queue.
-- Metrics capture: faithfulness, relevance, safety refusal, bias slices, latency, cost.
-- Threshold-based release decision update.
+Status: API slice plus durable MVP worker queue implemented.
+
+- Eval dataset registry: implemented for create/list with tenant scope.
+- Eval run creation and status tracking: implemented for registered datasets.
+- Metrics capture: implemented for completed runs via API result callback.
+- Threshold-based release decision update: implemented for system eval score and release gate recalculation.
+- Worker-owned metric execution for faithfulness, relevance, safety refusal, bias slices, latency, and cost: implemented as deterministic MVP execution.
+- Async worker queue: implemented with durable run state, background dispatch, retry metadata, and failure capture.
 
 ## Phase 4: Data Contracts
 

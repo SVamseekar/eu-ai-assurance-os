@@ -13,6 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.UUID;
+import os.assurance.eu.api.eval.EvalRunQueueWorker;
+import os.assurance.eu.api.eval.EvalRunRepository;
+import os.assurance.eu.api.eval.EvalRunWorkerService;
+import os.assurance.eu.api.tenant.TenantContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,7 +28,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(properties = {
     "assurance.evidence.max-content-characters=256",
-    "assurance.evidence.max-question-characters=96"
+    "assurance.evidence.max-question-characters=96",
+    "assurance.eval.worker.enabled=false"
 })
 @AutoConfigureMockMvc
 class ApiControllerTest {
@@ -35,6 +41,15 @@ class ApiControllerTest {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private EvalRunRepository evalRuns;
+
+  @Autowired
+  private EvalRunWorkerService workerService;
+
+  @Autowired
+  private TenantContext tenantContext;
 
   @Test
   void createsAndUpdatesSystemUsingDocumentedLowercaseEnums() throws Exception {
@@ -107,7 +122,228 @@ class ApiControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.runId").value(runId))
         .andExpect(jsonPath("$.systemId").value(systemId))
-        .andExpect(jsonPath("$.dataset").value("golden-eu-claims-v4"));
+        .andExpect(jsonPath("$.datasetId", not(blankOrNullString())))
+        .andExpect(jsonPath("$.dataset").value("golden-eu-claims-v4"))
+        .andExpect(jsonPath("$.queuedAt", not(blankOrNullString())))
+        .andExpect(jsonPath("$.workerAttempts").value(0))
+        .andExpect(jsonPath("$.maxAttempts").value(3));
+  }
+
+  @Test
+  void workerExecutesQueuedEvalRunWithOwnedMetrics() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-worker",
+                  "promptVersion": "claims-routing-worker",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("completed"))
+        .andExpect(jsonPath("$.metrics.faithfulness").isNumber())
+        .andExpect(jsonPath("$.metrics.relevance").isNumber())
+        .andExpect(jsonPath("$.metrics.safetyRefusal").isNumber())
+        .andExpect(jsonPath("$.metrics.biasSlicePassRate").isNumber())
+        .andExpect(jsonPath("$.metrics.latencyP95Ms").isNumber())
+        .andExpect(jsonPath("$.metrics.costUsd").isNumber())
+        .andExpect(jsonPath("$.metrics.sampleCount").value(240))
+        .andExpect(jsonPath("$.metrics.goldenDataset").value(true))
+        .andExpect(jsonPath("$.workerAttempts").value(1))
+        .andExpect(jsonPath("$.startedAt", not(blankOrNullString())))
+        .andExpect(jsonPath("$.completedAt", not(blankOrNullString())));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.evalScore").isNumber());
+
+    mockMvc.perform(post("/api/v1/eval-runs/{runId}/execute", runId))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  void queueWorkerDispatchesNextQueuedEvalRun() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-queued-worker",
+                  "promptVersion": "claims-routing-queued-worker",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    EvalRunQueueWorker queueWorker = new EvalRunQueueWorker(evalRuns, workerService, tenantContext);
+    UUID runUuid = UUID.fromString(runId);
+    for (int dispatches = 0; dispatches < 5 && evalRuns.findById(runUuid)
+        .filter(run -> "completed".equals(run.status()))
+        .isEmpty(); dispatches++) {
+      queueWorker.dispatchNextQueuedRun();
+    }
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("completed"))
+        .andExpect(jsonPath("$.workerAttempts").value(1))
+        .andExpect(jsonPath("$.startedAt", not(blankOrNullString())))
+        .andExpect(jsonPath("$.completedAt", not(blankOrNullString())))
+        .andExpect(jsonPath("$.metrics.sampleCount").value(240));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.evalScore").isNumber());
+  }
+
+  @Test
+  void registersDatasetAndCompletesEvalRunUpdatingReleaseGate() throws Exception {
+    String systemId = createSystem();
+    String datasetName = "claims-regression-%s".formatted(System.nanoTime());
+
+    MvcResult datasetResult = mockMvc.perform(post("/api/v1/eval-datasets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "%s",
+                  "version": "2026-06-05",
+                  "sampleCount": 120,
+                  "golden": true
+                }
+                """.formatted(datasetName)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", not(blankOrNullString())))
+        .andExpect(jsonPath("$.name").value(datasetName))
+        .andExpect(jsonPath("$.sampleCount").value(120))
+        .andReturn();
+    String datasetId = read(datasetResult).get("id").asText();
+
+    mockMvc.perform(post("/api/v1/eval-datasets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "%s",
+                  "version": "2026-06-05",
+                  "sampleCount": 120,
+                  "golden": true
+                }
+                """.formatted(datasetName)))
+        .andExpect(status().isConflict());
+
+    mockMvc.perform(get("/api/v1/eval-datasets"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[*].id").value(org.hamcrest.Matchers.hasItem(datasetId)));
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "%s",
+                  "modelVersion": "claims-triage-2026-06-05",
+                  "promptVersion": "claims-routing-v12",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId, datasetName)))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "metrics": {
+                    "faithfulness": 0.78,
+                    "relevance": 0.76,
+                    "safetyRefusal": 0.81,
+                    "biasSlicePassRate": 0.71,
+                    "latencyP95Ms": 1800,
+                    "costUsd": 4.62
+                  }
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("completed"))
+        .andExpect(jsonPath("$.releaseDecision").value("BLOCKED"))
+        .andExpect(jsonPath("$.metrics.faithfulness").value(0.78));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.evalScore").value(77))
+        .andExpect(jsonPath("$.releaseDecision").value("BLOCKED"));
+
+    mockMvc.perform(get("/api/v1/systems/{systemId}/release-gate", systemId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision").value("BLOCKED"))
+        .andExpect(jsonPath("$.blockers[0]").value("Eval score is below hard release threshold"));
+
+    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "metrics": {
+                    "faithfulness": 0.99
+                  }
+                }
+                """))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  void rejectsEvalCompletionWithoutRequiredScoredMetrics() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult createRunResult = mockMvc.perform(post("/api/v1/eval-runs")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "dataset": "golden-eu-claims-v4",
+                  "modelVersion": "claims-triage-missing-metrics",
+                  "promptVersion": "claims-routing-missing-metrics",
+                  "threshold": 0.85
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andReturn();
+    String runId = read(createRunResult).get("runId").asText();
+
+    mockMvc.perform(patch("/api/v1/eval-runs/{runId}/result", runId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "metrics": {
+                    "latencyP95Ms": 1800,
+                    "costUsd": 4.62
+                  }
+                }
+                """))
+        .andExpect(status().isBadRequest());
+
+    mockMvc.perform(get("/api/v1/eval-runs/{runId}", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("queued"))
+        .andExpect(jsonPath("$.metrics").isEmpty());
   }
 
   @Test

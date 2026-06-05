@@ -26,4 +26,9 @@ public class EvalRunRepository {
     return repository.findByTenantIdAndId(tenantContext.tenantId(), runId)
         .map(EvalRunEntity::toDomain);
   }
+
+  @Transactional(readOnly = true)
+  public Optional<EvalRunEntity> findNextDispatchable() {
+    return repository.findFirstByStatusAndQueuedAtLessThanEqualOrderByQueuedAtAsc("queued", java.time.Instant.now());
+  }
 }

@@ -25,6 +25,8 @@ public class EvalRunEntity {
   @Column(nullable = false)
   private UUID systemId;
 
+  private UUID datasetId;
+
   @Column(nullable = false)
   private String status;
 
@@ -51,6 +53,24 @@ public class EvalRunEntity {
   @Column(nullable = false)
   private Instant createdAt;
 
+  @Column(nullable = false)
+  private Instant queuedAt;
+
+  private Instant startedAt;
+
+  private Instant completedAt;
+
+  private Instant failedAt;
+
+  @Column(nullable = false)
+  private int workerAttempts;
+
+  @Column(nullable = false)
+  private int maxAttempts;
+
+  @Column(length = 2048)
+  private String failureReason;
+
   protected EvalRunEntity() {
   }
 
@@ -58,6 +78,7 @@ public class EvalRunEntity {
     this.id = evalRun.runId();
     this.tenantId = tenantId;
     this.systemId = evalRun.systemId();
+    this.datasetId = evalRun.datasetId();
     this.status = evalRun.status();
     this.dataset = evalRun.dataset();
     this.modelVersion = evalRun.modelVersion();
@@ -66,12 +87,20 @@ public class EvalRunEntity {
     this.metrics = evalRun.metrics();
     this.releaseDecision = evalRun.releaseDecision();
     this.createdAt = evalRun.createdAt();
+    this.queuedAt = evalRun.queuedAt();
+    this.startedAt = evalRun.startedAt();
+    this.completedAt = evalRun.completedAt();
+    this.failedAt = evalRun.failedAt();
+    this.workerAttempts = evalRun.workerAttempts();
+    this.maxAttempts = evalRun.maxAttempts();
+    this.failureReason = evalRun.failureReason();
   }
 
   public EvalRun toDomain() {
     return new EvalRun(
         id,
         systemId,
+        datasetId,
         status,
         dataset,
         modelVersion,
@@ -79,6 +108,21 @@ public class EvalRunEntity {
         threshold,
         metrics,
         releaseDecision,
-        createdAt);
+        createdAt,
+        queuedAt,
+        startedAt,
+        completedAt,
+        failedAt,
+        workerAttempts,
+        maxAttempts,
+        failureReason);
+  }
+
+  public UUID id() {
+    return id;
+  }
+
+  public UUID tenantId() {
+    return tenantId;
   }
 }
