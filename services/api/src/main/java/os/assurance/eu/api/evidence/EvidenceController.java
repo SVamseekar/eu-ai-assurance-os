@@ -2,14 +2,16 @@ package os.assurance.eu.api.evidence;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
-import os.assurance.eu.api.audit.AuditService;
+import java.util.UUID;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -17,38 +19,32 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/v1/evidence")
 public class EvidenceController {
   private final AiSystemRepository systems;
-  private final AuditService auditService;
+  private final EvidenceService evidenceService;
 
-  public EvidenceController(AiSystemRepository systems, AuditService auditService) {
+  public EvidenceController(AiSystemRepository systems, EvidenceService evidenceService) {
     this.systems = systems;
-    this.auditService = auditService;
+    this.evidenceService = evidenceService;
+  }
+
+  @PostMapping("/documents")
+  @ResponseStatus(HttpStatus.CREATED)
+  public EvidenceDocumentResponse createDocument(@Valid @RequestBody CreateEvidenceDocumentRequest request) {
+    systems.findById(request.systemId())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    return evidenceService.ingest(request);
+  }
+
+  @GetMapping("/systems/{systemId}/documents")
+  public List<EvidenceDocumentResponse> listDocuments(@PathVariable UUID systemId) {
+    systems.findById(systemId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    return evidenceService.listDocuments(systemId);
   }
 
   @PostMapping("/query")
   public EvidenceQueryResponse queryEvidence(@Valid @RequestBody EvidenceQueryRequest request) {
     AiSystem system = systems.findById(request.systemId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
-    EvidenceQueryResponse response = new EvidenceQueryResponse(
-        "%s currently has a %s release decision. Open gaps: %s."
-            .formatted(system.name(), system.releaseDecision(), String.join("; ", system.openGaps())),
-        system.evidenceCoverage() / 100.0,
-        List.of(
-            new Citation(
-                "doc_dpia_mvp",
-                "%s DPIA".formatted(system.name()),
-                "Release controls",
-                "Reviewer action is required before unresolved high-risk blockers are released."),
-            new Citation(
-                "doc_control_map_mvp",
-                "EU AI Act control map",
-                "High-risk systems",
-                "Risk management, data governance, logging, transparency, human oversight, accuracy, and cybersecurity controls must be evidenced.")));
-    auditService.append(
-        system.id(),
-        "evidence.query_answered",
-        "ai_system",
-        system.id().toString(),
-        Map.of("question", request.question(), "confidence", response.confidence()));
-    return response;
+    return evidenceService.answer(system, request.question());
   }
 }

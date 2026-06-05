@@ -60,35 +60,43 @@ create table system_controls (
 create table evidence_documents (
   id uuid primary key,
   tenant_id uuid not null references tenants(id),
-  system_id uuid references ai_systems(id),
+  system_id uuid not null references ai_systems(id),
   type text not null,
   title text not null,
   source_uri text not null,
   checksum text not null,
+  chunk_count int not null,
+  ingestion_status text not null,
   created_at timestamptz not null default now()
 );
 
 create table evidence_chunks (
   id uuid primary key,
   document_id uuid not null references evidence_documents(id),
+  ordinal int not null,
   section_ref text,
   content text not null,
-  embedding vector(1536),
-  metadata jsonb not null default '{}'
+  embedding text not null,
+  metadata_json text not null default '{}'
 );
 
 create table evidence_queries (
   id uuid primary key,
   tenant_id uuid not null references tenants(id),
-  system_id uuid references ai_systems(id),
+  system_id uuid not null references ai_systems(id),
   question text not null,
   answer text not null,
-  confidence numeric not null,
-  citations jsonb not null,
-  created_by uuid references users(id),
+  confidence double precision not null,
+  citations_json text not null,
+  created_by uuid not null references users(id),
   created_at timestamptz not null default now()
 );
 ```
+
+The Phase 2 MVP stores deterministic local embedding vectors as text so the
+same migrations validate against H2 and PostgreSQL. The production path should
+replace `evidence_chunks.embedding` with `vector(1536)` and add an IVFFlat or
+HNSW pgvector index once the embedding provider is selected.
 
 ## Eval Tables
 

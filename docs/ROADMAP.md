@@ -26,12 +26,14 @@ Status: complete.
 
 ## Phase 2: Evidence and RAG
 
-- Evidence document upload metadata.
-- Text extraction pipeline.
-- Chunking and embedding.
-- pgvector similarity search.
-- Citation-required answer generation.
-- Prompt injection safeguards for evidence documents.
+Status: in progress.
+
+- Evidence document upload metadata: implemented.
+- Text extraction pipeline: implemented for provided text with metadata fallback.
+- Chunking and embedding: implemented with deterministic local embeddings.
+- pgvector similarity search: local cosine search implemented; production pgvector index remains.
+- Citation-required answer generation: implemented.
+- Prompt injection safeguards for evidence documents: implemented.
 
 ## Phase 3: Eval Gates
 

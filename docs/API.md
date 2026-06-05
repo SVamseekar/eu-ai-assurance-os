@@ -81,8 +81,39 @@ Request:
   "systemId": "sys_001",
   "type": "DPIA",
   "title": "Claims Triage DPIA",
-  "sourceUri": "s3://tenant-a/dpia/claims.pdf"
+  "sourceUri": "s3://tenant-a/dpia/claims.pdf",
+  "content": "Optional extracted text for local indexing.",
+  "checksum": "optional-upstream-checksum",
+  "metadata": {
+    "version": "2026-06"
+  }
 }
+```
+
+Response:
+
+```json
+{
+  "id": "doc_123",
+  "systemId": "sys_001",
+  "type": "DPIA",
+  "title": "Claims Triage DPIA",
+  "sourceUri": "s3://tenant-a/dpia/claims.pdf",
+  "checksum": "sha256-or-upstream-checksum",
+  "chunkCount": 4,
+  "ingestionStatus": "indexed",
+  "createdAt": "2026-06-05T10:05:00Z"
+}
+```
+
+The `content` field is optional and backward compatible with metadata-only
+uploads. When provided, the API strips prompt-injection-like document lines,
+chunks the remaining text, embeds each chunk, and stores the index for cited
+retrieval. Metadata-only uploads are indexed with a generated placeholder text
+until object-store extraction is wired in.
+
+```http
+GET /evidence/systems/{systemId}/documents
 ```
 
 ```http
