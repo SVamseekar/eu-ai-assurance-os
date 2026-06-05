@@ -329,6 +329,10 @@ em {
   grid-template-columns: minmax(320px, .85fr) minmax(0, 1.15fr);
 }
 
+.evidence-workbench {
+  margin-top: 16px;
+}
+
 .panel {
   padding: 16px;
 }
@@ -519,6 +523,57 @@ tr:last-child td {
   background: var(--panel-2);
   color: var(--muted);
   font-size: .88rem;
+}
+
+.status-pill {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+.status-pill.online {
+  border-color: color-mix(in srgb, var(--good), transparent 55%);
+  color: var(--good);
+}
+
+.document-list {
+  display: grid;
+  gap: 10px;
+}
+
+.document-list.empty {
+  min-height: 160px;
+  place-items: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  padding: 12px;
+}
+
+.document-row strong,
+.document-row span {
+  display: block;
+}
+
+.document-row span,
+.document-row em {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .8rem;
 }
 
 .console {

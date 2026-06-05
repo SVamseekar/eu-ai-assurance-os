@@ -26,7 +26,7 @@ Status: complete.
 
 ## Phase 2: Evidence and RAG
 
-Status: in progress.
+Status: MVP complete.
 
 - Evidence document upload metadata: implemented.
 - Text extraction pipeline: implemented for provided text with metadata fallback.
@@ -34,6 +34,10 @@ Status: in progress.
 - pgvector similarity search: local cosine search implemented; production pgvector index remains.
 - Citation-required answer generation: implemented.
 - Prompt injection safeguards for evidence documents: implemented.
+- Static web app upload/list/query flow: implemented with API fallback to demo mode.
+
+Production hardening remains: external object-store extraction, provider-backed
+embeddings, and PostgreSQL pgvector/HNSW indexing.
 
 ## Phase 3: Eval Gates
 

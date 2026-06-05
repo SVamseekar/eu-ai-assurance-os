@@ -144,6 +144,10 @@
           </div>
           <form id="evidenceForm" class="ask">
             <label>
+              System
+              <select id="evidenceSystem"></select>
+            </label>
+            <label>
               Question
               <textarea id="evidenceQuestion" rows="5">Which controls block the Claims Triage AI release, and what evidence is missing?</textarea>
             </label>
@@ -158,6 +162,51 @@
             </div>
           </div>
           <div id="ragAnswer" class="answer empty">Run a cited compliance query.</div>
+        </section>
+      </div>
+      <div class="grid split evidence-workbench">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Index Evidence</h2>
+              <p>Upload extracted text from a policy, DPIA, model card, or vendor document.</p>
+            </div>
+          </div>
+          <form id="evidenceUploadForm" class="form">
+            <label>
+              Type
+              <select id="evidenceType">
+                <option>DPIA</option>
+                <option>POLICY</option>
+                <option>MODEL_CARD</option>
+                <option>VENDOR_DOC</option>
+                <option>CONTROL_MAP</option>
+              </select>
+            </label>
+            <label>
+              Title
+              <input id="evidenceTitle" value="Claims Triage Oversight SOP">
+            </label>
+            <label>
+              Source URI
+              <input id="evidenceSource" value="memory://claims-oversight-sop">
+            </label>
+            <label>
+              Extracted text
+              <textarea id="evidenceContent" rows="6">Human oversight SOP requires reviewer override, claimant appeal route, owner sign-off, and monthly bias monitoring evidence before release.</textarea>
+            </label>
+            <button class="primary" type="submit">Index document</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Indexed Documents</h2>
+              <p>Documents available for cited retrieval on the selected system.</p>
+            </div>
+            <span id="apiStatus" class="status-pill">Demo mode</span>
+          </div>
+          <div id="evidenceDocuments" class="document-list empty">No indexed documents loaded.</div>
         </section>
       </div>
     </section>

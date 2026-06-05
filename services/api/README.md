@@ -71,6 +71,10 @@ The API starts on:
 http://localhost:8080
 ```
 
+The service allows local browser clients from common development ports,
+including `localhost:8000`, `localhost:4173`, and Vite defaults, for the
+static web prototype's evidence upload/query workflow.
+
 Run against PostgreSQL:
 
 ```bash

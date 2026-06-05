@@ -2,7 +2,7 @@
 
 EU AI Assurance OS is a governance control plane for teams shipping AI systems in the European market. It validates AI releases against EU-focused controls by combining system inventory, risk classification, cited compliance evidence, evaluation gates, data-contract drift monitoring, approval workflows, and audit-ready evidence packs.
 
-This repo starts with a verified static product prototype and a production-oriented project foundation. The next implementation phase should add a real backend, persistence, authentication, RAG retrieval, evaluation workers, and CI/CD release gates.
+This repo starts with a verified static product prototype and a production-oriented Spring Boot backend foundation. The current MVP includes persistence, tenant-scoped APIs, audit trails, release gates, eval run records, data-contract drift simulation, and API-backed evidence RAG retrieval.
 
 ## Why This Project
 
@@ -34,7 +34,7 @@ Implemented:
 - Command dashboard
 - AI system registry
 - EU risk topology visualization
-- Compliance evidence RAG simulation
+- Compliance evidence RAG with API-backed document indexing and cited retrieval
 - Eval gate simulation
 - Data-contract drift simulation
 - Append-only audit timeline
@@ -45,9 +45,9 @@ Implemented:
 ## Repository Structure
 
 ```text
-apps/web/       Static interactive prototype
+apps/web/       Static interactive prototype with optional API-backed evidence flow
 docs/           PRD, architecture, API, schema, security, roadmap
-services/api/   Placeholder for Spring Boot or FastAPI backend
+services/api/   Spring Boot backend MVP
 infra/          Placeholder for Docker, Terraform, and deployment manifests
 scripts/        Local development and data scripts
 ```
@@ -83,13 +83,10 @@ Compliance:
 
 ## Next Milestone
 
-Build the backend MVP:
+Harden the MVP for production-like operation:
 
-1. Auth and tenant model
-2. AI system registry APIs
-3. Control library and risk classification APIs
-4. Evidence document ingestion
-5. Basic RAG retrieval with citations
-6. Eval run records and release gate calculation
-7. Data contract status APIs
-8. Audit event append API
+1. Replace deterministic local embeddings with a provider-backed embedding adapter.
+2. Add PostgreSQL pgvector/HNSW indexing for evidence chunks.
+3. Wire object-store document extraction for PDFs and office documents.
+4. Add authentication, RBAC, and request-scoped actor resolution.
+5. Move eval and drift workflows onto async workers.

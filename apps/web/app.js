@@ -166,6 +166,11 @@ function loadState() {
 
 const state = loadState();
 
+const api = {
+  baseUrl: localStorage.getItem("euai-api-base") || "http://localhost:8080/api/v1",
+  online: false
+};
+
 const riskColors = {
   high: "#b42318",
   limited: "#b54708",
@@ -178,6 +183,59 @@ function qs(selector) {
 
 function qsa(selector) {
   return Array.from(document.querySelectorAll(selector));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function sentenceCase(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/(^|_)([a-z])/g, (_, boundary, letter) => `${boundary === "_" ? " " : ""}${letter.toUpperCase()}`);
+}
+
+function normalizeSystem(system) {
+  return {
+    id: system.id,
+    name: system.name,
+    owner: system.owner,
+    risk: String(system.riskClass || system.risk || "limited").toLowerCase(),
+    basis: system.riskBasis || system.basis || system.purpose,
+    evidence: system.evidenceCoverage ?? system.evidence ?? 0,
+    eval: system.evalScore ?? system.eval ?? 0,
+    contract: sentenceCase(system.dataContractStatus || system.contract || "warning"),
+    decision: sentenceCase(system.releaseDecision || system.decision || "review"),
+    gaps: system.openGaps || system.gaps || []
+  };
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${api.baseUrl}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    ...options
+  });
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+  return response.status === 204 ? null : response.json();
+}
+
+function setApiStatus(online, detail = "") {
+  api.online = online;
+  const status = qs("#apiStatus");
+  if (!status) return;
+  status.textContent = online ? "API connected" : "Demo mode";
+  status.title = detail || (online ? api.baseUrl : "Spring API not reachable");
+  status.classList.toggle("online", online);
 }
 
 function applyTheme() {
@@ -230,11 +288,11 @@ function renderGateRows() {
     const decisionClass = system.decision === "Pass" ? "good" : system.decision === "Review" ? "warn" : "bad";
     return `
       <tr>
-        <td><strong>${system.name}</strong><br><em>${system.owner}</em></td>
-        <td><span class="chip ${riskClass}">${system.risk}</span><br><em>${system.basis}</em></td>
+        <td><strong>${escapeHtml(system.name)}</strong><br><em>${escapeHtml(system.owner)}</em></td>
+        <td><span class="chip ${riskClass}">${escapeHtml(system.risk)}</span><br><em>${escapeHtml(system.basis)}</em></td>
         <td>${system.evidence}%</td>
         <td>${system.eval}%</td>
-        <td>${system.contract}</td>
+        <td>${escapeHtml(system.contract)}</td>
         <td class="decision ${decisionClass}">${system.decision}</td>
       </tr>
     `;
@@ -245,9 +303,9 @@ function renderGateRows() {
 function renderInbox() {
   qs("#controlInbox").innerHTML = state.controls.map((control) => `
     <article class="task">
-      <strong>${control.title}</strong>
-      <p>${control.body}</p>
-      <div class="chips">${control.chips.map((chip) => `<span class="chip">${chip}</span>`).join("")}</div>
+      <strong>${escapeHtml(control.title)}</strong>
+      <p>${escapeHtml(control.body)}</p>
+      <div class="chips">${control.chips.map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}</div>
     </article>
   `).join("");
 }
@@ -257,17 +315,20 @@ function renderSystems() {
     const riskClass = classForRisk(system.risk);
     return `
       <article class="card">
-        <div class="chips"><span class="chip ${riskClass}">${system.risk}</span><span class="chip">${system.owner}</span></div>
-        <h2>${system.name}</h2>
-        <p>${system.basis}</p>
+        <div class="chips"><span class="chip ${riskClass}">${escapeHtml(system.risk)}</span><span class="chip">${escapeHtml(system.owner)}</span></div>
+        <h2>${escapeHtml(system.name)}</h2>
+        <p>${escapeHtml(system.basis)}</p>
         <span class="metric-label">Assurance coverage</span>
         <div class="progress"><span style="width:${system.evidence}%"></span></div>
-        <p>${system.gaps.length ? system.gaps.join("; ") : "No open gaps."}</p>
+        <p>${system.gaps.length ? escapeHtml(system.gaps.join("; ")) : "No open gaps."}</p>
       </article>
     `;
   }).join("");
 
-  qs("#evalSystem").innerHTML = state.systems.map((system) => `<option>${system.name}</option>`).join("");
+  qs("#evalSystem").innerHTML = state.systems.map((system) => `<option>${escapeHtml(system.name)}</option>`).join("");
+  qs("#evidenceSystem").innerHTML = state.systems.map((system) => `
+    <option value="${escapeHtml(system.id || system.name)}">${escapeHtml(system.name)}</option>
+  `).join("");
 }
 
 function renderContracts() {
@@ -346,22 +407,135 @@ function drawRiskCanvas() {
   });
 }
 
-function answerEvidence(event) {
-  event.preventDefault();
-  const question = qs("#evidenceQuestion").value.trim();
-  const claims = state.systems.find((system) => system.name === "Claims Triage AI");
+function selectedEvidenceSystem() {
+  const selected = qs("#evidenceSystem").value;
+  return state.systems.find((system) => String(system.id || system.name) === selected) || state.systems[0];
+}
+
+function renderEvidenceDocuments(documents = []) {
+  const target = qs("#evidenceDocuments");
+  if (!documents.length) {
+    target.classList.add("empty");
+    target.innerHTML = "No indexed documents loaded.";
+    return;
+  }
+  target.classList.remove("empty");
+  target.innerHTML = documents.map((document) => `
+    <article class="document-row">
+      <div>
+        <strong>${escapeHtml(document.title)}</strong>
+        <span>${escapeHtml(document.type)} · ${document.chunkCount} chunk${document.chunkCount === 1 ? "" : "s"}</span>
+      </div>
+      <em>${escapeHtml(document.ingestionStatus)}</em>
+    </article>
+  `).join("");
+}
+
+async function loadBackendSystems() {
+  try {
+    const systems = await apiRequest("/systems");
+    state.systems = systems.map(normalizeSystem);
+    setApiStatus(true);
+    saveState();
+  } catch (error) {
+    setApiStatus(false, error.message);
+  }
+}
+
+async function loadEvidenceDocuments() {
+  const system = selectedEvidenceSystem();
+  if (!api.online || !system?.id) {
+    renderEvidenceDocuments([]);
+    return;
+  }
+  try {
+    renderEvidenceDocuments(await apiRequest(`/evidence/systems/${system.id}/documents`));
+  } catch (error) {
+    setApiStatus(false, error.message);
+    renderEvidenceDocuments([]);
+  }
+}
+
+function renderRagResponse(question, response) {
   qs("#ragAnswer").classList.remove("empty");
   qs("#ragAnswer").innerHTML = `
     <span class="metric-label">Question</span>
-    <p>${question}</p>
-    <h2>Claims Triage AI is blocked for release.</h2>
-    <p>The system is classified as high-risk because it supports access decisions for an essential private service. The release gate is blocked by missing human oversight evidence, a faithfulness score below the configured eval threshold, and an unmapped data-contract change in <strong>claims_events.v4</strong>.</p>
+    <p>${escapeHtml(question)}</p>
+    <h2>Cited evidence answer</h2>
+    <p>${escapeHtml(response.answer)}</p>
+    ${(response.citations || []).map((citation) => `
+      <div class="citation">
+        <strong>${escapeHtml(citation.title)} · ${escapeHtml(citation.section)}</strong><br>
+        ${escapeHtml(citation.snippet)}
+      </div>
+    `).join("")}
+    <div class="citation"><strong>Confidence: ${Math.round((response.confidence || 0) * 100)}%</strong><br>Reviewer should inspect the cited source material before release approval.</div>
+  `;
+}
+
+function renderDemoRagResponse(question) {
+  const claims = state.systems.find((system) => system.name === "Claims Triage AI") || state.systems[0];
+  qs("#ragAnswer").classList.remove("empty");
+  qs("#ragAnswer").innerHTML = `
+    <span class="metric-label">Question</span>
+    <p>${escapeHtml(question)}</p>
+    <h2>${escapeHtml(claims.name)} is ${escapeHtml(claims.decision.toLowerCase())} for release.</h2>
+    <p>The system is classified as ${escapeHtml(claims.risk)} risk. The release gate depends on human oversight evidence, eval threshold performance, and data-contract status.</p>
     <div class="citation"><strong>Source: DPIA-CLM-014</strong><br>Reviewer override must include purpose, affected cohort, appeal route, and owner sign-off before production.</div>
     <div class="citation"><strong>Source: EU-AIA-HR-003 control map</strong><br>High-risk systems require documented risk management, data governance, logging, transparency, human oversight, accuracy, and cybersecurity controls.</div>
     <div class="citation"><strong>Confidence: ${claims.evidence}%</strong><br>Recommended action: complete oversight SOP, rerun bias eval, approve the schema contract update, then re-open release review.</div>
   `;
-  addAudit("Compliance RAG answered a cited evidence query for Claims Triage AI.");
+}
+
+async function answerEvidence(event) {
+  event.preventDefault();
+  const question = qs("#evidenceQuestion").value.trim();
+  const system = selectedEvidenceSystem();
+  if (api.online && system?.id) {
+    try {
+      const response = await apiRequest("/evidence/query", {
+        method: "POST",
+        body: JSON.stringify({ systemId: system.id, question })
+      });
+      renderRagResponse(question, response);
+      addAudit(`Compliance RAG answered a cited evidence query for ${system.name}.`);
+      saveState();
+      return;
+    } catch (error) {
+      setApiStatus(false, error.message);
+      showToast("API unavailable; using demo answer");
+    }
+  }
+  renderDemoRagResponse(question);
+  addAudit(`Compliance RAG answered a demo evidence query for ${system?.name || "Claims Triage AI"}.`);
   saveState();
+}
+
+async function uploadEvidence(event) {
+  event.preventDefault();
+  const system = selectedEvidenceSystem();
+  if (!api.online || !system?.id) {
+    showToast("Start the API to index evidence");
+    return;
+  }
+  try {
+    await apiRequest("/evidence/documents", {
+      method: "POST",
+      body: JSON.stringify({
+        systemId: system.id,
+        type: qs("#evidenceType").value,
+        title: qs("#evidenceTitle").value.trim(),
+        sourceUri: qs("#evidenceSource").value.trim(),
+        content: qs("#evidenceContent").value.trim(),
+        metadata: { source: "web-prototype" }
+      })
+    });
+    addAudit(`Evidence document indexed for ${system.name}.`);
+    await loadEvidenceDocuments();
+    showToast("Evidence indexed");
+  } catch (error) {
+    showToast(`Index failed: ${error.message}`);
+  }
 }
 
 function runEval(event) {
@@ -516,10 +690,12 @@ function renderAll() {
   drawRiskCanvas();
 }
 
-function init() {
+async function init() {
   applyTheme();
   initNav();
+  await loadBackendSystems();
   renderAll();
+  await loadEvidenceDocuments();
   qs("#themeToggle").addEventListener("click", () => {
     state.theme = state.theme === "dark" ? "light" : "dark";
     applyTheme();
@@ -528,6 +704,8 @@ function init() {
   });
   qs("#riskFilter").addEventListener("change", drawRiskCanvas);
   qs("#evidenceForm").addEventListener("submit", answerEvidence);
+  qs("#evidenceUploadForm").addEventListener("submit", uploadEvidence);
+  qs("#evidenceSystem").addEventListener("change", loadEvidenceDocuments);
   qs("#evalForm").addEventListener("submit", runEval);
   qs("#simulateDrift").addEventListener("click", simulateDrift);
   qs("#addSystem").addEventListener("click", addSystem);
