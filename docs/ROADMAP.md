@@ -54,11 +54,14 @@ Status: API slice plus durable MVP worker queue implemented.
 
 ## Phase 4: Data Contracts
 
+Status: complete.
+
 - Data contract CRUD: implemented for create/list/read/update with tenant scope.
 - Drift event ingestion: implemented with open, acknowledged, and resolved states.
 - Contract-to-system mapping: implemented through persisted `system_id`.
-- Lineage display.
+- Lineage display: implemented as interactive React Flow DAG (data source → contract → AI system) in Next.js dashboard at `/contracts`. Animated edges for breach/warning contracts.
 - Release gate integration: implemented for warning and breach rollups.
+- Frontend rewrite: vanilla JS prototype replaced with Next.js 16 + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query production dashboard at `apps/dashboard/`.
 
 ## Phase 5: Workflow
 
