@@ -1089,6 +1089,36 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThan(0)));
   }
 
+  @Test
+  void embeddingProviderReturnsSemanticallySimilarResults() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(post("/api/v1/evidence/documents")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "type": "POLICY",
+                  "title": "Human Oversight SOP",
+                  "sourceUri": "memory://human-oversight-sop",
+                  "content": "All high-risk AI releases require a named human reviewer to sign off before deployment. The reviewer must verify bias test results and document any overrides."
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.ingestionStatus").value("indexed"));
+
+    mockMvc.perform(post("/api/v1/evidence/query")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "question": "Who must approve a high-risk AI release?"
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.citations[0].title").value("Human Oversight SOP"));
+  }
+
   private String createSystem() throws Exception {
     MvcResult result = mockMvc.perform(post("/api/v1/systems")
             .contentType(MediaType.APPLICATION_JSON)
