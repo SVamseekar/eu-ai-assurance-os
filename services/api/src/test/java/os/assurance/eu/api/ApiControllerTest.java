@@ -35,6 +35,7 @@ import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 import os.assurance.eu.api.tenant.UserRole;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -1015,6 +1016,27 @@ class ApiControllerTest {
     mockMvc.perform(get("/api/v1/systems")
             .header("X-Api-Key", DEFAULT_API_KEY))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  @Tag("integration")
+  void extractsTextFromHttpsUriWhenContentIsBlank() throws Exception {
+    String systemId = createSystem();
+
+    // A real publicly accessible text/HTML page — avoids flakiness of external PDFs
+    mockMvc.perform(post("/api/v1/evidence/documents")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "type": "POLICY",
+                  "title": "EU AI Act Info Page",
+                  "sourceUri": "https://example.com"
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.ingestionStatus").value(org.hamcrest.Matchers.oneOf("indexed", "indexed_with_warnings")))
+        .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThan(0)));
   }
 
   private String createSystem() throws Exception {
