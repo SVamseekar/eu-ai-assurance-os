@@ -20,7 +20,14 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(properties = {
     "assurance.eval.worker.enabled=false",
-    "assurance.eval.callback.secret=test-eval-callback-secret"
+    "assurance.eval.callback.secret=test-eval-callback-secret",
+    "spring.datasource.url=jdbc:postgresql://localhost:5432/eu_ai_assurance",
+    "spring.datasource.username=eu_ai_assurance",
+    "spring.datasource.password=eu_ai_assurance",
+    "spring.datasource.driver-class-name=org.postgresql.Driver",
+    "spring.jpa.hibernate.ddl-auto=validate",
+    "spring.flyway.locations=classpath:db/migration,classpath:db/postgresql",
+    "assurance.evidence.embedding-provider=local-hash"
 })
 @ActiveProfiles("postgres")
 @Tag("postgres")
