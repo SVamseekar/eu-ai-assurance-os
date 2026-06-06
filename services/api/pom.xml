@@ -121,6 +121,39 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludedGroups>postgres</excludedGroups>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <groups>postgres</groups>
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*IT.java</include>
+          </includes>
+          <systemPropertyVariables>
+            <spring.profiles.active>postgres</spring.profiles.active>
+            <DATABASE_URL>${env.DATABASE_URL}</DATABASE_URL>
+            <DATABASE_USERNAME>${env.DATABASE_USERNAME}</DATABASE_USERNAME>
+            <DATABASE_PASSWORD>${env.DATABASE_PASSWORD}</DATABASE_PASSWORD>
+            <EVAL_CALLBACK_SECRET>${env.EVAL_CALLBACK_SECRET}</EVAL_CALLBACK_SECRET>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

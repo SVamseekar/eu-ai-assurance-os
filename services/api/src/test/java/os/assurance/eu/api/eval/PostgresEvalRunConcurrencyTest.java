@@ -12,8 +12,8 @@ import java.util.concurrent.Executors;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import os.assurance.eu.api.system.ReleaseDecision;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -23,8 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
     "assurance.eval.callback.secret=test-eval-callback-secret"
 })
 @ActiveProfiles("postgres")
-@EnabledIfEnvironmentVariable(named = "RUN_POSTGRES_CONCURRENCY", matches = "true")
-@EnabledIfEnvironmentVariable(named = "DATABASE_URL", matches = ".+")
+@Tag("postgres")
 class PostgresEvalRunConcurrencyTest {
   @Autowired
   private AiSystemRepository systems;
