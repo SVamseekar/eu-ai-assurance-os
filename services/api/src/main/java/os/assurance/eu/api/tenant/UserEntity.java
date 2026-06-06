@@ -42,4 +42,8 @@ public class UserEntity {
   public UserRole role() {
     return role;
   }
+
+  public UUID id() {
+    return id;
+  }
 }
