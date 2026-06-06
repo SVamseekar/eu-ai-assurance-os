@@ -10,17 +10,45 @@ import ai.djl.ndarray.types.DataType;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ZooModel;
+import ai.djl.translate.Batchifier;
+import ai.djl.translate.Translator;
+import ai.djl.translate.TranslatorContext;
 import jakarta.annotation.PreDestroy;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 public class DjlSentenceEmbeddingProvider implements EvidenceEmbeddingProvider {
+
+    private static final String MODEL_URL =
+        "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx";
+
     private final ZooModel<NDList, NDList> model;
     private final HuggingFaceTokenizer tokenizer;
 
     public DjlSentenceEmbeddingProvider() throws Exception {
+        Path modelDir = Files.createTempDirectory("all-minilm-l6-v2");
+        Path modelFile = modelDir.resolve("model.onnx");
+        if (!Files.exists(modelFile)) {
+            HttpClient client = HttpClient.newBuilder()
+                .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+                .build();
+            HttpResponse<Path> resp = client.send(
+                HttpRequest.newBuilder().uri(URI.create(MODEL_URL)).GET().build(),
+                HttpResponse.BodyHandlers.ofFile(modelFile));
+            if (resp.statusCode() != 200) {
+                throw new IllegalStateException("Failed to download ONNX model: HTTP " + resp.statusCode());
+            }
+        }
         Criteria<NDList, NDList> criteria = Criteria.builder()
             .setTypes(NDList.class, NDList.class)
-            .optModelUrls("djl://ai.djl.huggingface.onnxruntime/all-MiniLM-L6-v2")
+            .optModelPath(modelDir)
+            .optModelName("model")
             .optEngine("OnnxRuntime")
+            .optTranslator(new PassThroughTranslator())
             .build();
         this.model = criteria.loadModel();
         this.tokenizer = HuggingFaceTokenizer.newInstance("sentence-transformers/all-MiniLM-L6-v2");
@@ -34,28 +62,46 @@ public class DjlSentenceEmbeddingProvider implements EvidenceEmbeddingProvider {
     @Override
     public String embed(String text) {
         try (Predictor<NDList, NDList> predictor = model.newPredictor();
-             NDManager manager = NDManager.newBaseManager()) {
+             NDManager manager = NDManager.newBaseManager("OnnxRuntime")) {
             Encoding encoding = tokenizer.encode(text, true, true);
             long[] ids = encoding.getIds();
             long[] mask = encoding.getAttentionMask();
-            NDArray inputIds = manager.create(ids, new Shape(1, ids.length));
-            NDArray attentionMask = manager.create(mask, new Shape(1, mask.length));
-            NDArray tokenTypeIds = manager.zeros(new Shape(1, ids.length), DataType.INT64);
+            int seqLen = ids.length;
+
+            NDArray inputIds = manager.create(ids, new Shape(1, seqLen));
+            NDArray attentionMask = manager.create(mask, new Shape(1, seqLen));
+            NDArray tokenTypeIds = manager.zeros(new Shape(1, seqLen), DataType.INT64);
             NDList output = predictor.predict(new NDList(inputIds, attentionMask, tokenTypeIds));
-            NDArray tokenEmbeddings = output.get(0);
-            NDArray maskExpanded = attentionMask.reshape(1, mask.length, 1)
-                .broadcast(tokenEmbeddings.getShape())
-                .toType(DataType.FLOAT32, false);
-            NDArray sumEmbeddings = tokenEmbeddings.mul(maskExpanded).sum(new int[]{1});
-            NDArray sumMask = maskExpanded.sum(new int[]{1}).clip(1e-9f, Float.MAX_VALUE);
-            NDArray pooled = sumEmbeddings.div(sumMask);
-            NDArray norm = pooled.norm(new int[]{1}, true).clip(1e-9f, Float.MAX_VALUE);
-            NDArray normalized = pooled.div(norm);
-            float[] vector = normalized.toFloatArray();
+
+            // output.get(0) is token_embeddings: shape [1, seqLen, hiddenSize]
+            // Copy to float[] immediately — ONNX NDArrays don't support tensor math ops
+            float[] tokenEmbFlat = output.get(0).toFloatArray();
+            int hiddenSize = tokenEmbFlat.length / seqLen;
+
+            // Attention-mask mean pooling in pure Java
+            float[] pooled = new float[hiddenSize];
+            float maskSum = 0f;
+            for (int t = 0; t < seqLen; t++) {
+                if (mask[t] == 0) continue;
+                maskSum += 1f;
+                for (int h = 0; h < hiddenSize; h++) {
+                    pooled[h] += tokenEmbFlat[t * hiddenSize + h];
+                }
+            }
+            if (maskSum < 1e-9f) maskSum = 1e-9f;
+            for (int h = 0; h < hiddenSize; h++) {
+                pooled[h] /= maskSum;
+            }
+
+            // L2 normalise
+            float norm = 0f;
+            for (float v : pooled) norm += v * v;
+            norm = (float) Math.sqrt(norm);
+            if (norm < 1e-9f) norm = 1e-9f;
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < vector.length; i++) {
+            for (int i = 0; i < hiddenSize; i++) {
                 if (i > 0) sb.append(',');
-                sb.append(vector[i]);
+                sb.append(pooled[i] / norm);
             }
             return sb.toString();
         } catch (Exception e) {
@@ -82,6 +128,20 @@ public class DjlSentenceEmbeddingProvider implements EvidenceEmbeddingProvider {
     @PreDestroy
     public void close() {
         model.close();
-        tokenizer.close();
+    }
+
+    private static final class PassThroughTranslator implements Translator<NDList, NDList> {
+        @Override
+        public NDList processInput(TranslatorContext ctx, NDList input) {
+            return input;
+        }
+        @Override
+        public NDList processOutput(TranslatorContext ctx, NDList output) {
+            return output;
+        }
+        @Override
+        public Batchifier getBatchifier() {
+            return null;
+        }
     }
 }
