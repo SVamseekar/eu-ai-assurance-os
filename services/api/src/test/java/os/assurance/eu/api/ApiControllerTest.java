@@ -1119,6 +1119,23 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.citations[0].title").value("Human Oversight SOP"));
   }
 
+  @Test
+  void propagatesCorrelationId() throws Exception {
+    mockMvc.perform(get("/api/v1/systems")
+            .header("X-Request-Id", "test-correlation-123"))
+        .andExpect(status().isOk())
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+            .header().string("X-Request-Id", "test-correlation-123"));
+  }
+
+  @Test
+  void generatesCorrelationIdWhenAbsent() throws Exception {
+    mockMvc.perform(get("/api/v1/systems"))
+        .andExpect(status().isOk())
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+            .header().exists("X-Request-Id"));
+  }
+
   private String createSystem() throws Exception {
     MvcResult result = mockMvc.perform(post("/api/v1/systems")
             .contentType(MediaType.APPLICATION_JSON)
