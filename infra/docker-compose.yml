@@ -1,18 +1,16 @@
-version: "3.9"
-
 services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: eu_ai_assurance
-      POSTGRES_USER: eu_ai_assurance
-      POSTGRES_PASSWORD: eu_ai_assurance
+      POSTGRES_DB: ${POSTGRES_DB:-eu_ai_assurance}
+      POSTGRES_USER: ${POSTGRES_USER:-eu_ai_assurance}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eu_ai_assurance}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eu_ai_assurance"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eu_ai_assurance}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,13 +19,15 @@ services:
     build:
       context: ..
       dockerfile: infra/Dockerfile
+    profiles:
+      - full
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: postgres
-      DATABASE_URL: jdbc:postgresql://postgres:5432/eu_ai_assurance
-      DATABASE_USERNAME: eu_ai_assurance
-      DATABASE_PASSWORD: eu_ai_assurance
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/eu_ai_assurance}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-eu_ai_assurance}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-eu_ai_assurance}
       EVAL_CALLBACK_SECRET: ${EVAL_CALLBACK_SECRET}
     depends_on:
       postgres:

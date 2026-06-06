@@ -1,6 +1,3 @@
-version: "3.9"
-
-services:
-  api:
-    profiles:
-      - full
+# No overrides needed — profile isolation is handled directly in docker-compose.yml.
+# docker compose up            → starts postgres only
+# docker compose --profile full up → starts postgres + api
