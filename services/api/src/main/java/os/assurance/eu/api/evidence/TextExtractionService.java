@@ -25,6 +25,12 @@ public class TextExtractionService {
         .connectTimeout(Duration.ofSeconds(10))
         .followRedirects(HttpClient.Redirect.NEVER)
         .build();
+    private final FileStorageService fileStorage;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public TextExtractionService(FileStorageService fileStorage) {
+        this.fileStorage = fileStorage;
+    }
 
     public String extract(CreateEvidenceDocumentRequest request) {
         if (request.content() != null && !request.content().isBlank()) {
@@ -52,6 +58,21 @@ public class TextExtractionService {
                 throw e;
             } catch (Exception e) {
                 log.warn("Text extraction failed for {}: {}", request.sourceUri(), e.getMessage());
+            }
+        }
+        if ("s3".equals(scheme)) {
+            if (fileStorage != null) {
+                URI uri = URI.create(request.sourceUri());
+                String bucket = uri.getHost();
+                String key = uri.getPath().replaceFirst("^/", "");
+                try (InputStream body = fileStorage.download(bucket, key)) {
+                    String extracted = tika.parseToString(body, new Metadata(), MAX_FETCH_CHARS);
+                    if (extracted != null && !extracted.isBlank()) {
+                        return extracted.strip();
+                    }
+                } catch (Exception e) {
+                    log.warn("S3 extraction failed for {}: {}", request.sourceUri(), e.getMessage());
+                }
             }
         }
         return metadataStub(request);

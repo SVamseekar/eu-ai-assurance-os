@@ -1036,6 +1036,23 @@ class ApiControllerTest {
   }
 
   @Test
+  void uploadsMultipartFileAndIndexesContent() throws Exception {
+    String systemId = createSystem();
+    byte[] content = "Evidence content for testing multipart upload".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+    mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .multipart("/api/v1/evidence/documents/upload")
+            .file(new org.springframework.mock.web.MockMultipartFile(
+                "file", "test-policy.txt", "text/plain", content))
+            .param("systemId", systemId)
+            .param("type", "POLICY")
+            .param("title", "Test Upload Policy"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.ingestionStatus").value(org.hamcrest.Matchers.oneOf("indexed", "indexed_with_warnings")))
+        .andExpect(jsonPath("$.chunkCount").value(org.hamcrest.Matchers.greaterThan(0)));
+  }
+
+  @Test
   @Tag("integration")
   void extractsTextFromHttpsUriWhenContentIsBlank() throws Exception {
     String systemId = createSystem();
