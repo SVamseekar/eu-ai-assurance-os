@@ -26,6 +26,8 @@ import os.assurance.eu.api.eval.EvalRunRepository;
 import os.assurance.eu.api.eval.EvalRunWorkerService;
 import os.assurance.eu.api.eval.EvalRunMetrics;
 import os.assurance.eu.api.system.ReleaseDecision;
+import os.assurance.eu.api.tenant.ApiKeyEntity;
+import os.assurance.eu.api.tenant.ApiKeyJpaRepository;
 import os.assurance.eu.api.tenant.TenantContext;
 import os.assurance.eu.api.tenant.TenantEntity;
 import os.assurance.eu.api.tenant.TenantJpaRepository;
@@ -51,6 +53,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @AutoConfigureMockMvc
 class ApiControllerTest {
   private static final String CALLBACK_SECRET = "test-eval-callback-secret";
+  private static final String DEFAULT_API_KEY = "00000000-0000-0000-0000-000000000a01";
   private static final String DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
   private static final String DEFAULT_ACTOR_ID = "00000000-0000-0000-0000-000000000101";
   private static final String ENGINEERING_ACTOR_ID = "00000000-0000-0000-0000-000000000102";
@@ -81,6 +84,9 @@ class ApiControllerTest {
 
   @Autowired
   private UserJpaRepository users;
+
+  @Autowired
+  private ApiKeyJpaRepository apiKeyRepo;
 
   @BeforeEach
   void seedTestActors() {
@@ -113,6 +119,13 @@ class ApiControllerTest {
             "engineering@second.example.com",
             UserRole.AI_ENGINEERING_LEAD,
             now)));
+    UUID defaultApiKeyId = UUID.fromString(DEFAULT_API_KEY);
+    apiKeyRepo.findById(defaultApiKeyId)
+        .orElseGet(() -> apiKeyRepo.save(new ApiKeyEntity(
+            defaultApiKeyId,
+            UUID.fromString(DEFAULT_TENANT_ID),
+            UUID.fromString(DEFAULT_ACTOR_ID),
+            Instant.now())));
   }
 
   @Test
@@ -987,6 +1000,20 @@ class ApiControllerTest {
     mockMvc.perform(get("/api/v1/systems")
             .header("X-Tenant-Id", "not-a-uuid"))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void rejectsRequestWithUnknownApiKey() throws Exception {
+    mockMvc.perform(get("/api/v1/systems")
+            .header("X-Api-Key", "00000000-0000-0000-0000-000000009999"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void acceptsRequestWithValidApiKey() throws Exception {
+    mockMvc.perform(get("/api/v1/systems")
+            .header("X-Api-Key", DEFAULT_API_KEY))
+        .andExpect(status().isOk());
   }
 
   private String createSystem() throws Exception {

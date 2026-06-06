@@ -14,6 +14,8 @@ import os.assurance.eu.api.system.DataContractStatus;
 import os.assurance.eu.api.system.ReleaseDecision;
 import os.assurance.eu.api.system.ReleaseGateService;
 import os.assurance.eu.api.system.RiskClass;
+import os.assurance.eu.api.tenant.ApiKeyEntity;
+import os.assurance.eu.api.tenant.ApiKeyJpaRepository;
 import os.assurance.eu.api.tenant.TenantContext;
 import os.assurance.eu.api.tenant.TenantEntity;
 import os.assurance.eu.api.tenant.TenantJpaRepository;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BootstrapData implements CommandLineRunner {
   private final TenantJpaRepository tenants;
   private final UserJpaRepository users;
+  private final ApiKeyJpaRepository apiKeyRepo;
   private final AiSystemJpaRepository systemStore;
   private final AiSystemRepository systems;
   private final EvalDatasetJpaRepository evalDatasets;
@@ -36,12 +39,14 @@ public class BootstrapData implements CommandLineRunner {
   public BootstrapData(
       TenantJpaRepository tenants,
       UserJpaRepository users,
+      ApiKeyJpaRepository apiKeyRepo,
       AiSystemJpaRepository systemStore,
       AiSystemRepository systems,
       EvalDatasetJpaRepository evalDatasets,
       ReleaseGateService releaseGateService) {
     this.tenants = tenants;
     this.users = users;
+    this.apiKeyRepo = apiKeyRepo;
     this.systemStore = systemStore;
     this.systems = systems;
     this.evalDatasets = evalDatasets;
@@ -65,6 +70,13 @@ public class BootstrapData implements CommandLineRunner {
             TenantContext.DEFAULT_TENANT_ID,
             "compliance@example.com",
             UserRole.COMPLIANCE_OFFICER,
+            now)));
+    UUID defaultApiKey = UUID.fromString("00000000-0000-0000-0000-000000000a01");
+    apiKeyRepo.findById(defaultApiKey)
+        .orElseGet(() -> apiKeyRepo.save(new ApiKeyEntity(
+            defaultApiKey,
+            TenantContext.DEFAULT_TENANT_ID,
+            TenantContext.DEFAULT_USER_ID,
             now)));
     if (!evalDatasets.existsByTenantIdAndNameAndVersion(
         TenantContext.DEFAULT_TENANT_ID,

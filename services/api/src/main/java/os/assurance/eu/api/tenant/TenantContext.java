@@ -14,6 +14,17 @@ public class TenantContext {
   public static final String TENANT_HEADER = "X-Tenant-Id";
   public static final String ACTOR_HEADER = "X-Actor-Id";
   private final ThreadLocal<UUID> tenantOverride = new ThreadLocal<>();
+  private final ThreadLocal<UUID> actorOverride = new ThreadLocal<>();
+
+  public void setOverrides(UUID tenantId, UUID actorId) {
+    tenantOverride.set(tenantId);
+    actorOverride.set(actorId);
+  }
+
+  public void clearOverrides() {
+    tenantOverride.remove();
+    actorOverride.remove();
+  }
 
   public UUID tenantId() {
     UUID override = tenantOverride.get();
@@ -24,6 +35,10 @@ public class TenantContext {
   }
 
   public UUID actorId() {
+    UUID override = actorOverride.get();
+    if (override != null) {
+      return override;
+    }
     return headerUuid(ACTOR_HEADER, DEFAULT_USER_ID);
   }
 
