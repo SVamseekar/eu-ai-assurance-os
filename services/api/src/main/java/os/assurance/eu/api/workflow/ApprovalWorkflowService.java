@@ -151,6 +151,9 @@ public class ApprovalWorkflowService {
    */
   @Transactional
   public ApprovalWorkflow rejectStage(UUID workflowId, UUID stageId, String rationale) {
+    if (rationale == null || rationale.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rationale is required for rejection");
+    }
     UserEntity actor = resolveActor();
     ApprovalWorkflow workflow = resolveWorkflow(workflowId);
     ApprovalStage stage = resolveStage(workflow, stageId);
@@ -185,6 +188,9 @@ public class ApprovalWorkflowService {
    */
   @Transactional
   public ApprovalWorkflow overrideStage(UUID workflowId, UUID stageId, String rationale) {
+    if (rationale == null || rationale.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rationale is required for override");
+    }
     UserEntity actor = resolveActor();
 
     // Only ADMIN can override
