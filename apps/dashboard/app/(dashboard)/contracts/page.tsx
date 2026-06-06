@@ -10,8 +10,10 @@ import { useQueries } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { DriftEvent } from "@/lib/types";
 
+import { useDashboard } from "@/context/dashboard-context";
+
 export default function ContractsPage() {
-  const { data: systems = MOCK_SYSTEMS } = useSystems();
+  const { allSystems: systems } = useDashboard();
   const { data: contracts = MOCK_CONTRACTS } = useContracts();
 
   const driftQueries = useQueries({

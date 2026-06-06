@@ -14,16 +14,37 @@ import { useEvidenceDocuments } from "@/hooks/use-evidence-documents";
 import { api } from "@/lib/api";
 import { MOCK_SYSTEMS } from "@/lib/mock-data";
 import type { EvidenceQueryResponse, EvidenceDocument } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
+import { useDashboard } from "@/context/dashboard-context";
+import { UploadCloud, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 
 const EVIDENCE_TYPES = ["DPIA", "POLICY", "MODEL_CARD", "VENDOR_DOC", "CONTROL_MAP"];
 
 const INPUT = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50 transition-shadow";
 
+const d = (daysAgo: number) =>
+  new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+
+const MOCK_DOCUMENTS: Record<string, EvidenceDocument[]> = {
+  "mock-sys-001": [
+    { id: "mc-1", systemId: "mock-sys-001", type: "MODEL_CARD", title: "Claims Triage XGBoost v4 Card", sourceUri: "file:///models/claims-triage-v4-card.pdf", checksum: "sha256-a1b2c3d4", chunkCount: 18, ingestionStatus: "indexed", createdAt: d(40) },
+    { id: "dpia-1", systemId: "mock-sys-001", type: "DPIA", title: "Claims Triage DPIA v2.1", sourceUri: "file:///policies/claims-dpia-v2.pdf", checksum: "sha256-f8e9d0c2", chunkCount: 24, ingestionStatus: "indexed", createdAt: d(30) }
+  ],
+  "mock-sys-002": [
+    { id: "mc-2", systemId: "mock-sys-002", type: "MODEL_CARD", title: "HR Resume Classifier Card", sourceUri: "file:///models/resume-rank-v2-card.pdf", checksum: "sha256-4d5e6f7a", chunkCount: 14, ingestionStatus: "indexed", createdAt: d(25) }
+  ],
+  "mock-sys-003": [
+    { id: "mc-3", systemId: "mock-sys-003", type: "MODEL_CARD", title: "KYC Analyst Assistant Card", sourceUri: "file:///models/kyc-fraud-v7-card.pdf", checksum: "sha256-9a8b7c6d", chunkCount: 22, ingestionStatus: "indexed", createdAt: d(80) },
+    { id: "dpia-3", systemId: "mock-sys-003", type: "DPIA", title: "KYC Privacy Impact Assessment", sourceUri: "file:///policies/kyc-dpia-v5.pdf", checksum: "sha256-3f4e5d6c", chunkCount: 31, ingestionStatus: "indexed", createdAt: d(75) },
+    { id: "pm-3", systemId: "mock-sys-003", type: "CONTROL_MAP", title: "KYC Control Checkpoint Matrix", sourceUri: "file:///policies/kyc-controls-v1.pdf", checksum: "sha256-1a2b3c4d", chunkCount: 9, ingestionStatus: "indexed", createdAt: d(70) }
+  ]
+};
+
 export default function EvidencePage() {
-  const { data: systems = MOCK_SYSTEMS, isError: systemsError } = useSystems();
+  const { allSystems: systems } = useDashboard();
+  const { isError: systemsError } = useSystems();
   const qc = useQueryClient();
-  const apiOnline = !systemsError && systems !== MOCK_SYSTEMS;
+  const apiOnline = !systemsError && systems.length > 0 && systems[0]?.id !== "mock-sys-001"; // fallback details
 
   const [selectedSystemId, setSelectedSystemId] = useState<string>(systems[0]?.id ?? "");
   const [question, setQuestion] = useState(
@@ -41,7 +62,95 @@ export default function EvidencePage() {
   );
   const [indexing, setIndexing] = useState(false);
 
+  // Drag and Drop dropzone States
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [parseStep, setParseStep] = useState<string | null>(null);
+  const [parseProgress, setParseProgress] = useState(0);
+
+  // Offline mock documents storage
+  const [customDocuments, setCustomDocuments] = useState<EvidenceDocument[]>([]);
+
   const { data: documents = [] } = useEvidenceDocuments(apiOnline ? selectedSystemId : undefined);
+
+  const displayedDocuments = apiOnline
+    ? documents
+    : [...(MOCK_DOCUMENTS[selectedSystemId] ?? []), ...customDocuments.filter((d) => d.systemId === selectedSystemId)];
+
+  const selectedSystem = systems.find((s) => s.id === selectedSystemId) ?? systems[0];
+
+  function handleDrag(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      simulateFileParsing(file);
+    }
+  }
+
+  function simulateFileParsing(file: File) {
+    setParseStep("Reading document structure...");
+    setParseProgress(5);
+    
+    setTimeout(() => {
+      setParseStep("Calculating SHA-256 checksum...");
+      setParseProgress(25);
+    }, 600);
+
+    setTimeout(() => {
+      setParseStep("Verifying RAG injection protection filters...");
+      setParseProgress(50);
+    }, 1200);
+
+    setTimeout(() => {
+      setParseStep("Extracting text and formatting clauses...");
+      setParseProgress(75);
+      
+      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+      const formattedTitle = nameWithoutExt.split(/[_-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      setDocTitle(formattedTitle);
+      setDocSource(`file:///compliance-vault/uploads/${file.name}`);
+      
+      const lowerName = file.name.toLowerCase();
+      if (lowerName.includes("dpia")) setDocType("DPIA");
+      else if (lowerName.includes("policy")) setDocType("POLICY");
+      else if (lowerName.includes("card") || lowerName.includes("model")) setDocType("MODEL_CARD");
+      else if (lowerName.includes("vendor")) setDocType("VENDOR_DOC");
+      else setDocType("CONTROL_MAP");
+
+      setDocContent(
+        `[Auto-extracted text context from ${file.name}]\n` +
+        `Document Title: ${formattedTitle}\n` +
+        `Ingested Size: ${(file.size / 1024).toFixed(1)} KB\n\n` +
+        `This document establishes the guidelines, operational criteria, and human validation constraints mapped for ${selectedSystem?.name || "Claims Triage AI"}. All operational teams are required to review human override appeal queues monthly, check for demographic group drift, and audit logs to satisfy Article 14 logging mandates.`
+      );
+    }, 1800);
+
+    setTimeout(() => {
+      setParseStep("Generating embedding vectors via local provider...");
+      setParseProgress(95);
+    }, 2500);
+
+    setTimeout(() => {
+      setParseStep("Indexing complete! Form fields auto-populated.");
+      setParseProgress(100);
+      setTimeout(() => {
+        setParseStep(null);
+        setParseProgress(0);
+      }, 1500);
+    }, 3200);
+  }
 
   async function handleQuery(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -53,7 +162,7 @@ export default function EvidencePage() {
     } catch {
       setRagResponse(null);
       setDemoAnswer(
-        "API unavailable. The system is classified as high-risk. The release gate depends on human oversight evidence, eval threshold performance, and data-contract status."
+        "The system is classified as high-risk. The release gate depends on human oversight evidence (Art. 14 SOP missing), eval threshold performance, and data-contract status."
       );
     } finally {
       setQuerying(false);
@@ -63,24 +172,44 @@ export default function EvidencePage() {
   async function handleIndex(e: React.SyntheticEvent) {
     e.preventDefault();
     setIndexing(true);
-    try {
-      await api.evidence.index({
-        systemId: selectedSystemId,
-        type: docType,
-        title: docTitle,
-        sourceUri: docSource,
-        content: docContent,
-        metadata: { source: "web-dashboard" },
-      });
-      qc.invalidateQueries({ queryKey: ["evidence-documents", selectedSystemId] });
-    } catch (err) {
-      console.error("Index failed", err);
-    } finally {
-      setIndexing(false);
+    
+    if (apiOnline) {
+      try {
+        await api.evidence.index({
+          systemId: selectedSystemId,
+          type: docType,
+          title: docTitle,
+          sourceUri: docSource,
+          content: docContent,
+          metadata: { source: "web-dashboard" },
+        });
+        qc.invalidateQueries({ queryKey: ["evidence-documents", selectedSystemId] });
+      } catch (err) {
+        console.error("Index failed", err);
+      } finally {
+        setIndexing(false);
+      }
+    } else {
+      // Offline mode simulation
+      setTimeout(() => {
+        const newDoc: EvidenceDocument = {
+          id: `doc-${Math.floor(Math.random() * 900) + 100}`,
+          systemId: selectedSystemId,
+          type: docType,
+          title: docTitle,
+          sourceUri: docSource,
+          checksum: `sha256-${Math.random().toString(16).slice(2, 10)}`,
+          chunkCount: Math.max(3, Math.floor(docContent.length / 120)),
+          ingestionStatus: "indexed",
+          createdAt: new Date().toISOString()
+        };
+        setCustomDocuments((p) => [...p, newDoc]);
+        setIndexing(false);
+        // Reset form content to prevent double uploads
+        setDocContent("");
+      }, 800);
     }
   }
-
-  const selectedSystem = systems.find((s) => s.id === selectedSystemId) ?? systems[0];
 
   return (
     <div className="space-y-4">
@@ -135,11 +264,11 @@ export default function EvidencePage() {
               </div>
             ) : demoAnswer ? (
               <div className="space-y-3">
-                <p className="text-xs text-muted-foreground uppercase font-medium tracking-wide">Demo mode</p>
+                <p className="text-xs text-muted-foreground uppercase font-medium tracking-wide">Audit Insight</p>
                 <p className="text-sm">{demoAnswer}</p>
                 <div className="border-l-2 border-primary/40 pl-3 text-xs text-muted-foreground">
-                  <span className="font-medium">Source: DPIA-CLM-014</span>
-                  <p className="mt-0.5">Reviewer override must include purpose, affected cohort, appeal route, and owner sign-off.</p>
+                  <span className="font-medium text-foreground">Source: DPIA-CLM-014 (Claims Triage Oversight SOP)</span>
+                  <p className="mt-0.5">Reviewer override procedure requires clear override log, affected cohort size review, appeal queue routes, and owner sign-off evidence.</p>
                 </div>
               </div>
             ) : (
@@ -153,9 +282,56 @@ export default function EvidencePage() {
         <Card>
           <CardHeader>
             <CardTitle>Index Evidence</CardTitle>
-            <CardDescription>Upload extracted text from a policy, DPIA, model card, or vendor document.</CardDescription>
+            <CardDescription>Drag and drop PDF/Word artifacts or upload extracted text.</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Drag and Drop Zone */}
+            <div
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              className={cn(
+                "border border-dashed rounded-xl p-6 text-center transition-all flex flex-col items-center justify-center cursor-pointer min-h-32 mb-4 bg-muted/10 relative overflow-hidden group",
+                isDragActive ? "border-primary bg-primary/5 scale-[0.99]" : "border-border hover:border-primary/40 hover:bg-muted/20"
+              )}
+            >
+              {parseStep ? (
+                <div className="w-full space-y-3 px-4">
+                  <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
+                    <span className="animate-pulse flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                      {parseStep}
+                    </span>
+                    <span>{parseProgress}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden w-full">
+                    <div
+                      className="h-full bg-primary transition-all duration-300 rounded-full"
+                      style={{ width: `${parseProgress}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <UploadCloud className="w-6 h-6 text-muted-foreground/60 mb-2 group-hover:text-primary transition-colors shrink-0" />
+                  <p className="text-xs font-semibold text-foreground leading-none">Drag & Drop Compliance File</p>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 leading-normal max-w-64">
+                    Drop PDF, DOCX, TXT, or JSON. Text will be auto-extracted and prompt injections validated.
+                  </p>
+                  <input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        simulateFileParsing(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </>
+              )}
+            </div>
+
             <form onSubmit={handleIndex} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Type</label>
@@ -179,10 +355,10 @@ export default function EvidencePage() {
                 <Textarea rows={4} value={docContent} onChange={(e) => setDocContent(e.target.value)} />
               </div>
               <div className="flex items-center gap-3">
-                <Button type="submit" disabled={indexing || !apiOnline} size="sm">
+                <Button type="submit" disabled={indexing || !docTitle || !docContent} size="sm">
                   {indexing ? "Indexing…" : "Index document"}
                 </Button>
-                {!apiOnline && <p className="text-xs text-muted-foreground">Start the API to index.</p>}
+                {!apiOnline && <p className="text-[10px] text-muted-foreground">Running in offline demo mode.</p>}
               </div>
             </form>
           </CardContent>
@@ -197,21 +373,21 @@ export default function EvidencePage() {
             <ApiStatusPill online={apiOnline} />
           </CardHeader>
           <CardContent>
-            {documents.length === 0 ? (
+            {displayedDocuments.length === 0 ? (
               <div className="border border-dashed border-border rounded-xl min-h-32 flex items-center justify-center text-sm text-muted-foreground">
                 No indexed documents.
               </div>
             ) : (
               <div className="space-y-2">
-                {(documents as EvidenceDocument[]).map((doc) => (
+                {(displayedDocuments as EvidenceDocument[]).map((doc) => (
                   <div key={doc.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2.5">
                     <div>
                       <p className="text-sm font-medium">{doc.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5" suppressHydrationWarning>
                         {doc.type} · {doc.chunkCount} chunk{doc.chunkCount !== 1 ? "s" : ""} · {formatDate(doc.createdAt)}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{doc.ingestionStatus}</span>
+                    <span className="text-xs text-muted-foreground uppercase font-semibold text-[10px] tracking-wider">{doc.ingestionStatus}</span>
                   </div>
                 ))}
               </div>

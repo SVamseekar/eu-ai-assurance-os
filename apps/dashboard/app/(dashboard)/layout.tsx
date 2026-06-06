@@ -2,11 +2,11 @@
 
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
-import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { api } from "@/lib/api";
-import { MOCK_SYSTEMS } from "@/lib/mock-data";
 import { normaliseDecision } from "@/lib/utils";
+import { useDashboard } from "@/context/dashboard-context";
+import { SystemDetailsSheet, ContractDetailsSheet } from "@/components/details-sheets";
+import { MOCK_AUDIT_EVENTS, MOCK_DRIFT_EVENTS } from "@/lib/mock-data";
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   "/command": {
@@ -49,13 +49,15 @@ function downloadJson(filename: string, payload: unknown) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: systems } = useQuery({
-    queryKey: ["systems"],
-    queryFn: api.systems.list,
-    placeholderData: MOCK_SYSTEMS,
-  });
+  const {
+    allSystems,
+    selectedSystem,
+    setSelectedSystem,
+    selectedContract,
+    setSelectedContract
+  } = useDashboard();
 
-  const blockedCount = (systems ?? MOCK_SYSTEMS).filter(
+  const blockedCount = allSystems.filter(
     (s) => normaliseDecision(s.releaseDecision) === "Blocked"
   ).length;
 
@@ -65,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const pack = {
       product: "EU AI Assurance OS",
       generatedAt: new Date().toISOString(),
-      systems: systems ?? MOCK_SYSTEMS,
+      systems: allSystems,
     };
     downloadJson(`eu-ai-assurance-evidence-${new Date().toISOString().slice(0, 10)}.json`, pack);
   }
@@ -86,6 +88,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
         {children}
       </main>
+
+      {/* Slide-over details drawers */}
+      <SystemDetailsSheet
+        system={selectedSystem}
+        isOpen={selectedSystem !== null}
+        onClose={() => setSelectedSystem(null)}
+        auditEvents={MOCK_AUDIT_EVENTS}
+      />
+      
+      <ContractDetailsSheet
+        contract={selectedContract}
+        isOpen={selectedContract !== null}
+        onClose={() => setSelectedContract(null)}
+        driftEvents={MOCK_DRIFT_EVENTS}
+        systems={allSystems}
+      />
     </div>
   );
 }

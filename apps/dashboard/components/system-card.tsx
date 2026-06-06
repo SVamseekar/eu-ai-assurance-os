@@ -2,16 +2,21 @@ import { RiskBadge } from "./risk-badge";
 import { DecisionBadge } from "./decision-badge";
 import { normaliseDecision } from "@/lib/utils";
 import type { AiSystem } from "@/lib/types";
+import { useDashboard } from "@/context/dashboard-context";
 
 interface SystemCardProps {
   system: AiSystem;
 }
 
 export function SystemCard({ system }: SystemCardProps) {
+  const { openSystemDetails } = useDashboard();
   const decision = normaliseDecision(system.releaseDecision);
 
   return (
-    <div className="rounded-xl border border-border p-4 bg-muted/30">
+    <div
+      onClick={() => openSystemDetails(system.id)}
+      className="rounded-xl border border-border p-4 bg-muted/30 hover:bg-muted/40 hover:shadow-xs hover:border-border transition-all cursor-pointer"
+    >
       {/* Top row */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">

@@ -24,6 +24,7 @@ POST /systems
 
 Request:
 
+
 ```json
 {
   "name": "Claims Triage AI",

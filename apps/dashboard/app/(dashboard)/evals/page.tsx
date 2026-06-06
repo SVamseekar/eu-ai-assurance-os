@@ -12,18 +12,25 @@ import { api } from "@/lib/api";
 import { MOCK_SYSTEMS } from "@/lib/mock-data";
 import type { EvalRun } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const DATASETS = ["golden-eu-claims-v4", "hr-candidate-screening-v2", "customer-support-rag-v8"];
+import { useDashboard } from "@/context/dashboard-context";
+import { Modal } from "@/components/ui/modal";
+import { Plus } from "lucide-react";
 
 export default function EvalsPage() {
-  const { data: systems = MOCK_SYSTEMS } = useSystems();
+  const { allSystems: systems } = useDashboard();
   const { data: operations } = useEvalOperations();
+  const { evalDatasets, registerDataset } = useDashboard();
 
   const [selectedSystemId, setSelectedSystemId] = useState(systems[0]?.id ?? "");
-  const [dataset, setDataset] = useState(DATASETS[0]);
+  const [dataset, setDataset] = useState(evalDatasets[0] || "golden-eu-claims-v4");
   const [threshold, setThreshold] = useState(85);
   const [consoleLines, setConsoleLines] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
+
+  // Dataset modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newDsName, setNewDsName] = useState("");
+  const [newDsDesc, setNewDsDesc] = useState("");
 
   async function handleRun(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -55,7 +62,8 @@ export default function EvalsPage() {
       const decision = score >= threshold ? "PASS" : score < threshold - 7 ? "BLOCKED" : "REVIEW";
       setConsoleLines([
         `> queued eval run for ${system.name} (demo)`,
-        "> loaded dataset and judge rubric",
+        `> loaded dataset:     ${dataset}`,
+        "> loaded judge rubric",
         `> faithfulness:       ${score}%`,
         `> safety refusal:     ${Math.max(70, score - 3)}%`,
         "> latency guard:      pass",
@@ -64,6 +72,18 @@ export default function EvalsPage() {
       ]);
     } finally {
       setRunning(false);
+    }
+  }
+
+  function handleCreateDataset(e: React.SyntheticEvent) {
+    e.preventDefault();
+    if (newDsName) {
+      const formatted = newDsName.toLowerCase().replace(/\s+/g, "-");
+      registerDataset(formatted);
+      setDataset(formatted);
+      setIsModalOpen(false);
+      setNewDsName("");
+      setNewDsDesc("");
     }
   }
 
@@ -86,15 +106,28 @@ export default function EvalsPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Dataset selection with inline creator */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Dataset</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-medium text-muted-foreground">Dataset</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    className="text-[10px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Register Dataset
+                  </button>
+                </div>
                 <Select value={dataset} onValueChange={(v) => v && setDataset(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DATASETS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    {evalDatasets.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Pass threshold (%)</label>
                 <input
@@ -149,6 +182,43 @@ export default function EvalsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Dataset Registration Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Register Eval Dataset"
+        description="Register a new golden set for automatic model regression checks."
+      >
+        <form onSubmit={handleCreateDataset} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dataset Name</label>
+            <input
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
+              value={newDsName}
+              onChange={(e) => setNewDsName(e.target.value)}
+              placeholder="e.g. claims-denial-v5"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description</label>
+            <input
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
+              value={newDsDesc}
+              onChange={(e) => setNewDsDesc(e.target.value)}
+              placeholder="e.g. 500 gold standard claims classification checks"
+            />
+          </div>
+          <div className="flex justify-end gap-2.5">
+            <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={!newDsName}>
+              Register Dataset
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

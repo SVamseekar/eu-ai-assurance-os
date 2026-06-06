@@ -4,6 +4,7 @@ import type { AiSystem } from "@/lib/types";
 import { normaliseDecision, cn } from "@/lib/utils";
 import { RiskBadge } from "@/components/risk-badge";
 import { DecisionBadge } from "@/components/decision-badge";
+import { useDashboard } from "@/context/dashboard-context";
 
 interface RiskTopologyProps {
   systems: AiSystem[];
@@ -11,6 +12,7 @@ interface RiskTopologyProps {
 }
 
 export function RiskTopology({ systems, filter }: RiskTopologyProps) {
+  const { openSystemDetails } = useDashboard();
   const filtered = systems.filter((s) => filter === "all" || s.riskClass === filter);
 
   return (
@@ -36,7 +38,8 @@ export function RiskTopology({ systems, filter }: RiskTopologyProps) {
         return (
           <div
             key={system.id}
-            className="grid grid-cols-[1fr_180px_72px_80px_90px] gap-4 items-center px-3 py-3 rounded-lg hover:bg-muted/30 transition-colors"
+            onClick={() => openSystemDetails(system.id)}
+            className="grid grid-cols-[1fr_180px_72px_80px_90px] gap-4 items-center px-3 py-3 rounded-lg hover:bg-muted/40 hover:shadow-xs border border-transparent hover:border-border transition-all cursor-pointer"
           >
             {/* System name */}
             <div className="min-w-0">

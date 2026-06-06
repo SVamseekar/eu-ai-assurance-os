@@ -3,72 +3,165 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { RiskTopology } from "@/components/risk-topology";
-import { ReleaseGateTable } from "@/components/release-gate-table";
-import { useSystems } from "@/hooks/use-systems";
-import { MOCK_SYSTEMS } from "@/lib/mock-data";
-import { normaliseDecision, cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useContracts } from "@/hooks/use-contracts";
+import { MOCK_CONTRACTS } from "@/lib/mock-data";
+import { normaliseDecision, cn, formatDate } from "@/lib/utils";
+import {
+  TrendingUp, TrendingDown, Minus,
+  ShieldAlert, AlertTriangle, CheckCircle2, Clock,
+  ShieldCheck, FileText, Sparkles
+} from "lucide-react";
+import { DecisionBadge } from "@/components/decision-badge";
+import { useDashboard } from "@/context/dashboard-context";
+import { Modal } from "@/components/ui/modal";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+
+const ACTOR_NAMES: Record<string, string> = {
+  "actor-priya": "Priya Nair",
+  "actor-marco": "Marco Bianchi",
+  "actor-leo":   "Leo Hartmann",
+  "actor-sofia": "Sofia Andersen",
+};
+
+const EVENT_ICON: Record<string, React.ElementType> = {
+  RELEASE_GATE_CALCULATED: ShieldCheck,
+  EVIDENCE_INDEXED:        FileText,
+  EVIDENCE_QUERIED:        FileText,
+  DRIFT_EVENT_CREATED:     AlertTriangle,
+};
+
+const EVENT_COLOR: Record<string, string> = {
+  RELEASE_GATE_CALCULATED: "text-indigo-500",
+  EVIDENCE_INDEXED:        "text-sky-500",
+  EVIDENCE_QUERIED:        "text-sky-500",
+  DRIFT_EVENT_CREATED:     "text-amber-500",
+};
+
+function toTitle(s: string) {
+  return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function CommandPage() {
-  const { data: systems = MOCK_SYSTEMS } = useSystems();
+  const { allSystems: systems, openSystemDetails, allAudits: auditEvents, overrideGate } = useDashboard();
+  const { data: contracts = MOCK_CONTRACTS } = useContracts();
+  
   const [riskFilter, setRiskFilter] = useState<"all" | "high" | "limited" | "minimal">("all");
 
-  const blocked = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Blocked").length;
-  const review  = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Review").length;
-  const highRisk = systems.filter((s) => s.riskClass === "high").length;
-  const totalGaps = systems.reduce((sum, s) => sum + s.openGaps.length, 0);
-  const avgEval = Math.round(systems.reduce((sum, s) => sum + s.evalScore, 0) / systems.length);
+  // Override Modal States
+  const [overrideSystemId, setOverrideSystemId] = useState<string | null>(null);
+  const [overrideSystemName, setOverrideSystemName] = useState("");
+  const [justification, setJustification] = useState("");
+
+  const blocked   = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Blocked");
+  const review    = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Review");
+  const highRisk  = systems.filter((s) => s.riskClass === "high").length;
+  const avgEval   = Math.round(systems.reduce((sum, s) => sum + s.evalScore, 0) / systems.length);
   const avgEvidence = Math.round(systems.reduce((sum, s) => sum + s.evidenceCoverage, 0) / systems.length);
+  const breaches  = contracts.filter((c) => c.status === "BREACH").length;
+  const warnings  = contracts.filter((c) => c.status === "WARNING").length;
 
   const metrics = [
     {
-      label: "Total AI Systems",
+      label: "AI Systems Registered",
       value: systems.length,
-      sub: `${highRisk} high-risk registered`,
+      sub: `${highRisk} high-risk · ${systems.length - highRisk} limited/minimal`,
       trend: "neutral" as const,
     },
     {
-      label: "Open Control Gaps",
-      value: totalGaps,
-      sub: blocked > 0 ? `${blocked} blocking release` : "No blockers",
-      trend: (blocked > 0 ? "down" : "up") as "up" | "down" | "neutral",
+      label: "Release Blockers",
+      value: blocked.length,
+      sub: blocked.length > 0 ? blocked.map((s) => s.name).join(", ") : "All systems clear",
+      trend: (blocked.length > 0 ? "down" : "up") as "up" | "down" | "neutral",
     },
     {
       label: "Avg. Eval Score",
       value: `${avgEval}%`,
-      sub: avgEval >= 85 ? "Above 85% target" : "Below 85% target",
+      sub: avgEval >= 85 ? `${avgEvidence}% evidence avg · on target` : `${avgEvidence}% evidence avg · below 85% gate`,
       trend: (avgEval >= 85 ? "up" : "down") as "up" | "down" | "neutral",
     },
     {
-      label: "Audit Completeness",
-      value: `${Math.min(98, avgEvidence + 5)}%`,
-      sub: `${review} systems under review`,
-      trend: "up" as const,
+      label: "Contract Health",
+      value: breaches > 0 ? `${breaches} breach${breaches > 1 ? "es" : ""}` : warnings > 0 ? `${warnings} warning${warnings > 1 ? "s" : ""}` : "All healthy",
+      sub: breaches > 0 ? `${warnings} warning${warnings !== 1 ? "s" : ""} · ${contracts.length - breaches - warnings} healthy` : `${contracts.length} contracts monitored`,
+      trend: (breaches > 0 ? "down" : warnings > 0 ? "neutral" : "up") as "up" | "down" | "neutral",
     },
   ];
 
+  // All open gaps across all systems, sorted worst-first
+  const allGaps = systems
+    .flatMap((s) => s.openGaps.map((g) => ({ system: s.name, systemId: s.id, riskClass: s.riskClass, gap: g, decision: normaliseDecision(s.releaseDecision) })))
+    .sort((a, b) => (a.decision === "Blocked" ? -1 : b.decision === "Blocked" ? 1 : 0));
+
+  const recentEvents = [...auditEvents]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
+
+  // Filter blocked or review systems for override actions
+  const blockedOrReviewSystems = systems.filter(
+    (s) => normaliseDecision(s.releaseDecision) === "Blocked" || normaliseDecision(s.releaseDecision) === "Review"
+  );
+
+  // SVG Donut Calculations
+  const high = systems.filter(s => s.riskClass === "high").length;
+  const limited = systems.filter(s => s.riskClass === "limited").length;
+  const minimal = systems.filter(s => s.riskClass === "minimal").length;
+  const total = systems.length;
+
+  const r = 36;
+  const circ = 2 * Math.PI * r;
+  const highPct = total ? high / total : 0;
+  const limitedPct = total ? limited / total : 0;
+  const minimalPct = total ? minimal / total : 0;
+
+  const strokeHigh = circ * highPct;
+  const strokeLimited = circ * limitedPct;
+  const strokeMinimal = circ * minimalPct;
+
+  const offsetHigh = 0;
+  const offsetLimited = strokeHigh;
+  const offsetMinimal = strokeHigh + strokeLimited;
+
+  function handleTriggerOverride(id: string, name: string) {
+    setOverrideSystemId(id);
+    setOverrideSystemName(name);
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {metrics.map((m) => (
           <Card key={m.label}>
-            <CardContent className="pt-5 pb-4">
+            <CardContent className="pt-5 pb-4 relative overflow-hidden">
               <p className="text-xs text-muted-foreground mb-3">{m.label}</p>
               <p className="text-2xl font-bold tracking-tight mb-2">{m.value}</p>
+              
+              {/* Compliance index mini line graph */}
+              {m.label === "Avg. Eval Score" && (
+                <div className="w-full h-7 mb-2 overflow-visible">
+                  <svg viewBox="0 0 100 20" className="w-full h-full text-primary fill-none overflow-visible">
+                    <path
+                      d="M 5,15 L 20,13 L 35,16 L 50,11 L 65,14 L 80,9 L 95,5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="95" cy="5" r="1.5" fill="currentColor" />
+                  </svg>
+                </div>
+              )}
+
               <div className="flex items-center gap-1.5">
-                {m.trend === "up"      && <TrendingUp   className="w-3 h-3 text-emerald-500 shrink-0" />}
-                {m.trend === "down"    && <TrendingDown  className="w-3 h-3 text-red-500 shrink-0" />}
-                {m.trend === "neutral" && <Minus         className="w-3 h-3 text-muted-foreground shrink-0" />}
+                {m.trend === "up"      && <TrendingUp  className="w-3 h-3 text-emerald-500 shrink-0" />}
+                {m.trend === "down"    && <TrendingDown className="w-3 h-3 text-red-500 shrink-0" />}
+                {m.trend === "neutral" && <Minus        className="w-3 h-3 text-muted-foreground shrink-0" />}
                 <p className={cn(
-                  "text-xs",
+                  "text-xs truncate",
                   m.trend === "up"      && "text-emerald-600 dark:text-emerald-400",
                   m.trend === "down"    && "text-red-600 dark:text-red-400",
                   m.trend === "neutral" && "text-muted-foreground"
@@ -81,14 +174,186 @@ export default function CommandPage() {
         ))}
       </div>
 
-      {/* Release readiness */}
+      {/* Row 2: Analytics Donut & Release Overrides widget */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Risk Donut Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>System Risk Distribution</CardTitle>
+            <CardDescription>Ratio of registered AI risk classes</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between pb-6">
+            <div className="relative w-28 h-28 flex-shrink-0">
+              <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                <circle cx="50" cy="50" r={r} fill="transparent" stroke="var(--border)" strokeWidth="8" />
+                {strokeMinimal > 0 && (
+                  <circle
+                    cx="50" cy="50" r={r} fill="transparent"
+                    stroke="oklch(0.62 0.18 160)" strokeWidth="8"
+                    strokeDasharray={`${strokeMinimal} ${circ}`}
+                    strokeDashoffset={-offsetMinimal}
+                  />
+                )}
+                {strokeLimited > 0 && (
+                  <circle
+                    cx="50" cy="50" r={r} fill="transparent"
+                    stroke="oklch(0.72 0.17 55)" strokeWidth="8"
+                    strokeDasharray={`${strokeLimited} ${circ}`}
+                    strokeDashoffset={-offsetLimited}
+                  />
+                )}
+                {strokeHigh > 0 && (
+                  <circle
+                    cx="50" cy="50" r={r} fill="transparent"
+                    stroke="oklch(0.57 0.22 25)" strokeWidth="8"
+                    strokeDasharray={`${strokeHigh} ${circ}`}
+                    strokeDashoffset={-offsetHigh}
+                  />
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-xl font-bold leading-none">{total}</span>
+                <span className="text-[8px] text-muted-foreground mt-1 uppercase font-bold tracking-wider">Total</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pl-4 flex-1">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[oklch(0.57_0.22_25)] shrink-0" />
+                  <span className="text-muted-foreground font-medium">High</span>
+                </div>
+                <span className="font-semibold tabular-nums">{high} ({Math.round((high / total) * 100)}%)</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[oklch(0.72_0.17_55)] shrink-0" />
+                  <span className="text-muted-foreground font-medium">Limited</span>
+                </div>
+                <span className="font-semibold tabular-nums">{limited} ({Math.round((limited / total) * 100)}%)</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[oklch(0.62_0.18_160)] shrink-0" />
+                  <span className="text-muted-foreground font-medium">Minimal</span>
+                </div>
+                <span className="font-semibold tabular-nums">{minimal} ({Math.round((minimal / total) * 100)}%)</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Release Overrides widget */}
+        <Card className="col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle>Manual Compliance Overrides</CardTitle>
+            <CardDescription>Authorize manual overrides to clear blocked release gates.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="divide-y divide-border overflow-y-auto min-h-28 max-h-32">
+              {blockedOrReviewSystems.length === 0 ? (
+                <div className="flex items-center justify-center gap-2 p-7 text-xs text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  All release gates are clear. No overrides needed.
+                </div>
+              ) : (
+                blockedOrReviewSystems.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-muted/10 transition-colors last:rounded-b-xl">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-foreground leading-none mb-1">{s.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate leading-normal">
+                        {s.openGaps[0] || "Evaluation threshold breach"} 
+                        {s.openGaps.length > 1 && ` (+${s.openGaps.length - 1} more)`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleTriggerOverride(s.id, s.name)}
+                      className="px-2.5 py-1 text-[9px] font-bold bg-primary hover:bg-primary/95 text-primary-foreground rounded-lg cursor-pointer transition-colors shadow-xs"
+                    >
+                      Authorize Override
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 3: Active blockers + Recent activity */}
+      <div className="grid grid-cols-[1fr_340px] gap-4">
+        {/* Active blockers & gaps */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Control Gaps</CardTitle>
+            <CardDescription>Open gaps blocking or flagging systems for release review.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="divide-y divide-border max-h-[260px] overflow-y-auto">
+              {allGaps.map((item, i) => (
+                <div
+                  key={i}
+                  onClick={() => openSystemDetails(item.systemId)}
+                  className="flex items-start gap-3 px-6 py-3.5 hover:bg-muted/30 transition-all border border-transparent hover:border-border cursor-pointer last:rounded-b-xl hover:shadow-xs"
+                >
+                  <div className="mt-0.5 shrink-0">
+                    {item.decision === "Blocked"
+                      ? <ShieldAlert className="w-4 h-4 text-red-500" />
+                      : <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground leading-snug">{item.gap}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.system}</p>
+                  </div>
+                  <DecisionBadge decision={item.decision} className="shrink-0 mt-0.5" />
+                </div>
+              ))}
+              {allGaps.length === 0 && (
+                <div className="flex items-center gap-2 px-6 py-5 text-sm text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  All control gaps resolved.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest audit events across all systems.</CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="divide-y divide-border max-h-[260px] overflow-y-auto">
+              {recentEvents.map((event) => {
+                const Icon = EVENT_ICON[event.eventType] ?? Clock;
+                const color = EVENT_COLOR[event.eventType] ?? "text-muted-foreground";
+                const actor = event.actorId ? ACTOR_NAMES[event.actorId] ?? event.actorId : null;
+                return (
+                  <div key={event.id} className="flex items-start gap-3 px-5 py-3 hover:bg-muted/20 transition-colors last:rounded-b-xl">
+                    <Icon className={cn("w-3.5 h-3.5 mt-0.5 shrink-0", color)} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium leading-snug">{toTitle(event.eventType)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate" suppressHydrationWarning>
+                        {actor ? `${actor} · ` : ""}{formatDate(event.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Release readiness table */}
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-4">
           <div>
             <CardTitle>Release Readiness</CardTitle>
-            <CardDescription className="mt-0.5">
-              Evidence coverage, eval score, and release decision per system.
-            </CardDescription>
+            <CardDescription>Evidence coverage, eval score, and release decision per system.</CardDescription>
           </div>
           <Select value={riskFilter} onValueChange={(v) => v && setRiskFilter(v as typeof riskFilter)}>
             <SelectTrigger className="w-32 h-8 text-xs shrink-0">
@@ -107,18 +372,43 @@ export default function CommandPage() {
         </CardContent>
       </Card>
 
-      {/* Release gate table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Release Gate</CardTitle>
-          <CardDescription>
-            Combined compliance evidence, eval regression, data drift, and human oversight.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ReleaseGateTable systems={systems} />
-        </CardContent>
-      </Card>
+      {/* Override Justification Dialog Modal */}
+      <Modal
+        isOpen={overrideSystemId !== null}
+        onClose={() => setOverrideSystemId(null)}
+        title={`Authorize Override — ${overrideSystemName}`}
+        description="Enter compliance justification. An immutable audit record will log this override signature."
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Oversight Justification</label>
+            <Textarea
+              rows={4}
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              placeholder="e.g. Reviewed manual safety fallback protocol. Biweekly bias audits scheduled; manual routing fallback verified under Art. 14 guidelines."
+            />
+          </div>
+          <div className="flex justify-end gap-2.5">
+            <Button variant="outline" size="sm" onClick={() => setOverrideSystemId(null)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!justification}
+              onClick={() => {
+                if (overrideSystemId) {
+                  overrideGate(overrideSystemId, justification);
+                  setOverrideSystemId(null);
+                  setJustification("");
+                }
+              }}
+            >
+              Confirm Override Signature
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

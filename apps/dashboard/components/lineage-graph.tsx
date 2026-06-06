@@ -14,6 +14,8 @@ import { SourceNode, ContractNode, SystemNode } from "./lineage-nodes";
 import type { AiSystem, DataContract } from "@/lib/types";
 import { normaliseDecision } from "@/lib/utils";
 
+import { useDashboard } from "@/context/dashboard-context";
+
 const NODE_TYPES = {
   source: SourceNode,
   contract: ContractNode,
@@ -26,6 +28,18 @@ interface LineageGraphProps {
 }
 
 export function LineageGraph({ systems, contracts }: LineageGraphProps) {
+  const { openSystemDetails, openContractDetails } = useDashboard();
+
+  const handleNodeClick = (_event: React.MouseEvent, node: any) => {
+    if (node.type === "system") {
+      const systemId = node.id.replace("system-", "");
+      openSystemDetails(systemId);
+    } else if (node.type === "contract") {
+      const contractId = node.id.replace("contract-", "");
+      openContractDetails(contractId);
+    }
+  };
+
   const { nodes, edges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -107,6 +121,7 @@ export function LineageGraph({ systems, contracts }: LineageGraphProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={NODE_TYPES}
+        onNodeClick={handleNodeClick}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         nodesDraggable

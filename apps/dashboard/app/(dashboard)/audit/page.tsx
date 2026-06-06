@@ -15,12 +15,67 @@ const EVENT_CONFIG: Record<string, { icon: React.ElementType; color: string; bg:
 };
 const DEFAULT_CFG = { icon: ShieldCheck, color: "text-muted-foreground", bg: "bg-muted" };
 
+const ACTOR_NAMES: Record<string, string> = {
+  "actor-priya": "Priya Nair",
+  "actor-marco": "Marco Bianchi",
+  "actor-leo":   "Leo Hartmann",
+  "actor-sofia": "Sofia Andersen",
+};
+
 function toTitle(s: string) {
   return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function PayloadSummary({ eventType, payload }: { eventType: string; payload: Record<string, unknown> }) {
+  if (eventType === "RELEASE_GATE_CALCULATED") {
+    const decision = String(payload.decision ?? "");
+    const color = decision === "PASS"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : decision === "BLOCKED"
+      ? "text-red-600 dark:text-red-400"
+      : "text-amber-600 dark:text-amber-400";
+    return (
+      <p className="text-xs text-muted-foreground mt-0.5">
+        Decision: <span className={`font-semibold ${color}`}>{decision}</span>
+        {payload.reason != null && <span> · {String(payload.reason)}</span>}
+      </p>
+    );
+  }
+  if (eventType === "DRIFT_EVENT_CREATED") {
+    const sev = String(payload.severity ?? "");
+    const sevColor = sev === "BREACH" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400";
+    return (
+      <p className="text-xs text-muted-foreground mt-0.5">
+        <span className={`font-semibold ${sevColor}`}>{sev}</span>
+        {" on "}
+        <span className="font-mono text-[11px]">{String(payload.field ?? "")}</span>
+        {payload.contractName != null && <span> · {String(payload.contractName)}</span>}
+      </p>
+    );
+  }
+  if (eventType === "EVIDENCE_INDEXED") {
+    return (
+      <p className="text-xs text-muted-foreground mt-0.5">
+        {String(payload.title ?? "")}
+        {payload.type != null && <span> · {String(payload.type)}</span>}
+        {payload.chunks !== undefined && <span> · {String(payload.chunks)} chunks</span>}
+      </p>
+    );
+  }
+  if (eventType === "EVIDENCE_QUERIED") {
+    return (
+      <p className="text-xs text-muted-foreground mt-0.5 italic truncate max-w-sm">
+        &ldquo;{String(payload.question ?? "")}&rdquo;
+      </p>
+    );
+  }
+  return null;
+}
+
+import { useDashboard } from "@/context/dashboard-context";
+
 export default function AuditPage() {
-  const { data: events = MOCK_AUDIT_EVENTS } = useAuditEvents();
+  const { allAudits: events } = useDashboard();
 
   return (
     <Card>
@@ -41,14 +96,15 @@ export default function AuditPage() {
                   <Icon className={`w-4 h-4 ${cfg.color}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{toTitle(event.eventType)}</p>
-                  {event.resourceId && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {event.resourceType} · <span className="font-mono text-[11px]">{event.resourceId}</span>
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{toTitle(event.eventType)}</p>
+                    {event.actorId && (
+                      <span className="text-xs text-muted-foreground">· {ACTOR_NAMES[event.actorId] ?? event.actorId}</span>
+                    )}
+                  </div>
+                  <PayloadSummary eventType={event.eventType} payload={event.payload as Record<string, unknown>} />
                 </div>
-                <time className="text-xs text-muted-foreground shrink-0 mt-0.5 tabular-nums">
+                <time className="text-xs text-muted-foreground shrink-0 mt-0.5 tabular-nums" suppressHydrationWarning>
                   {formatDate(event.createdAt)}
                 </time>
               </div>
