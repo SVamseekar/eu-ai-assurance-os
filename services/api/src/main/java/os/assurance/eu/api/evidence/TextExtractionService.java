@@ -26,10 +26,12 @@ public class TextExtractionService {
         .followRedirects(HttpClient.Redirect.NEVER)
         .build();
     private final FileStorageService fileStorage;
+    private final FileStorageProperties storageProps;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
-    public TextExtractionService(FileStorageService fileStorage) {
+    public TextExtractionService(FileStorageService fileStorage, FileStorageProperties storageProps) {
         this.fileStorage = fileStorage;
+        this.storageProps = storageProps;
     }
 
     public String extract(CreateEvidenceDocumentRequest request) {
@@ -65,6 +67,10 @@ public class TextExtractionService {
                 URI uri = URI.create(request.sourceUri());
                 String bucket = uri.getHost();
                 String key = uri.getPath().replaceFirst("^/", "");
+                if (storageProps != null && !storageProps.bucket().equals(bucket)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "S3 URI references a bucket that is not configured for this deployment");
+                }
                 try (InputStream body = fileStorage.download(bucket, key)) {
                     String extracted = tika.parseToString(body, new Metadata(), MAX_FETCH_CHARS);
                     if (extracted != null && !extracted.isBlank()) {

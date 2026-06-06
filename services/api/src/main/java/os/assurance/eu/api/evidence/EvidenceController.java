@@ -3,6 +3,7 @@ package os.assurance.eu.api.evidence;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.util.StringUtils;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import org.springframework.http.HttpStatus;
@@ -49,7 +50,10 @@ public class EvidenceController {
           @RequestParam(required = false) String checksum) throws Exception {
     systems.findById(systemId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
-    String key = "evidence/" + systemId + "/" + UUID.randomUUID() + "/" + file.getOriginalFilename();
+    String filename = StringUtils.hasText(file.getOriginalFilename())
+        ? StringUtils.cleanPath(file.getOriginalFilename())
+        : "upload";
+    String key = "evidence/" + systemId + "/" + UUID.randomUUID() + "/" + filename;
     String uri = fileStorage.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
     var req = new CreateEvidenceDocumentRequest(
         systemId, type, title, uri, null, checksum, null);

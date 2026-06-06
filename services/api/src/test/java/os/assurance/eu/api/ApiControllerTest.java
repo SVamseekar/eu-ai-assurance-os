@@ -1053,6 +1053,22 @@ class ApiControllerTest {
   }
 
   @Test
+  void rejectsEvidenceDocumentPointingToUnauthorizedS3Bucket() throws Exception {
+    String systemId = createSystem();
+    mockMvc.perform(post("/api/v1/evidence/documents")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "type": "POLICY",
+                  "title": "Stolen Policy",
+                  "sourceUri": "s3://attacker-bucket/secrets/credentials.json"
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   @Tag("integration")
   void extractsTextFromHttpsUriWhenContentIsBlank() throws Exception {
     String systemId = createSystem();
