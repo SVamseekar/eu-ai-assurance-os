@@ -123,6 +123,7 @@ class ApiControllerTest {
     apiKeyRepo.findById(defaultApiKeyId)
         .orElseGet(() -> apiKeyRepo.save(new ApiKeyEntity(
             defaultApiKeyId,
+            os.assurance.eu.api.tenant.ApiKeyHasher.sha256Hex(DEFAULT_API_KEY),
             UUID.fromString(DEFAULT_TENANT_ID),
             UUID.fromString(DEFAULT_ACTOR_ID),
             Instant.now())));

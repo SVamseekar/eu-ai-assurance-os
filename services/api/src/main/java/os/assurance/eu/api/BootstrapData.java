@@ -2,9 +2,12 @@ package os.assurance.eu.api;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.core.env.Environment;
 import os.assurance.eu.api.eval.EvalDataset;
+import static os.assurance.eu.api.tenant.ApiKeyHasher.sha256Hex;
 import os.assurance.eu.api.eval.EvalDatasetEntity;
 import os.assurance.eu.api.eval.EvalDatasetJpaRepository;
 import os.assurance.eu.api.system.AiSystem;
@@ -35,6 +38,7 @@ public class BootstrapData implements CommandLineRunner {
   private final AiSystemRepository systems;
   private final EvalDatasetJpaRepository evalDatasets;
   private final ReleaseGateService releaseGateService;
+  private final Environment environment;
 
   public BootstrapData(
       TenantJpaRepository tenants,
@@ -43,7 +47,8 @@ public class BootstrapData implements CommandLineRunner {
       AiSystemJpaRepository systemStore,
       AiSystemRepository systems,
       EvalDatasetJpaRepository evalDatasets,
-      ReleaseGateService releaseGateService) {
+      ReleaseGateService releaseGateService,
+      Environment environment) {
     this.tenants = tenants;
     this.users = users;
     this.apiKeyRepo = apiKeyRepo;
@@ -51,6 +56,7 @@ public class BootstrapData implements CommandLineRunner {
     this.systems = systems;
     this.evalDatasets = evalDatasets;
     this.releaseGateService = releaseGateService;
+    this.environment = environment;
   }
 
   @Override
@@ -71,13 +77,17 @@ public class BootstrapData implements CommandLineRunner {
             "compliance@example.com",
             UserRole.COMPLIANCE_OFFICER,
             now)));
-    UUID defaultApiKey = UUID.fromString("00000000-0000-0000-0000-000000000a01");
-    apiKeyRepo.findById(defaultApiKey)
-        .orElseGet(() -> apiKeyRepo.save(new ApiKeyEntity(
-            defaultApiKey,
-            TenantContext.DEFAULT_TENANT_ID,
-            TenantContext.DEFAULT_USER_ID,
-            now)));
+    // Only seed the fixed dev/test API key when NOT running against real Postgres
+    if (!Arrays.asList(environment.getActiveProfiles()).contains("postgres")) {
+      UUID defaultApiKey = UUID.fromString("00000000-0000-0000-0000-000000000a01");
+      apiKeyRepo.findById(defaultApiKey)
+          .orElseGet(() -> apiKeyRepo.save(new ApiKeyEntity(
+              defaultApiKey,
+              sha256Hex(defaultApiKey.toString()),
+              TenantContext.DEFAULT_TENANT_ID,
+              TenantContext.DEFAULT_USER_ID,
+              now)));
+    }
     if (!evalDatasets.existsByTenantIdAndNameAndVersion(
         TenantContext.DEFAULT_TENANT_ID,
         "golden-eu-claims-v4",

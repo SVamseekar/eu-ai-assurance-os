@@ -38,14 +38,16 @@ public class TenantContextFilter extends OncePerRequestFilter {
         String apiKeyHeader = request.getHeader(API_KEY_HEADER);
 
         if (apiKeyHeader != null && !apiKeyHeader.isBlank()) {
-            UUID keyId;
+            // Validate format (must be UUID)
             try {
-                keyId = UUID.fromString(apiKeyHeader);
+                UUID.fromString(apiKeyHeader);
             } catch (IllegalArgumentException e) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid " + API_KEY_HEADER);
                 return;
             }
-            ApiKeyEntity key = apiKeys.findById(keyId).orElse(null);
+            // Look up by hash — never by raw value
+            String keyHash = ApiKeyHasher.sha256Hex(apiKeyHeader);
+            ApiKeyEntity key = apiKeys.findByKeyHash(keyHash).orElse(null);
             if (key == null) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown API key");
                 return;
