@@ -49,7 +49,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     "assurance.evidence.max-content-characters=256",
     "assurance.evidence.max-question-characters=96",
     "assurance.eval.worker.enabled=false",
-    "assurance.eval.callback.secret=test-eval-callback-secret"
+    "assurance.eval.callback.secret=test-eval-callback-secret",
+    "management.endpoint.health.show-details=always",
+    "management.endpoint.health.show-components=always"
 })
 @AutoConfigureMockMvc
 class ApiControllerTest {

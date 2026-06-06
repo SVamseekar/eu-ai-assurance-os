@@ -22,7 +22,7 @@ public class EmbeddingProviderHealthIndicator implements HealthIndicator {
             }
             return Health.up().withDetail("provider", provider.name()).build();
         } catch (Exception e) {
-            return Health.down(e).withDetail("provider", provider.name()).build();
+            return Health.down().withDetail("provider", provider.name()).build();
         }
     }
 }
