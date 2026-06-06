@@ -1136,6 +1136,29 @@ class ApiControllerTest {
             .header().exists("X-Request-Id"));
   }
 
+  @Test
+  void livenessProbeIsUp() throws Exception {
+    mockMvc.perform(get("/actuator/health/liveness"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("UP"));
+  }
+
+  @Test
+  void readinessProbeIsUp() throws Exception {
+    mockMvc.perform(get("/actuator/health/readiness"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("UP"));
+  }
+
+  @Test
+  void healthEndpointIncludesEmbeddingProviderComponent() throws Exception {
+    mockMvc.perform(get("/actuator/health"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("UP"))
+        .andExpect(jsonPath("$.components.embeddingProvider").exists())
+        .andExpect(jsonPath("$.components.embeddingProvider.status").value("UP"));
+  }
+
   private String createSystem() throws Exception {
     MvcResult result = mockMvc.perform(post("/api/v1/systems")
             .contentType(MediaType.APPLICATION_JSON)
