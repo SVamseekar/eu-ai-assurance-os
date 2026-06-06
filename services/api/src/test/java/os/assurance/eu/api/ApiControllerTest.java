@@ -909,6 +909,23 @@ class ApiControllerTest {
   }
 
   @Test
+  void rejectsEvidenceDocumentPointingToLocalhostSsrf() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(post("/api/v1/evidence/documents")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "systemId": "%s",
+                  "type": "POLICY",
+                  "title": "SSRF Probe",
+                  "sourceUri": "https://127.0.0.1/internal"
+                }
+                """.formatted(systemId)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void rejectsOversizedEvidenceContent() throws Exception {
     String systemId = createSystem();
 

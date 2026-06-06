@@ -1,6 +1,7 @@
 package os.assurance.eu.api.evidence;
 
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -11,7 +12,9 @@ import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class TextExtractionService {
@@ -20,6 +23,7 @@ public class TextExtractionService {
     private final Tika tika = new Tika();
     private final HttpClient http = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
+        .followRedirects(HttpClient.Redirect.NEVER)
         .build();
 
     public String extract(CreateEvidenceDocumentRequest request) {
@@ -28,9 +32,11 @@ public class TextExtractionService {
         }
         String scheme = URI.create(request.sourceUri()).getScheme().toLowerCase(Locale.ROOT);
         if ("https".equals(scheme)) {
+            URI uri = URI.create(request.sourceUri());
+            validateNoSsrf(uri);
             try {
                 HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(request.sourceUri()))
+                    .uri(uri)
                     .timeout(Duration.ofSeconds(30))
                     .GET()
                     .build();
@@ -42,11 +48,40 @@ public class TextExtractionService {
                         return extracted.strip();
                     }
                 }
+            } catch (ResponseStatusException e) {
+                throw e;
             } catch (Exception e) {
                 log.warn("Text extraction failed for {}: {}", request.sourceUri(), e.getMessage());
             }
         }
         return metadataStub(request);
+    }
+
+    private void validateNoSsrf(URI uri) {
+        String host = uri.getHost();
+        if (host == null || host.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid source URI: no host");
+        }
+        try {
+            InetAddress[] addresses = InetAddress.getAllByName(host);
+            for (InetAddress addr : addresses) {
+                if (addr.isLoopbackAddress()
+                        || addr.isLinkLocalAddress()
+                        || addr.isSiteLocalAddress()
+                        || addr.isAnyLocalAddress()
+                        || addr.isMulticastAddress()) {
+                    throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Source URI resolves to a private or reserved address");
+                }
+            }
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Source URI host could not be resolved");
+        }
     }
 
     private String metadataStub(CreateEvidenceDocumentRequest request) {
