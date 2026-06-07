@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Sheet } from "./ui/sheet";
+import { ApprovalWorkflowPanel } from "./approval-workflow";
+import { MOCK_WORKFLOWS } from "@/lib/mock-data";
 import { RiskBadge } from "./risk-badge";
 import { DecisionBadge } from "./decision-badge";
 import { normaliseDecision, cn, formatDate } from "@/lib/utils";
@@ -27,7 +30,13 @@ interface SystemDetailsSheetProps {
 }
 
 export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: SystemDetailsSheetProps) {
+  const [activeTab, setActiveTab] = useState<"details" | "approval">("details");
+  const { activeRole } = useDashboard();
+
   if (!system) return null;
+
+  const workflows = MOCK_WORKFLOWS[system.id] ?? [];
+  const activeWorkflow = workflows.find((w) => w.status === "OPEN") ?? null;
 
   const decision = normaliseDecision(system.releaseDecision);
   const systemAudits = auditEvents
@@ -52,6 +61,38 @@ export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: Sys
       title={system.name}
       description={`Owned by ${system.owner} · Registered in region: ${system.deploymentRegion}`}
     >
+      <div className="flex gap-1 bg-muted/40 rounded-lg p-1 border border-border">
+        <button
+          onClick={() => setActiveTab("details")}
+          className={cn(
+            "flex-1 text-xs py-1.5 rounded-md font-medium transition-colors",
+            activeTab === "details"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Details
+        </button>
+        <button
+          onClick={() => setActiveTab("approval")}
+          className={cn(
+            "flex-1 text-xs py-1.5 rounded-md font-medium transition-colors",
+            activeTab === "approval"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Approval
+          {activeWorkflow && (
+            <span className="ml-1.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[9px] font-bold">
+              !
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "details" && (
+        <>
       {/* Risk and Decision badges */}
       <div className="flex items-center gap-3 bg-muted/40 p-4 rounded-xl border border-border">
         <div className="flex-1">
@@ -190,6 +231,19 @@ export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: Sys
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {activeTab === "approval" && (
+        <ApprovalWorkflowPanel
+          workflows={workflows}
+          activeWorkflow={activeWorkflow}
+          activeRole={activeRole}
+          onApprove={(wId, sId, r) => console.log("approve", wId, sId, r)}
+          onReject={(wId, sId, r) => console.log("reject", wId, sId, r)}
+          onOverride={(wId, sId, r) => console.log("override", wId, sId, r)}
+        />
+      )}
     </Sheet>
   );
 }

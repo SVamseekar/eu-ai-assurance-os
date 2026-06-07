@@ -2,6 +2,7 @@ import { RiskBadge } from "./risk-badge";
 import { DecisionBadge } from "./decision-badge";
 import { normaliseDecision, cn } from "@/lib/utils";
 import type { AiSystem } from "@/lib/types";
+import { MOCK_WORKFLOWS } from "@/lib/mock-data";
 
 interface ReleaseGateTableProps {
   systems: AiSystem[];
@@ -18,7 +19,8 @@ export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Evidence</th>
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Eval</th>
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Contract</th>
-            <th className="text-left pb-3 text-xs font-medium text-muted-foreground">Decision</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Decision</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground">Workflow</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -71,8 +73,32 @@ export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
                     {system.dataContractStatus}
                   </span>
                 </td>
-                <td className="py-3.5">
+                <td className="py-3.5 pr-4">
                   <DecisionBadge decision={decision} />
+                </td>
+                <td className="py-3.5">
+                  {(() => {
+                    const wfs = MOCK_WORKFLOWS[system.id] ?? [];
+                    const open = wfs.find((w) => w.status === "OPEN");
+                    const last = wfs[0];
+                    if (open) {
+                      const activeStage = open.stages.find((s) => s.status === "PENDING");
+                      const stagePos = activeStage ? `Stage ${activeStage.stageOrder}/${open.stages.filter(s => s.status !== "SKIPPED").length}` : "";
+                      return (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                          OPEN · {stagePos}
+                        </span>
+                      );
+                    }
+                    if (last?.status === "APPROVED") {
+                      return <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓ Approved</span>;
+                    }
+                    if (last?.status === "REJECTED") {
+                      return <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">✗ Rejected</span>;
+                    }
+                    return <span className="text-[10px] text-muted-foreground">—</span>;
+                  })()}
                 </td>
               </tr>
             );
