@@ -10,6 +10,8 @@ import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import os.assurance.eu.api.system.ReleaseDecision;
 import os.assurance.eu.api.system.ReleaseGateService;
+import os.assurance.eu.api.workflow.ApprovalWorkflowService;
+import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,18 +27,21 @@ public class EvalRunCompletionService {
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
   private final EvalRunMetrics evalRunMetrics;
+  private final ApprovalWorkflowService approvalWorkflowService;
 
   public EvalRunCompletionService(
       AiSystemRepository systems,
       EvalRunRepository evalRuns,
       ReleaseGateService releaseGateService,
       AuditService auditService,
-      EvalRunMetrics evalRunMetrics) {
+      EvalRunMetrics evalRunMetrics,
+      ApprovalWorkflowService approvalWorkflowService) {
     this.systems = systems;
     this.evalRuns = evalRuns;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
     this.evalRunMetrics = evalRunMetrics;
+    this.approvalWorkflowService = approvalWorkflowService;
   }
 
   @Transactional
@@ -89,6 +94,7 @@ public class EvalRunCompletionService {
             "runDecision", completed.releaseDecision(),
             "releaseDecision", updated.releaseDecision()));
     evalRunMetrics.completed(source);
+    approvalWorkflowService.openCycle(updated, WorkflowTrigger.EVAL_REGRESSION);
     return completed;
   }
 

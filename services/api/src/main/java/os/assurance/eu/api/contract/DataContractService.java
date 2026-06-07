@@ -10,6 +10,8 @@ import os.assurance.eu.api.system.AiSystemRepository;
 import os.assurance.eu.api.system.DataContractStatus;
 import os.assurance.eu.api.system.ReleaseDecision;
 import os.assurance.eu.api.system.ReleaseGateService;
+import os.assurance.eu.api.workflow.ApprovalWorkflowService;
+import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,18 +24,21 @@ public class DataContractService {
   private final AiSystemRepository systems;
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
+  private final ApprovalWorkflowService approvalWorkflowService;
 
   public DataContractService(
       DataContractRepository contracts,
       DriftEventRepository driftEvents,
       AiSystemRepository systems,
       ReleaseGateService releaseGateService,
-      AuditService auditService) {
+      AuditService auditService,
+      ApprovalWorkflowService approvalWorkflowService) {
     this.contracts = contracts;
     this.driftEvents = driftEvents;
     this.systems = systems;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
+    this.approvalWorkflowService = approvalWorkflowService;
   }
 
   @Transactional(readOnly = true)
@@ -126,6 +131,10 @@ public class DataContractService {
         now,
         now));
     recalculateContractAndSystemStatus(contract.id());
+    if (saved.severity() == DriftSeverity.BREACH) {
+      systems.findById(contract.systemId()).ifPresent(sys ->
+          approvalWorkflowService.openCycle(sys, WorkflowTrigger.CONTRACT_BREACH));
+    }
     auditService.append(
         contract.systemId(),
         "data_contract.drift_detected",

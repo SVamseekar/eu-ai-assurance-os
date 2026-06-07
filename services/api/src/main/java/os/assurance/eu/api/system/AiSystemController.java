@@ -13,6 +13,8 @@ import os.assurance.eu.api.contract.DataContract;
 import os.assurance.eu.api.contract.DataContractService;
 import os.assurance.eu.api.contract.DriftEvent;
 import os.assurance.eu.api.contract.DriftStatus;
+import os.assurance.eu.api.workflow.ApprovalWorkflowService;
+import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,16 +33,19 @@ public class AiSystemController {
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
   private final DataContractService dataContractService;
+  private final ApprovalWorkflowService approvalWorkflowService;
 
   public AiSystemController(
       AiSystemRepository repository,
       ReleaseGateService releaseGateService,
       AuditService auditService,
-      DataContractService dataContractService) {
+      DataContractService dataContractService,
+      ApprovalWorkflowService approvalWorkflowService) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
     this.dataContractService = dataContractService;
+    this.approvalWorkflowService = approvalWorkflowService;
   }
 
   @GetMapping
@@ -80,6 +85,7 @@ public class AiSystemController {
         "ai_system",
         saved.id().toString(),
         Map.of("name", saved.name(), "releaseDecision", saved.releaseDecision()));
+    approvalWorkflowService.openCycle(saved, WorkflowTrigger.SYSTEM_CREATED);
     return new CreateAiSystemResponse(saved.id(), saved.releaseDecision(), saved.createdAt());
   }
 
@@ -146,6 +152,7 @@ public class AiSystemController {
             "riskClass", saved.riskClass(),
             "humanOversightRequired", request.humanOversightRequired(),
             "affectedUsers", request.affectedUsers() == null ? List.of() : request.affectedUsers()));
+    approvalWorkflowService.openCycle(saved, WorkflowTrigger.RISK_RECLASSIFIED);
     return new RiskClassificationResponse(
         saved.id(),
         saved.riskClass(),
