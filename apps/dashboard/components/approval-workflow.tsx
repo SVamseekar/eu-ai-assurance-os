@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { ApprovalWorkflow, ApprovalStage, StageStatus } from "@/lib/types";
 import { ApprovalActionModal } from "./approval-action-modal";
 import { CheckCircle2, XCircle, AlertTriangle, Clock, SkipForward } from "lucide-react";
+import { STAGE_LABELS, isActionableStage } from "@/lib/workflow-helpers";
 
 interface ApprovalWorkflowPanelProps {
   workflows: ApprovalWorkflow[];
@@ -15,35 +16,12 @@ interface ApprovalWorkflowPanelProps {
   onOverride: (workflowId: string, stageId: string, rationale: string) => void;
 }
 
-const STAGE_LABELS: Record<string, string> = {
-  ENG_LEAD_REVIEW: "Engineering Lead Review",
-  COMPLIANCE_REVIEW: "Compliance Review",
-  LEGAL_SIGNOFF: "Legal Sign-off",
-};
-
-const ROLE_TO_STAGE: Record<string, string> = {
-  "actor-marco": "AI_ENGINEERING_LEAD",
-  "actor-priya": "COMPLIANCE_OFFICER",
-  "actor-leo": "LEGAL_COUNSEL",
-  "actor-sofia": "COMPLIANCE_OFFICER",
-};
-
 function StageStatusIcon({ status }: { status: StageStatus }) {
   if (status === "APPROVED") return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
   if (status === "REJECTED") return <XCircle className="w-4 h-4 text-red-500" />;
   if (status === "OVERRIDDEN") return <AlertTriangle className="w-4 h-4 text-amber-500" />;
   if (status === "SKIPPED") return <SkipForward className="w-4 h-4 text-muted-foreground/40" />;
   return <Clock className="w-4 h-4 text-muted-foreground" />;
-}
-
-function isActionableStage(stage: ApprovalStage, stages: ApprovalStage[], activeRole: string): boolean {
-  if (stage.status !== "PENDING") return false;
-  const priorPending = stages.some(
-    (s) => s.stageOrder < stage.stageOrder && s.status === "PENDING"
-  );
-  if (priorPending) return false;
-  const actorRole = ROLE_TO_STAGE[activeRole];
-  return actorRole === stage.requiredRole || activeRole === "actor-admin";
 }
 
 export function ApprovalWorkflowPanel({

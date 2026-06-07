@@ -6,23 +6,10 @@ import type { ApprovalStage } from "@/lib/types";
 import { Clock } from "lucide-react";
 import { useState } from "react";
 import { ApprovalActionModal } from "@/components/approval-action-modal";
-
-const STAGE_LABELS: Record<string, string> = {
-  ENG_LEAD_REVIEW: "Engineering Lead Review",
-  COMPLIANCE_REVIEW: "Compliance Review",
-  LEGAL_SIGNOFF: "Legal Sign-off",
-};
-
-const ROLE_TO_STAGE: Record<string, string> = {
-  "actor-marco": "AI_ENGINEERING_LEAD",
-  "actor-priya": "COMPLIANCE_OFFICER",
-  "actor-leo": "LEGAL_COUNSEL",
-  "actor-sofia": "COMPLIANCE_OFFICER",
-};
+import { STAGE_LABELS, isActionableStage } from "@/lib/workflow-helpers";
 
 export default function ApprovalsPage() {
   const { allSystems, activeRole } = useDashboard();
-  const actorRole = ROLE_TO_STAGE[activeRole];
 
   const [modal, setModal] = useState<{
     stage: ApprovalStage;
@@ -39,14 +26,7 @@ export default function ApprovalsPage() {
   });
 
   const myItems = openWorkflows.filter(({ workflow }) =>
-    workflow.stages.some(
-      (s) =>
-        s.status === "PENDING" &&
-        s.requiredRole === actorRole &&
-        !workflow.stages.some(
-          (prior) => prior.stageOrder < s.stageOrder && prior.status === "PENDING"
-        )
-    )
+    workflow.stages.some((s) => isActionableStage(s, workflow.stages, activeRole))
   );
 
   const otherItems = openWorkflows.filter(
@@ -67,13 +47,8 @@ export default function ApprovalsPage() {
         ) : (
           <div className="space-y-2">
             {myItems.map(({ system, workflow }) => {
-              const activeStage = workflow.stages.find(
-                (s) =>
-                  s.status === "PENDING" &&
-                  s.requiredRole === actorRole &&
-                  !workflow.stages.some(
-                    (p) => p.stageOrder < s.stageOrder && p.status === "PENDING"
-                  )
+              const activeStage = workflow.stages.find((s) =>
+                isActionableStage(s, workflow.stages, activeRole)
               )!;
               const openedMs = Date.now() - new Date(workflow.openedAt).getTime();
               const openedDays = Math.floor(openedMs / 86_400_000);
