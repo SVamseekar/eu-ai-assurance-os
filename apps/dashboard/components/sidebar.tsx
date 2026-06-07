@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/context/dashboard-context";
+import { MOCK_WORKFLOWS } from "@/lib/mock-data";
 import {
   LayoutDashboard,
   Server,
@@ -12,11 +13,13 @@ import {
   GitBranch,
   ScrollText,
   ShieldCheck,
+  ClipboardCheck,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/command", label: "Dashboard", icon: LayoutDashboard },
   { href: "/systems", label: "AI Systems", icon: Server },
+  { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
   { href: "/evidence", label: "Evidence", icon: FileSearch },
   { href: "/evals", label: "Eval Gates", icon: FlaskConical },
   { href: "/contracts", label: "Contracts", icon: GitBranch },
@@ -30,6 +33,9 @@ interface SidebarProps {
 export function Sidebar({ blockedCount }: SidebarProps) {
   const pathname = usePathname();
   const { activeRole, setActiveRole } = useDashboard();
+  const openCount = Object.values(MOCK_WORKFLOWS).filter((wfs) =>
+    wfs.some((w) => w.status === "OPEN")
+  ).length;
 
   return (
     <aside className="fixed inset-y-0 left-0 w-56 border-r border-border bg-card flex flex-col z-10">
@@ -62,6 +68,11 @@ export function Sidebar({ blockedCount }: SidebarProps) {
             >
               <Icon className={cn("w-4 h-4 flex-shrink-0", active ? "text-primary" : "text-muted-foreground/70")} />
               {item.label}
+              {item.label === "Approvals" && openCount > 0 && (
+                <span className="ml-auto text-[9px] font-bold bg-amber-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                  {openCount}
+                </span>
+              )}
             </Link>
           );
         })}
