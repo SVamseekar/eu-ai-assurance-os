@@ -61,6 +61,8 @@ class ApiControllerTest {
   private static final String DEFAULT_ACTOR_ID = "00000000-0000-0000-0000-000000000101";
   private static final String ENGINEERING_ACTOR_ID = "00000000-0000-0000-0000-000000000102";
   private static final String AUDITOR_ACTOR_ID = "00000000-0000-0000-0000-000000000103";
+  private static final String LEGAL_ACTOR_ID = "00000000-0000-0000-0000-000000000104";
+  private static final String ADMIN_ACTOR_ID = "00000000-0000-0000-0000-000000000105";
   private static final String SECOND_TENANT_ID = "00000000-0000-0000-0000-000000000002";
   private static final String SECOND_TENANT_ENGINEERING_ACTOR_ID = "00000000-0000-0000-0000-000000000202";
 
@@ -107,6 +109,20 @@ class ApiControllerTest {
             UUID.fromString(DEFAULT_TENANT_ID),
             "auditor@example.com",
             UserRole.AUDITOR,
+            now)));
+    users.findById(UUID.fromString(LEGAL_ACTOR_ID))
+        .orElseGet(() -> users.save(new UserEntity(
+            UUID.fromString(LEGAL_ACTOR_ID),
+            UUID.fromString(DEFAULT_TENANT_ID),
+            "legal@example.com",
+            UserRole.LEGAL_COUNSEL,
+            now)));
+    users.findById(UUID.fromString(ADMIN_ACTOR_ID))
+        .orElseGet(() -> users.save(new UserEntity(
+            UUID.fromString(ADMIN_ACTOR_ID),
+            UUID.fromString(DEFAULT_TENANT_ID),
+            "admin@example.com",
+            UserRole.ADMIN,
             now)));
     tenants.findById(UUID.fromString(SECOND_TENANT_ID))
         .orElseGet(() -> tenants.save(new TenantEntity(
@@ -1161,6 +1177,96 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.components.embeddingProvider.status").value("UP"));
   }
 
+  @Test
+  void creatingReviewSystemOpensWorkflow() throws Exception {
+    String systemId = createSystem();
+
+    mockMvc.perform(get("/api/v1/systems/{id}/workflows/active", systemId)
+            .header("X-Actor-Id", DEFAULT_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("OPEN"))
+        .andExpect(jsonPath("$.stages").isArray());
+  }
+
+  @Test
+  void approveAndRejectFlowThroughStages() throws Exception {
+    String systemId = createHighRiskBlockedSystem();
+
+    MvcResult wfResult = mockMvc.perform(get("/api/v1/systems/{id}/workflows/active", systemId)
+            .header("X-Actor-Id", ENGINEERING_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andReturn();
+    JsonNode wf = read(wfResult);
+    String workflowId = wf.get("id").asText();
+    String stage1Id = wf.get("stages").get(0).get("id").asText();
+
+    mockMvc.perform(post("/api/v1/systems/{sId}/workflows/{wId}/stages/{stId}/approve",
+                systemId, workflowId, stage1Id)
+            .header("X-Actor-Id", ENGINEERING_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"rationale\": \"Eval scores reviewed and acceptable\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("OPEN"));
+
+    MvcResult wfResult2 = mockMvc.perform(get("/api/v1/systems/{id}/workflows/active", systemId)
+            .header("X-Actor-Id", DEFAULT_ACTOR_ID))
+        .andReturn();
+    String stage2Id = read(wfResult2).get("stages").get(1).get("id").asText();
+
+    mockMvc.perform(post("/api/v1/systems/{sId}/workflows/{wId}/stages/{stId}/reject",
+                systemId, workflowId, stage2Id)
+            .header("X-Actor-Id", DEFAULT_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"rationale\": \"Bias eval missing for protected categories\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("REJECTED"));
+  }
+
+  @Test
+  void wrongRoleCannotApproveStage() throws Exception {
+    String systemId = createHighRiskBlockedSystem();
+    MvcResult wfResult = mockMvc.perform(get("/api/v1/systems/{id}/workflows/active", systemId)
+            .header("X-Actor-Id", DEFAULT_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andReturn();
+    String workflowId = read(wfResult).get("id").asText();
+    String stage1Id = read(wfResult).get("stages").get(0).get("id").asText();
+
+    mockMvc.perform(post("/api/v1/systems/{sId}/workflows/{wId}/stages/{stId}/approve",
+                systemId, workflowId, stage1Id)
+            .header("X-Actor-Id", DEFAULT_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"rationale\": \"ok\"}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void adminCanOverrideAnyStage() throws Exception {
+    String systemId = createHighRiskBlockedSystem();
+    MvcResult wfResult = mockMvc.perform(get("/api/v1/systems/{id}/workflows/active", systemId)
+            .header("X-Actor-Id", ADMIN_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andReturn();
+    String workflowId = read(wfResult).get("id").asText();
+    String stage1Id = read(wfResult).get("stages").get(0).get("id").asText();
+
+    mockMvc.perform(post("/api/v1/systems/{sId}/workflows/{wId}/stages/{stId}/override",
+                systemId, workflowId, stage1Id)
+            .header("X-Actor-Id", ADMIN_ACTOR_ID)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"rationale\": \"Emergency compliance override - board approval obtained\"}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void evidencePackIncludesApprovalHistory() throws Exception {
+    String systemId = createSystem();
+    mockMvc.perform(get("/api/v1/systems/{id}/evidence-pack", systemId)
+            .header("X-Actor-Id", DEFAULT_ACTOR_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.approvals").isArray());
+  }
+
   private String createSystem() throws Exception {
     MvcResult result = mockMvc.perform(post("/api/v1/systems")
             .contentType(MediaType.APPLICATION_JSON)
@@ -1176,6 +1282,28 @@ class ApiControllerTest {
                   "evalScore": 86,
                   "dataContractStatus": "warning",
                   "openGaps": []
+                }
+                """))
+        .andExpect(status().isCreated())
+        .andReturn();
+    return read(result).get("id").asText();
+  }
+
+  private String createHighRiskBlockedSystem() throws Exception {
+    MvcResult result = mockMvc.perform(post("/api/v1/systems")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "name": "High Risk Blocked System",
+                  "owner": "Risk Team",
+                  "purpose": "Insurance claims triage",
+                  "riskClass": "high",
+                  "riskBasis": "Art. 6(2) Annex III",
+                  "deploymentRegion": "EU",
+                  "evidenceCoverage": 50,
+                  "evalScore": 70,
+                  "dataContractStatus": "breach",
+                  "openGaps": ["Human oversight SOP missing"]
                 }
                 """))
         .andExpect(status().isCreated())
