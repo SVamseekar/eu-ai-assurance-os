@@ -1,5 +1,6 @@
 import type {
   AiSystem,
+  ApprovalWorkflow,
   AuditEvent,
   DataContract,
   DriftEvent,
@@ -41,6 +42,27 @@ export const api = {
     list: () => request<AiSystem[]>("/systems"),
     get: (id: string) => request<AiSystem>(`/systems/${id}`),
     releaseGate: (id: string) => request<ReleaseGateResponse>(`/systems/${id}/release-gate`),
+  },
+  workflows: {
+    list: (systemId: string) =>
+      request<ApprovalWorkflow[]>(`/systems/${systemId}/workflows`),
+    active: (systemId: string) =>
+      request<ApprovalWorkflow>(`/systems/${systemId}/workflows/active`),
+    approve: (systemId: string, workflowId: string, stageId: string, rationale?: string) =>
+      request<ApprovalWorkflow>(
+        `/systems/${systemId}/workflows/${workflowId}/stages/${stageId}/approve`,
+        { method: "POST", body: JSON.stringify({ rationale }) }
+      ),
+    reject: (systemId: string, workflowId: string, stageId: string, rationale: string) =>
+      request<ApprovalWorkflow>(
+        `/systems/${systemId}/workflows/${workflowId}/stages/${stageId}/reject`,
+        { method: "POST", body: JSON.stringify({ rationale }) }
+      ),
+    override: (systemId: string, workflowId: string, stageId: string, rationale: string) =>
+      request<ApprovalWorkflow>(
+        `/systems/${systemId}/workflows/${workflowId}/stages/${stageId}/override`,
+        { method: "POST", body: JSON.stringify({ rationale }) }
+      ),
   },
   evidence: {
     documents: (systemId: string) =>

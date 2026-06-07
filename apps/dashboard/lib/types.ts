@@ -138,3 +138,37 @@ export interface SystemViewModel {
   releaseDecision: "Pass" | "Review" | "Blocked";
   openGaps: string[];
 }
+
+export type WorkflowStatus = "OPEN" | "APPROVED" | "REJECTED" | "SUPERSEDED";
+export type WorkflowTrigger =
+  | "SYSTEM_CREATED"
+  | "EVAL_REGRESSION"
+  | "CONTRACT_BREACH"
+  | "RISK_RECLASSIFIED"
+  | "HIGH_RISK_PASS";
+export type StageStatus = "PENDING" | "APPROVED" | "REJECTED" | "OVERRIDDEN" | "SKIPPED";
+export type StageType = "ENG_LEAD_REVIEW" | "COMPLIANCE_REVIEW" | "LEGAL_SIGNOFF";
+
+export interface ApprovalStage {
+  id: string;
+  workflowId: string;
+  stageOrder: number;
+  stageType: StageType;
+  requiredRole: string;
+  status: StageStatus;
+  actorId: string | null;
+  rationale: string | null;
+  actedAt: string | null;
+  createdAt: string;
+}
+
+export interface ApprovalWorkflow {
+  id: string;
+  systemId: string;
+  trigger: WorkflowTrigger;
+  status: WorkflowStatus;
+  stages: ApprovalStage[];
+  openedAt: string;
+  closedAt: string | null;
+  createdAt: string;
+}

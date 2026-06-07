@@ -1,4 +1,4 @@
-import type { AiSystem, DataContract, DriftEvent, AuditEvent } from "./types";
+import type { AiSystem, DataContract, DriftEvent, AuditEvent, ApprovalWorkflow } from "./types";
 
 const d = (daysAgo: number, hoursAgo = 0) =>
   new Date(Date.now() - daysAgo * 86_400_000 - hoursAgo * 3_600_000).toISOString();
@@ -319,3 +319,104 @@ export const MOCK_AUDIT_EVENTS: AuditEvent[] = [
     createdAt: d(0, 2.5),
   },
 ];
+
+export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
+  "mock-sys-001": [
+    {
+      id: "mock-wf-001",
+      systemId: "mock-sys-001",
+      trigger: "SYSTEM_CREATED",
+      status: "OPEN",
+      openedAt: d(1, 3),
+      closedAt: null,
+      createdAt: d(1, 3),
+      stages: [
+        {
+          id: "mock-stage-001",
+          workflowId: "mock-wf-001",
+          stageOrder: 1,
+          stageType: "ENG_LEAD_REVIEW",
+          requiredRole: "AI_ENGINEERING_LEAD",
+          status: "PENDING",
+          actorId: null,
+          rationale: null,
+          actedAt: null,
+          createdAt: d(1, 3),
+        },
+        {
+          id: "mock-stage-002",
+          workflowId: "mock-wf-001",
+          stageOrder: 2,
+          stageType: "COMPLIANCE_REVIEW",
+          requiredRole: "COMPLIANCE_OFFICER",
+          status: "PENDING",
+          actorId: null,
+          rationale: null,
+          actedAt: null,
+          createdAt: d(1, 3),
+        },
+        {
+          id: "mock-stage-003",
+          workflowId: "mock-wf-001",
+          stageOrder: 3,
+          stageType: "LEGAL_SIGNOFF",
+          requiredRole: "LEGAL_COUNSEL",
+          status: "PENDING",
+          actorId: null,
+          rationale: null,
+          actedAt: null,
+          createdAt: d(1, 3),
+        },
+      ],
+    },
+  ],
+  "mock-sys-004": [
+    {
+      id: "mock-wf-004",
+      systemId: "mock-sys-004",
+      trigger: "SYSTEM_CREATED",
+      status: "APPROVED",
+      openedAt: d(30),
+      closedAt: d(28),
+      createdAt: d(30),
+      stages: [
+        {
+          id: "mock-stage-010",
+          workflowId: "mock-wf-004",
+          stageOrder: 1,
+          stageType: "ENG_LEAD_REVIEW",
+          requiredRole: "AI_ENGINEERING_LEAD",
+          status: "APPROVED",
+          actorId: "00000000-0000-0000-0000-000000000102",
+          rationale: "Eval metrics all green. Faithfulness 0.91, bias pass rate 0.94.",
+          actedAt: d(29),
+          createdAt: d(30),
+        },
+        {
+          id: "mock-stage-011",
+          workflowId: "mock-wf-004",
+          stageOrder: 2,
+          stageType: "COMPLIANCE_REVIEW",
+          requiredRole: "COMPLIANCE_OFFICER",
+          status: "APPROVED",
+          actorId: "00000000-0000-0000-0000-000000000101",
+          rationale: "Evidence coverage 88%. Art. 52 transparency obligation noted in open gaps — acceptable for LIMITED risk.",
+          actedAt: d(28),
+          createdAt: d(30),
+        },
+        {
+          id: "mock-stage-012",
+          workflowId: "mock-wf-004",
+          stageOrder: 3,
+          stageType: "LEGAL_SIGNOFF",
+          requiredRole: "LEGAL_COUNSEL",
+          status: "SKIPPED",
+          actorId: null,
+          rationale: null,
+          actedAt: null,
+          createdAt: d(30),
+        },
+      ],
+    },
+  ],
+};
