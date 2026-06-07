@@ -13,6 +13,8 @@ import os.assurance.eu.api.contract.DataContract;
 import os.assurance.eu.api.contract.DataContractService;
 import os.assurance.eu.api.contract.DriftEvent;
 import os.assurance.eu.api.contract.DriftStatus;
+import os.assurance.eu.api.workflow.ApprovalStage;
+import os.assurance.eu.api.workflow.ApprovalWorkflow;
 import os.assurance.eu.api.workflow.ApprovalWorkflowService;
 import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.http.HttpStatus;
@@ -189,6 +191,9 @@ public class AiSystemController {
     List<Map<String, Object>> dataContracts = dataContractService.listContracts(system.id()).stream()
         .map(contract -> contractEvidence(system, contract))
         .toList();
+    List<Map<String, Object>> approvals = approvalWorkflowService.listBySystemId(system.id()).stream()
+        .map(this::workflowEvidence)
+        .toList();
     return new EvidencePackResponse(
         system.id(),
         Instant.now(),
@@ -204,8 +209,29 @@ public class AiSystemController {
             "latestScore", system.evalScore(),
             "releaseDecision", system.releaseDecision())),
         dataContracts,
-        List.of(),
+        approvals,
         auditEvents);
+  }
+
+  private Map<String, Object> workflowEvidence(ApprovalWorkflow workflow) {
+    Map<String, Object> evidence = new LinkedHashMap<>();
+    evidence.put("workflowId", workflow.id());
+    evidence.put("trigger", workflow.trigger());
+    evidence.put("status", workflow.status());
+    evidence.put("openedAt", workflow.openedAt());
+    evidence.put("closedAt", workflow.closedAt());
+    evidence.put("stages", workflow.stages().stream().map(this::stageEvidence).toList());
+    return evidence;
+  }
+
+  private Map<String, Object> stageEvidence(ApprovalStage stage) {
+    Map<String, Object> evidence = new LinkedHashMap<>();
+    evidence.put("stageType", stage.stageType());
+    evidence.put("status", stage.status());
+    evidence.put("actorId", stage.actorId());
+    evidence.put("rationale", stage.rationale());
+    evidence.put("actedAt", stage.actedAt());
+    return evidence;
   }
 
   private Map<String, Object> contractEvidence(AiSystem system, DataContract contract) {
