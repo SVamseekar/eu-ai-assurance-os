@@ -40,6 +40,7 @@ public class BootstrapData implements CommandLineRunner {
   private final EvalDatasetJpaRepository evalDatasets;
   private final ReleaseGateService releaseGateService;
   private final Environment environment;
+  private final TenantContext tenantContext;
   private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
   public BootstrapData(
@@ -50,7 +51,8 @@ public class BootstrapData implements CommandLineRunner {
       AiSystemRepository systems,
       EvalDatasetJpaRepository evalDatasets,
       ReleaseGateService releaseGateService,
-      Environment environment) {
+      Environment environment,
+      TenantContext tenantContext) {
     this.tenants = tenants;
     this.users = users;
     this.apiKeyRepo = apiKeyRepo;
@@ -59,11 +61,21 @@ public class BootstrapData implements CommandLineRunner {
     this.evalDatasets = evalDatasets;
     this.releaseGateService = releaseGateService;
     this.environment = environment;
+    this.tenantContext = tenantContext;
   }
 
   @Override
   @Transactional
   public void run(String... args) {
+    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.DEFAULT_USER_ID);
+    try {
+      seedBootstrapData();
+    } finally {
+      tenantContext.clearOverrides();
+    }
+  }
+
+  private void seedBootstrapData() {
     Instant now = Instant.now();
     tenants.findById(TenantContext.DEFAULT_TENANT_ID)
         .orElseGet(() -> tenants.save(new TenantEntity(

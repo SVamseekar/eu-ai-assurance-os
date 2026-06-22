@@ -5,28 +5,36 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import os.assurance.eu.api.auth.JwtService;
 
 @Component
 public class TenantContextFilter extends OncePerRequestFilter {
     static final String API_KEY_HEADER = "X-Api-Key";
+    static final String AUTHORIZATION_HEADER = "Authorization";
+    static final String BEARER_PREFIX = "Bearer ";
 
-    private final TenantJpaRepository tenants;
-    private final UserJpaRepository users;
+    private static final Set<String> UNAUTHENTICATED_PATHS = Set.of(
+        "/.well-known/jwks.json",
+        "/auth/login",
+        "/auth/refresh",
+        "/auth/logout",
+        "/actuator/health");
+
     private final ApiKeyJpaRepository apiKeys;
     private final TenantContext tenantContext;
+    private final JwtService jwtService;
 
     public TenantContextFilter(
-            TenantJpaRepository tenants,
-            UserJpaRepository users,
             ApiKeyJpaRepository apiKeys,
-            TenantContext tenantContext) {
-        this.tenants = tenants;
-        this.users = users;
+            TenantContext tenantContext,
+            JwtService jwtService) {
         this.apiKeys = apiKeys;
         this.tenantContext = tenantContext;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -35,61 +43,67 @@ public class TenantContextFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        String requestUri = request.getRequestURI();
+        if (UNAUTHENTICATED_PATHS.contains(requestUri) || requestUri.startsWith("/actuator/health")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String apiKeyHeader = request.getHeader(API_KEY_HEADER);
-
         if (apiKeyHeader != null && !apiKeyHeader.isBlank()) {
-            // Validate format (must be UUID)
-            try {
-                UUID.fromString(apiKeyHeader);
-            } catch (IllegalArgumentException e) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid " + API_KEY_HEADER);
-                return;
-            }
-            // Look up by hash — never by raw value
-            String keyHash = ApiKeyHasher.sha256Hex(apiKeyHeader);
-            ApiKeyEntity key = apiKeys.findByKeyHash(keyHash).orElse(null);
-            if (key == null) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown API key");
-                return;
-            }
-            tenantContext.setOverrides(key.tenantId(), key.userId());
-            try {
-                filterChain.doFilter(request, response);
-            } finally {
-                tenantContext.clearOverrides();
-            }
+            authenticateWithApiKey(apiKeyHeader, request, response, filterChain);
             return;
         }
 
-        // Legacy header fallback (for existing tests and dev tooling)
-        UUID tenantId = parseHeader(request, TenantContext.TENANT_HEADER, TenantContext.DEFAULT_TENANT_ID, response);
-        if (tenantId == null) return;
-        UUID actorId = parseHeader(request, TenantContext.ACTOR_HEADER, TenantContext.DEFAULT_USER_ID, response);
-        if (actorId == null) return;
+        String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
+        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
+            authenticateWithBearerToken(authorizationHeader.substring(BEARER_PREFIX.length()), request, response, filterChain);
+            return;
+        }
 
-        if (!tenants.existsById(tenantId)) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown tenant");
-            return;
-        }
-        if (!users.existsByIdAndTenantId(actorId, tenantId)) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown actor for tenant");
-            return;
-        }
-        filterChain.doFilter(request, response);
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or unsupported authentication");
     }
 
-    private UUID parseHeader(
+    private void authenticateWithApiKey(
+            String apiKeyHeader,
             HttpServletRequest request,
-            String headerName,
-            UUID fallback,
-            HttpServletResponse response) throws IOException {
-        String value = request.getHeader(headerName);
-        if (value == null || value.isBlank()) return fallback;
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         try {
-            return UUID.fromString(value);
+            UUID.fromString(apiKeyHeader);
         } catch (IllegalArgumentException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid " + headerName);
-            return null;
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid " + API_KEY_HEADER);
+            return;
+        }
+        String keyHash = ApiKeyHasher.sha256Hex(apiKeyHeader);
+        ApiKeyEntity key = apiKeys.findByKeyHash(keyHash).orElse(null);
+        if (key == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown API key");
+            return;
+        }
+        tenantContext.setOverrides(key.tenantId(), key.userId());
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            tenantContext.clearOverrides();
+        }
+    }
+
+    private void authenticateWithBearerToken(
+            String token,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+        var claims = jwtService.verifyAccessToken(token);
+        if (claims.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired access token");
+            return;
+        }
+        tenantContext.setOverrides(claims.get().tenantId(), claims.get().userId());
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            tenantContext.clearOverrides();
         }
     }
 }
