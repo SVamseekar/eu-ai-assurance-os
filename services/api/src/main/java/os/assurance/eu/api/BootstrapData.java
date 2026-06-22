@@ -26,6 +26,7 @@ import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 import os.assurance.eu.api.tenant.UserRole;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ public class BootstrapData implements CommandLineRunner {
   private final EvalDatasetJpaRepository evalDatasets;
   private final ReleaseGateService releaseGateService;
   private final Environment environment;
+  private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
   public BootstrapData(
       TenantJpaRepository tenants,
@@ -76,6 +78,7 @@ public class BootstrapData implements CommandLineRunner {
             TenantContext.DEFAULT_TENANT_ID,
             "compliance@example.com",
             UserRole.COMPLIANCE_OFFICER,
+            passwordEncoder.encode("dev-local-password-only"),
             now)));
     // Only seed the fixed dev/test API key when NOT running against real Postgres
     if (!Arrays.asList(environment.getActiveProfiles()).contains("postgres")) {

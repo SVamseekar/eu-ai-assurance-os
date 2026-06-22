@@ -25,6 +25,9 @@ public class UserEntity {
   @Column(nullable = false)
   private UserRole role;
 
+  @Column(name = "password_hash")
+  private String passwordHash;
+
   @Column(nullable = false)
   private Instant createdAt;
 
@@ -32,10 +35,15 @@ public class UserEntity {
   }
 
   public UserEntity(UUID id, UUID tenantId, String email, UserRole role, Instant createdAt) {
+    this(id, tenantId, email, role, null, createdAt);
+  }
+
+  public UserEntity(UUID id, UUID tenantId, String email, UserRole role, String passwordHash, Instant createdAt) {
     this.id = id;
     this.tenantId = tenantId;
     this.email = email;
     this.role = role;
+    this.passwordHash = passwordHash;
     this.createdAt = createdAt;
   }
 
@@ -45,5 +53,17 @@ public class UserEntity {
 
   public UUID id() {
     return id;
+  }
+
+  public UUID tenantId() {
+    return tenantId;
+  }
+
+  public String email() {
+    return email;
+  }
+
+  public String passwordHash() {
+    return passwordHash;
   }
 }
