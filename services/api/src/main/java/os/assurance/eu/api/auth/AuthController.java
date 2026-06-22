@@ -17,6 +17,12 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
+    // Constant-time defense against email-enumeration via login latency: bcrypt verification
+    // always runs against a real hash (this dummy one when no user/password exists), so a
+    // nonexistent email and a wrong password take statistically indistinguishable time.
+    private final String dummyHashForTimingParity = new BCryptPasswordEncoder(12)
+        .encode("dummy-password-never-matches-anything");
+
     public AuthController(UserJpaRepository users, JwtService jwtService, RefreshTokenService refreshTokenService) {
         this.users = users;
         this.jwtService = jwtService;
@@ -26,8 +32,11 @@ public class AuthController {
     @PostMapping("/auth/login")
     public TokenResponse login(@RequestBody LoginRequest request) {
         UserEntity user = users.findByEmail(request.email()).orElse(null);
-        if (user == null || user.passwordHash() == null
-                || !passwordEncoder.matches(request.password(), user.passwordHash())) {
+        String hashToVerifyAgainst = (user != null && user.passwordHash() != null)
+            ? user.passwordHash()
+            : dummyHashForTimingParity;
+        boolean passwordMatches = passwordEncoder.matches(request.password(), hashToVerifyAgainst);
+        if (user == null || user.passwordHash() == null || !passwordMatches) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
         return issueTokenPair(user.id(), user.tenantId(), user.role());

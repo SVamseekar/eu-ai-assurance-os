@@ -72,7 +72,7 @@ public class RefreshTokenService {
                 break;
             }
             String afterNext = next.replacedByTokenHash();
-            next.revoke(next.replacedByTokenHash());
+            next.revoke(null);
             repository.save(next);
             nextHash = afterNext;
         }

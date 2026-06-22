@@ -89,6 +89,47 @@ class AuthControllerTest {
     }
 
     @Test
+    void unknownEmailAndWrongPasswordTakeStatisticallyIndistinguishableTime() {
+        seedUser("timing-control@example.com", "correct-password");
+
+        // Warm up the JIT/connection pool before measuring, then take several samples of each
+        // path and compare medians — a bcrypt-skipping timing oracle would show as a
+        // consistent multi-millisecond gap between the two, not noise-level variance.
+        for (int i = 0; i < 3; i++) {
+            rest.postForEntity("/auth/login", new LoginRequest("timing-control@example.com", "wrong"), TokenResponse.class);
+            rest.postForEntity("/auth/login", new LoginRequest("nobody-" + i + "@example.com", "wrong"), TokenResponse.class);
+        }
+
+        long[] wrongPasswordTimes = new long[7];
+        long[] unknownEmailTimes = new long[7];
+        for (int i = 0; i < 7; i++) {
+            long start = System.nanoTime();
+            rest.postForEntity("/auth/login", new LoginRequest("timing-control@example.com", "wrong"), TokenResponse.class);
+            wrongPasswordTimes[i] = System.nanoTime() - start;
+
+            start = System.nanoTime();
+            rest.postForEntity("/auth/login", new LoginRequest("nobody-sample-" + i + "@example.com", "wrong"), TokenResponse.class);
+            unknownEmailTimes[i] = System.nanoTime() - start;
+        }
+
+        long wrongPasswordMedian = median(wrongPasswordTimes);
+        long unknownEmailMedian = median(unknownEmailTimes);
+        double ratio = (double) Math.max(wrongPasswordMedian, unknownEmailMedian)
+            / Math.min(wrongPasswordMedian, unknownEmailMedian);
+
+        // A bcrypt-skipping oracle produces an order-of-magnitude gap (no hash vs. a ~60-100ms
+        // bcrypt-12 hash); same-cost paths stay within normal HTTP/JVM noise. 3x is a generous
+        // ceiling that would already fail on a real timing leak while tolerating test-env jitter.
+        assertThat(ratio).isLessThan(3.0);
+    }
+
+    private long median(long[] values) {
+        long[] sorted = values.clone();
+        java.util.Arrays.sort(sorted);
+        return sorted[sorted.length / 2];
+    }
+
+    @Test
     void refreshIssuesANewTokenPair() {
         seedUser("refresh-flow@example.com", "correct-password");
         var login = rest.postForEntity(
