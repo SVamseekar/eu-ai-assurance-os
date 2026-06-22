@@ -11,28 +11,19 @@ import type {
   ReleaseGateResponse,
 } from "./types";
 
-const BASE = "/api/v1";
-
-export const apiHeaders = {
-  tenantId: "tenant-premium",
-  actorId: "actor-priya",
-};
+const BASE = "/api/proxy";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
 
-  if (typeof window !== "undefined") {
-    const tId = localStorage.getItem("eu-ai-tenant-id") || apiHeaders.tenantId;
-    const aId = localStorage.getItem("eu-ai-actor-id") || apiHeaders.actorId;
-    headers.set("X-Tenant-Id", tId);
-    headers.set("X-Actor-Id", aId);
-  }
-
   const res = await fetch(`${BASE}${path}`, {
     headers,
     ...init,
   });
+  if (res.status === 401 && typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.status === 204 ? (null as T) : res.json();
 }
