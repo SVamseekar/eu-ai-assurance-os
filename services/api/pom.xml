@@ -52,6 +52,23 @@
       <version>9.40</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.4.1</version>
+    </dependency>
+    <!-- Spring Boot's parent BOM manages httpcore5 down to 5.2.5, which is incompatible
+         with httpclient5 5.4.1 (requires httpcore5 >= 5.3.1). Pin explicitly to override. -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <version>5.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5-h2</artifactId>
+      <version>5.3.1</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
