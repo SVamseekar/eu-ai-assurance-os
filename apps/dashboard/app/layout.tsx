@@ -27,20 +27,46 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  keywords: [
+    "EU AI Act",
+    "AI governance",
+    "AI assurance",
+    "conformity assessment",
+    "RAG evidence",
+    "eval gates",
+    "AI risk classification",
+    "audit trail",
+    "EU AI Assurance OS",
+  ],
+  authors: [{ name: "Marti Soura Vamseekar", url: siteConfig.url }],
+  alternates: {
+    canonical: siteConfig.url,
+  },
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
     siteName: siteConfig.name,
+    locale: siteConfig.locale,
     type: "website",
+    url: siteConfig.url,
+    images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -51,7 +77,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="en-GB"
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
