@@ -167,14 +167,44 @@ Full template: [`.env.example`](../.env.example). Secrets handling: [NFR.md](./N
 
 ### C. Dashboard (Vercel)
 
-1. Import `apps/dashboard` (or monorepo root with dashboard as project root).
-2. Set:
-   - `ASSURANCE_API_BASE_URL=https://api.example.com`
-   - `NEXT_PUBLIC_SITE_URL=https://euassuranceai.example.com`
+**Production project (canonical):** `eu-ai-assurance`  
+**Live domains:** `https://euassuranceai.souravamseekar.com`, `https://eu-ai-assurance.vercel.app`  
+**Git root directory:** `apps/dashboard` (monorepo `SVamseekar/eu-ai-assurance-os`, production branch `main`)
+
+There is a second Vercel project `eu-ai-assurance-os` linked to the same GitHub repo for historical monorepo hooks. It is configured with **Ignore Build Step = `exit 1`** so it never builds (avoids burning Hobby build quota / rate limits on every PR). Do **not** use it for production.
+
+#### One-time project setup
+
+1. Project **eu-ai-assurance** → Git: connect `SVamseekar/eu-ai-assurance-os` → Root Directory **`apps/dashboard`** → Framework Next.js.
+2. Project **eu-ai-assurance-os** (stub): set Ignore Build Step to `exit 1`, or disconnect Git entirely.
+3. Env on **eu-ai-assurance** (Production + Preview as needed):
+   - `ASSURANCE_API_BASE_URL=https://api.example.com` (server-side only)
+   - `NEXT_PUBLIC_SITE_URL=https://euassuranceai.souravamseekar.com`
    - Optional `NEXT_PUBLIC_GA_MEASUREMENT_ID`
-   - Optional `DISCORD_DEMO_WEBHOOK_URL` or `DISCORD_WEBHOOK_URL` for `/request-demo` delivery
-3. Deploy production; verify login + `/api/proxy` against the API.
-4. Smoke public marketing paths: `/privacy`, `/terms`, `/refunds`, `/request-demo` return 200.
+   - Optional `DISCORD_DEMO_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` for `/request-demo`
+   - OAuth client ids/secrets + `OAUTH_REDIRECT_BASE_URL` (see `docs/oauth-production-smoke-test.md`)
+4. Domains: attach `euassuranceai.souravamseekar.com` to **eu-ai-assurance** only.
+
+#### Deploy
+
+**Automatic:** push/merge to `main` triggers production on `eu-ai-assurance` (root `apps/dashboard`).
+
+**Manual (when git hooks lag or quota recovered):**
+
+```bash
+cd apps/dashboard
+vercel --prod --yes
+```
+
+#### Verify
+
+1. Login UI: `https://euassuranceai.souravamseekar.com/login` (brand panel + Google/Microsoft + work email).
+2. Dashboard BFF: sign-in + `/api/proxy` against the API.
+3. Marketing: `/privacy`, `/terms`, `/refunds`, `/request-demo` return 200.
+
+#### Rate limits / failed Vercel checks on GitHub PRs
+
+Hobby accounts can hit **build rate limits** when many Dependabot/preview deploys fire. Required GitHub status checks for this repo are **CI jobs only** (API tests, Dashboard, Secret scan, Acceptance) — not Vercel. If Vercel shows “Deployment rate limited”, re-run `vercel --prod` later or wait for the window; do not treat that as a merge blocker.
 
 ### D. Post-deploy checks
 
