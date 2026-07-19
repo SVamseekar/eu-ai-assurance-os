@@ -106,6 +106,19 @@ Eval worker knobs:
 - `assurance.eval.callback.secret`
 - `assurance.eval.callback.signature-tolerance-seconds`
 
+Regulatory change monitoring (Part 14) knobs:
+
+- `assurance.reg-monitor.enabled` — scheduled poller (default true)
+- `assurance.reg-monitor.poll-interval-ms` — scheduler fixed delay (default 60000)
+- `assurance.reg-monitor.bootstrap-fixtures` — load curated offline fixtures (default true)
+- `assurance.reg-monitor.max-fetch-characters`
+- `assurance.reg-monitor.connect-timeout-seconds` / `response-timeout-seconds`
+
+The feed is **near-real-time polled** (not continuous legal push) and is an
+**assistive** feed, not an official legal bulletin. Impact hints prefer
+`UNCERTAIN` and never auto-change risk class or control status. Remote sources
+use SSRF-safe HTTPS fetch (DNS pin, redirects disabled).
+
 `EVAL_CALLBACK_SECRET` must be set in every runnable environment. Callback
 requests to `PATCH /api/v1/eval-runs/{id}/result` must include
 `X-Eval-Timestamp` and `X-Eval-Signature`, where the signature is

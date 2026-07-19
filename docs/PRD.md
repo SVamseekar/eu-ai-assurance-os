@@ -51,7 +51,9 @@ Out of scope for MVP (as final authority / overclaim):
 Phase 7 product expansions (assisted — never final legal authority):
 
 - **Assisted obligation determination** (Part 12): questionnaire + deterministic ruleset → suggested applicability / obligation map mapped to control codes. Always labeled not legal advice; requires human legal review; never auto-changes risk class without human confirm.
-- Certification readiness score (Part 13), regulatory change feed (Part 14), sector SPI packs (Part 15).
+- **Certification readiness score** (Part 13): weighted readiness + gaps only — never legal certification.
+- **Regulatory change monitoring feed** (Part 14): near-real-time polled assistive feed with UNCERTAIN impact hints — not an official legal bulletin; never auto-mutates risk/controls.
+- Sector SPI packs (Part 15).
 
 ## 5. Core Features
 

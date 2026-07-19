@@ -110,6 +110,21 @@ docker compose -f infra/docker-compose.yml --env-file .env.example up --build
 - Deploy / rollback / Vercel matrix: `docs/DEPLOYMENT.md`
 - Terraform skeleton validate (no cloud creds): `./scripts/terraform-validate.sh`
 
+## Regulatory change monitoring (Part 14)
+
+Near-real-time **poll** every `assurance.reg-monitor.poll-interval-ms` (default 60s
+scheduler tick; each source has its own `poll_interval_seconds`). This is not
+magical real-time law and not an official Official Journal subscription.
+
+- Curated bootstrap fixtures load on startup when the feed is empty / network blocked
+  (`assurance.reg-monitor.bootstrap-fixtures=true`).
+- Remote EUR-Lex / OJ sources are seeded **disabled**; enable only after reviewing
+  ToS and rate limits. Fetches are SSRF-safe (DNS pin, HTTPS only, no redirects).
+- Impact hints prefer `UNCERTAIN` and **never** auto-change risk class or control status.
+- Dashboard: `/reg-monitor`. APIs: `GET /api/v1/reg-monitor/items`,
+  `POST /api/v1/reg-monitor/items/{id}/review`,
+  `GET /api/v1/systems/{id}/reg-monitor/relevant`.
+
 ## Dashboard ops surface
 
 `/command` summarizes:

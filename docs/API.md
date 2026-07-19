@@ -468,6 +468,63 @@ approvals 10, oversight 10, determination 10, audit chain 5).
 downloadable readiness report. PDF is a human-readable export; JSON is primary.
 Audit events: `certification_readiness.assessed`, `certification_readiness.exported`.
 
+## Regulatory change monitoring (Part 14)
+
+**Product framing:** near-real-time **polled** assistive feed with heuristic impact hints.
+It is **not** an official legal bulletin, not continuous real-time law, and not legal advice.
+Impact levels prefer `UNCERTAIN`. The feed **never** auto-changes risk class or control status.
+
+Latency: bounded by `assurance.reg-monitor.poll-interval-ms` (scheduler) and each source’s
+`poll_interval_seconds`. Network sources are disabled by default; curated bootstrap fixtures
+load when the network is blocked or sources are empty.
+
+```http
+GET  /reg-monitor/items?since=&reviewed=
+POST /reg-monitor/items/{itemId}/review
+GET  /systems/{systemId}/reg-monitor/relevant
+```
+
+| Endpoint | Roles | Notes |
+|---|---|---|
+| `GET /reg-monitor/items` | ADMIN, AI_ENGINEERING_LEAD, COMPLIANCE_OFFICER, LEGAL_COUNSEL, AUDITOR | Optional `since` (ISO-8601), `reviewed` (boolean) |
+| `POST .../review` | ADMIN, COMPLIANCE_OFFICER, LEGAL_COUNSEL | Body `{ "notes": "..." }` — tenant-scoped review only |
+| `GET .../relevant` | same as list | Items matching system sector / control codes (heuristic) |
+
+`GET` list response:
+
+```json
+{
+  "productLabel": "Regulatory change monitoring feed",
+  "disclaimer": "…not an official legal bulletin…",
+  "latencyNote": "Latency is bounded by poll interval…",
+  "items": [
+    {
+      "id": "…",
+      "sourceCode": "CURATED_BOOTSTRAP",
+      "title": "…",
+      "summary": "…",
+      "impactHints": [
+        {
+          "controlCode": "HUMAN_OVERSIGHT",
+          "obligationCode": "HUMAN_OVERSIGHT_HIGH_IMPACT",
+          "impactLevel": "UNCERTAIN",
+          "impactNote": "…"
+        }
+      ],
+      "reviewed": false
+    }
+  ]
+}
+```
+
+Audit events: `reg_item.ingested` (payload includes `autoMutatesRiskOrControls: false`),
+`reg_item.reviewed`.
+
+Config: `assurance.reg-monitor.enabled`, `assurance.reg-monitor.poll-interval-ms`,
+`assurance.reg-monitor.bootstrap-fixtures`. SSRF-safe HTTPS fetch (DNS pin, no redirects)
+mirrors the evidence fetch pattern. Respect EUR-Lex / OJ ToS and rate limits when enabling
+remote sources.
+
 ## Approval Workflows
 
 ```http

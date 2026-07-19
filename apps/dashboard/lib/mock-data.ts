@@ -5,6 +5,7 @@ import type {
   DriftEvent,
   AuditEvent,
   ApprovalWorkflow,
+  RegMonitorFeed,
   WorkflowNotification,
 } from "./types";
 
@@ -560,4 +561,102 @@ export const MOCK_CERTIFICATION_READINESS: Record<string, CertificationReadiness
       },
     ],
   },
+};
+
+/** Offline demo feed for Part 14 — assistive only, not an official legal bulletin. */
+export const MOCK_REG_MONITOR_FEED: RegMonitorFeed = {
+  productLabel: "Regulatory change monitoring feed",
+  disclaimer:
+    "Regulatory change monitoring is an assistive feed produced by near-real-time polling. It is not an official government or Official Journal legal bulletin, not real-time law, and not legal advice. Impact hints prefer UNCERTAIN and never auto-change risk class or control status.",
+  latencyNote: "Latency is bounded by poll interval and source availability, not continuous legal push.",
+  items: [
+    {
+      id: "mock-reg-001",
+      sourceId: "a1600001-0000-4000-8000-000000000001",
+      sourceCode: "CURATED_BOOTSTRAP",
+      externalId: "fixture-ai-act-oversight-2024",
+      title: "EU AI Act human oversight expectations for high-risk systems (curated note)",
+      summary:
+        "Indicative summary of Art. 14-style human oversight themes. Operators should review oversight measures. Not legal advice.",
+      publishedAt: "2024-08-01T00:00:00Z",
+      url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      contentHash: "mockhash001",
+      fetchedAt: d(1, 2),
+      impactHints: [
+        {
+          id: "mock-hint-001",
+          regItemId: "mock-reg-001",
+          controlCode: "HUMAN_OVERSIGHT",
+          obligationCode: "HUMAN_OVERSIGHT_HIGH_IMPACT",
+          impactLevel: "UNCERTAIN",
+          impactNote: "Keyword match suggests human oversight themes; impact UNCERTAIN pending review.",
+          createdAt: d(1, 2),
+        },
+      ],
+      reviewed: false,
+      reviewedAt: null,
+      reviewNotes: null,
+      relevanceReason: "Matches system control HUMAN_OVERSIGHT (hint UNCERTAIN)",
+      productLabel: "Regulatory change monitoring feed",
+      disclaimer: "Assistive polled regulatory change feed with impact hints. Not an official legal bulletin.",
+    },
+    {
+      id: "mock-reg-002",
+      sourceId: "a1600001-0000-4000-8000-000000000001",
+      sourceCode: "CURATED_BOOTSTRAP",
+      externalId: "fixture-annex-iii-employment",
+      title: "Annex III employment and worker management use cases (indicative)",
+      summary:
+        "Indicative note on employment / HR screening use cases. Does not classify any system as high-risk automatically.",
+      publishedAt: "2024-10-01T00:00:00Z",
+      url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      contentHash: "mockhash002",
+      fetchedAt: d(3),
+      impactHints: [
+        {
+          id: "mock-hint-002",
+          regItemId: "mock-reg-002",
+          controlCode: "HUMAN_OVERSIGHT",
+          obligationCode: "EMPLOYMENT_HR",
+          impactLevel: "UNCERTAIN",
+          impactNote: "Keyword match suggests employment/HR themes; impact UNCERTAIN pending review.",
+          createdAt: d(3),
+        },
+      ],
+      reviewed: true,
+      reviewedAt: d(2),
+      reviewNotes: "Logged for HR pack review",
+      productLabel: "Regulatory change monitoring feed",
+      disclaimer: "Assistive polled regulatory change feed with impact hints. Not an official legal bulletin.",
+    },
+    {
+      id: "mock-reg-003",
+      sourceId: "a1600001-0000-4000-8000-000000000001",
+      sourceCode: "CURATED_BOOTSTRAP",
+      externalId: "fixture-data-governance",
+      title: "Data governance and training data quality themes under the AI Act",
+      summary:
+        "Curated note on data governance, bias mitigation, and record-keeping. Prefer UNCERTAIN impact until counsel reviews.",
+      publishedAt: "2024-09-15T00:00:00Z",
+      url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      contentHash: "mockhash003",
+      fetchedAt: d(5),
+      impactHints: [
+        {
+          id: "mock-hint-003",
+          regItemId: "mock-reg-003",
+          controlCode: "DATA_GOVERNANCE",
+          obligationCode: "DATA_GOVERNANCE_PROFILING",
+          impactLevel: "UNCERTAIN",
+          impactNote: "Keyword match suggests data governance themes; impact UNCERTAIN pending review.",
+          createdAt: d(5),
+        },
+      ],
+      reviewed: false,
+      reviewedAt: null,
+      reviewNotes: null,
+      productLabel: "Regulatory change monitoring feed",
+      disclaimer: "Assistive polled regulatory change feed with impact hints. Not an official legal bulletin.",
+    },
+  ],
 };

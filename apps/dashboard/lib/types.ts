@@ -248,6 +248,46 @@ export interface CertificationReadiness {
   gaps: ReadinessGap[];
 }
 
+/** Regulatory change monitoring (Part 14) — assistive polled feed, not official bulletin. */
+export type RegImpactLevel = "UNCERTAIN" | "POSSIBLE" | "LIKELY";
+
+export interface RegImpactHint {
+  id: string;
+  regItemId: string;
+  controlCode: string | null;
+  obligationCode: string | null;
+  impactLevel: RegImpactLevel;
+  impactNote: string;
+  createdAt: string;
+}
+
+export interface RegItem {
+  id: string;
+  sourceId: string;
+  sourceCode: string;
+  externalId: string;
+  title: string;
+  summary: string;
+  publishedAt: string | null;
+  url: string;
+  contentHash: string;
+  fetchedAt: string;
+  impactHints: RegImpactHint[];
+  reviewed: boolean;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+  relevanceReason?: string | null;
+  productLabel: string;
+  disclaimer: string;
+}
+
+export interface RegMonitorFeed {
+  productLabel: string;
+  disclaimer: string;
+  latencyNote: string;
+  items: RegItem[];
+}
+
 export interface DeterminationRun {
   id: string;
   systemId: string;

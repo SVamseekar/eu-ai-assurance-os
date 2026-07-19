@@ -205,3 +205,60 @@ create table audit_events (
   created_at timestamptz not null default now()
 );
 ```
+
+## Regulatory change monitoring (Part 14 / Flyway V16)
+
+Assistive polled feed — not an official legal bulletin. Items are global;
+reviews are tenant-scoped. Impact hints prefer `UNCERTAIN` and never auto-mutate
+risk class or control status.
+
+```sql
+create table reg_sources (
+  id uuid primary key,
+  code varchar(64) not null unique,
+  name varchar(255) not null,
+  url varchar(2048) not null,
+  feed_type varchar(32) not null check (feed_type in ('RSS', 'STATIC_FIXTURE', 'HTML_LIST')),
+  poll_interval_seconds int not null default 900,
+  enabled boolean not null default true,
+  last_polled_at timestamptz,
+  notes varchar(1024),
+  created_at timestamptz not null
+);
+
+create table reg_items (
+  id uuid primary key,
+  source_id uuid not null references reg_sources(id),
+  external_id varchar(512) not null,
+  title varchar(1024) not null,
+  summary varchar(4096) not null,
+  published_at timestamptz,
+  url varchar(2048) not null,
+  content_hash varchar(64) not null unique,
+  fetched_at timestamptz not null,
+  unique (source_id, external_id)
+);
+
+create table reg_impact_hints (
+  id uuid primary key,
+  reg_item_id uuid not null references reg_items(id),
+  control_code varchar(64),
+  obligation_code varchar(64),
+  impact_level varchar(32) not null check (impact_level in ('UNCERTAIN', 'POSSIBLE', 'LIKELY')),
+  impact_note varchar(2048) not null,
+  created_at timestamptz not null
+);
+
+create table reg_item_reviews (
+  id uuid primary key,
+  tenant_id uuid not null references tenants(id),
+  reg_item_id uuid not null references reg_items(id),
+  reviewed_by uuid references users(id),
+  reviewed_at timestamptz not null,
+  notes varchar(2048),
+  unique (tenant_id, reg_item_id)
+);
+```
+
+Seeded sources include `CURATED_BOOTSTRAP` (classpath JSON fixture, enabled) plus
+disabled EUR-Lex / OJ poll targets (respect ToS and rate limits when enabling).
