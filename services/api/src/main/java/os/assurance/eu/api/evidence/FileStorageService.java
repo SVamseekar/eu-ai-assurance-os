@@ -12,6 +12,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -34,14 +35,19 @@ public class FileStorageService {
                 : DefaultCredentialsProvider.create();
             var clientBuilder = S3Client.builder()
                 .region(Region.of(props.region()))
-                .credentialsProvider(credProvider);
+                .credentialsProvider(credProvider)
+                .forcePathStyle(props.pathStyleEnabled());
             if (props.endpoint() != null && !props.endpoint().isBlank()) {
                 clientBuilder.endpointOverride(URI.create(props.endpoint()));
             }
             this.s3 = clientBuilder.build();
             var presignerBuilder = S3Presigner.builder()
                 .region(Region.of(props.region()))
-                .credentialsProvider(credProvider);
+                .credentialsProvider(credProvider)
+                .serviceConfiguration(
+                    S3Configuration.builder()
+                        .pathStyleAccessEnabled(props.pathStyleEnabled())
+                        .build());
             if (props.endpoint() != null && !props.endpoint().isBlank()) {
                 presignerBuilder.endpointOverride(URI.create(props.endpoint()));
             }

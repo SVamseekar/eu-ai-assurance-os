@@ -99,6 +99,17 @@ histogram_quantile(0.95,
 
 Unit tests only assert that **timers/counters exist after traffic** — they never claim p95 &lt; 300 ms.
 
+## Local Compose stack (Part 9)
+
+```bash
+docker compose -f infra/docker-compose.yml --env-file .env.example up --build
+```
+
+- Health: `GET /actuator/health` (and liveness/readiness under `/actuator/health/*`)
+- Secrets template: root `.env.example` (`EVAL_CALLBACK_SECRET`, `AUDIT_CHAIN_SECRET`, DB, storage)
+- Deploy / rollback / Vercel matrix: `docs/DEPLOYMENT.md`
+- Terraform skeleton validate (no cloud creds): `./scripts/terraform-validate.sh`
+
 ## Dashboard ops surface
 
 `/command` summarizes:

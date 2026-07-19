@@ -18,6 +18,7 @@ jobs:
     outputs:
       api: ${{ steps.filter.outputs.api }}
       dashboard: ${{ steps.filter.outputs.dashboard }}
+      terraform: ${{ steps.filter.outputs.terraform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +31,10 @@ jobs:
               - '.github/workflows/ci.yml'
             dashboard:
               - 'apps/dashboard/**'
+              - '.github/workflows/ci.yml'
+            terraform:
+              - 'infra/terraform/**'
+              - 'scripts/terraform-validate.sh'
               - '.github/workflows/ci.yml'
 
   secret-scan:
@@ -159,3 +164,29 @@ jobs:
       - name: Production build
         if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
         run: npm run build
+
+  # Part 9: validate Terraform skeleton without cloud credentials (null provider only).
+  terraform-validate:
+    name: Terraform validate
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip — no Terraform changes
+        if: needs.changes.outputs.terraform != 'true' && github.event_name == 'pull_request'
+        run: echo "No Terraform skeleton changes; job is a no-op for path filter."
+
+      - uses: hashicorp/setup-terraform@v3
+        if: needs.changes.outputs.terraform == 'true' || github.event_name != 'pull_request'
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+
+      - name: fmt + init + validate
+        if: needs.changes.outputs.terraform == 'true' || github.event_name != 'pull_request'
+        working-directory: infra/terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false -input=false
+          terraform validate

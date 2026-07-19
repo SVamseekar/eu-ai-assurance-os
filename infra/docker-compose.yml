@@ -1,3 +1,22 @@
+# Full local stack for EU AI Assurance OS (Part 9).
+#
+# One-command (from repo root or this directory):
+#   docker compose -f infra/docker-compose.yml --env-file .env.example up --build
+#
+# Profiles:
+#   (default)   postgres + api
+#   dashboard   + Next.js self-host (optional; Vercel is primary for prod)
+#   minio       + S3-compatible object store for evidence FileStorage
+#   full        convenience: dashboard + minio together with default stack
+#
+# Resource guidance (not enforced — set deploy.resources or Docker Desktop limits):
+#   postgres  ~512MB RAM
+#   api       ~1–2GB RAM (DJL/ONNX models need headroom on first start)
+#   minio     ~256MB RAM
+#   dashboard ~512MB–1GB RAM
+
+name: eu-ai-assurance
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -10,28 +29,104 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eu_ai_assurance}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eu_ai_assurance} -d ${POSTGRES_DB:-eu_ai_assurance}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 10s
+    # deploy.resources are Swarm-only; documented for operators:
+    # memory reservation ~256M, limit ~1G
 
   api:
     build:
       context: ..
       dockerfile: infra/Dockerfile
-    profiles:
-      - full
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
       DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/eu_ai_assurance}
       DATABASE_USERNAME: ${DATABASE_USERNAME:-eu_ai_assurance}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-eu_ai_assurance}
-      EVAL_CALLBACK_SECRET: ${EVAL_CALLBACK_SECRET}
+      EVAL_CALLBACK_SECRET: ${EVAL_CALLBACK_SECRET:-local-dev-eval-callback-secret-change-me}
+      AUDIT_CHAIN_SECRET: ${AUDIT_CHAIN_SECRET:-local-dev-audit-chain-secret-change-me}
+      EVIDENCE_EMBEDDING_PROVIDER: ${EVIDENCE_EMBEDDING_PROVIDER:-local-hash}
+      ASSURANCE_STORAGE_ENABLED: ${ASSURANCE_STORAGE_ENABLED:-false}
+      ASSURANCE_STORAGE_BUCKET: ${ASSURANCE_STORAGE_BUCKET:-eu-ai-assurance-evidence}
+      ASSURANCE_STORAGE_REGION: ${ASSURANCE_STORAGE_REGION:-eu-west-1}
+      ASSURANCE_STORAGE_ENDPOINT: ${ASSURANCE_STORAGE_ENDPOINT:-}
+      ASSURANCE_STORAGE_ACCESS_KEY_ID: ${ASSURANCE_STORAGE_ACCESS_KEY_ID:-}
+      ASSURANCE_STORAGE_SECRET_ACCESS_KEY: ${ASSURANCE_STORAGE_SECRET_ACCESS_KEY:-}
+      ASSURANCE_STORAGE_PATH_STYLE: ${ASSURANCE_STORAGE_PATH_STYLE:-true}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 120s
+    # Suggested: memory limit 2G when using djl-sentence
+
+  # Optional: self-hosted dashboard (profile dashboard or full).
+  # Production dashboard is Vercel; this is for air-gapped / full local demos.
+  dashboard:
+    profiles: ["dashboard", "full"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.dashboard
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+    ports:
+      - "3000:3000"
+    environment:
+      ASSURANCE_API_BASE_URL: ${ASSURANCE_API_BASE_URL:-http://api:8080}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Optional: S3-compatible store for FileStorageService (profile minio or full).
+  minio:
+    profiles: ["minio", "full"]
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+
+  # One-shot bucket bootstrap for MinIO (runs after minio is healthy).
+  minio-init:
+    profiles: ["minio", "full"]
+    image: minio/mc:RELEASE.2024-11-17T19-35-56Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin};
+      mc mb -p local/$${ASSURANCE_STORAGE_BUCKET:-eu-ai-assurance-evidence} || true;
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      ASSURANCE_STORAGE_BUCKET: ${ASSURANCE_STORAGE_BUCKET:-eu-ai-assurance-evidence}
 
 volumes:
   postgres_data:
+  minio_data:

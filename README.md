@@ -21,7 +21,7 @@ EU AI Assurance OS is a governance control plane for teams shipping AI systems i
 | API | **Spring Boot 3.3**, Java 17, Flyway, Spring Data JPA |
 | Auth (today) | Password JWT + refresh tokens, API keys; **OAuth/OIDC not yet** |
 | Data | H2 (local default) or PostgreSQL (+ optional pgvector) |
-| Deploy | Dashboard on Vercel; API hosted separately (apply Flyway on the API DB) |
+| Deploy | Dashboard on Vercel; API via Docker/Compose or host (Flyway on boot); TF skeleton in `infra/terraform/` |
 
 ## Repository layout
 
@@ -30,22 +30,33 @@ apps/dashboard/   Production Next.js app (landing + authenticated dashboard)
 apps/web/         Legacy static HTML/CSS/JS prototype (reference only)
 services/api/     Spring Boot API MVP
 docs/             PRD, architecture, API contract, schema, roadmap, security
-infra/            Docker / compose placeholders
-scripts/          Local and CI helper scripts
+infra/            Docker Compose, API/dashboard Dockerfiles, Terraform skeleton
+scripts/          Local, Compose smoke, CI helper scripts
 ```
 
 ## Quick start
 
-### 1. API
+### Option A — Docker Compose (postgres + API)
+
+```bash
+docker compose -f infra/docker-compose.yml --env-file .env.example up --build
+# → API http://localhost:8080  ·  Postgres localhost:5432
+```
+
+See [infra/README.md](./infra/README.md) and [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+
+### Option B — native tooling
+
+#### 1. API
 
 ```bash
 cd services/api
 mvn test
 mvn spring-boot:run
-# → http://localhost:8080  (H2, Flyway through V10)
+# → http://localhost:8080  (H2, Flyway through latest V*)
 ```
 
-### 2. Dashboard
+#### 2. Dashboard
 
 ```bash
 cd apps/dashboard
@@ -65,13 +76,18 @@ python3 -m http.server 4173 --directory apps/web
 
 ## Environment variables
 
+Full template: [`.env.example`](./.env.example). Deploy matrix: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+
 | Variable | Where | Purpose |
 |---|---|---|
 | `EVAL_CALLBACK_SECRET` | API | HMAC secret for eval result callbacks (required in non-local envs) |
+| `AUDIT_CHAIN_SECRET` | API | Hash-chain HMAC for immutable audit (Part 6) |
 | `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` | API | Postgres profile |
 | `ASSURANCE_API_BASE_URL` | Dashboard | Upstream API base (default `http://localhost:8080`) |
 | `NEXT_PUBLIC_SITE_URL` | Dashboard | Canonical site URL for SEO/metadata |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Dashboard | Optional GA4 measurement id |
+| `ASSURANCE_STORAGE_*` | API | Optional S3/MinIO object store for evidence uploads |
+| `EVIDENCE_EMBEDDING_PROVIDER` | API | `local-hash` (H2) or `djl-sentence` (postgres default) |
 
 ## Roadmap status (honest)
 
@@ -91,6 +107,9 @@ See [docs/ROADMAP.md](./docs/ROADMAP.md) and [docs/superpowers/plans/2026-07-20-
 - [docs/API.md](./docs/API.md) — HTTP contract
 - [docs/SCHEMA.md](./docs/SCHEMA.md) — SQL tables
 - [docs/SECURITY.md](./docs/SECURITY.md) — threat model
+- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) — Docker, Vercel + API host, migrations, rollback
+- [docs/OPS.md](./docs/OPS.md) — CI release gate + observability
+- [docs/NFR.md](./docs/NFR.md) — latency/uptime targets and secrets
 - [SECURITY.md](./SECURITY.md) — vulnerability reporting
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — PR and branch conventions
 
