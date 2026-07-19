@@ -130,7 +130,7 @@ Full template: [`.env.example`](./.env.example). Deploy matrix: [`docs/DEPLOYMEN
 | 7 Assisted determination, readiness, reg-monitor, sector packs | **Complete** (assisted / readiness naming only) |
 | Landing legal + demo + SEO (Part 3) | **Complete** |
 | Metrics freeze (Part 2) | **Complete** — [`docs/METRICS_CANONICAL.md`](./docs/METRICS_CANONICAL.md) |
-| Docs alignment (Part 11) | This PR / branch |
+| Docs alignment (Part 11) | **Complete** (PR #40) |
 | CV / pitch / portfolio binaries (Part 16) | Planned |
 
 See [`docs/ROADMAP.md`](./docs/ROADMAP.md) and [`docs/superpowers/plans/2026-07-20-INDEX.md`](./docs/superpowers/plans/2026-07-20-INDEX.md).
