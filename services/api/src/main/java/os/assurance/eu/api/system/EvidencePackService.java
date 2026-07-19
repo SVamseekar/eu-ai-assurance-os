@@ -12,6 +12,7 @@ import os.assurance.eu.api.contract.DataContract;
 import os.assurance.eu.api.contract.DataContractService;
 import os.assurance.eu.api.contract.DriftEvent;
 import os.assurance.eu.api.contract.DriftStatus;
+import os.assurance.eu.api.determination.DeterminationService;
 import os.assurance.eu.api.workflow.ApprovalStage;
 import os.assurance.eu.api.workflow.ApprovalWorkflow;
 import os.assurance.eu.api.workflow.ApprovalWorkflowService;
@@ -28,6 +29,7 @@ public class EvidencePackService {
   private final AuditService auditService;
   private final DataContractService dataContractService;
   private final ApprovalWorkflowService approvalWorkflowService;
+  private final DeterminationService determinationService;
   private final Clock clock;
   private final String generator;
 
@@ -37,6 +39,7 @@ public class EvidencePackService {
       AuditService auditService,
       DataContractService dataContractService,
       ApprovalWorkflowService approvalWorkflowService,
+      DeterminationService determinationService,
       Clock clock,
       @Value("${assurance.evidence-pack.generator:eu-ai-assurance-api/0.1.0}") String generator) {
     this.repository = repository;
@@ -44,6 +47,7 @@ public class EvidencePackService {
     this.auditService = auditService;
     this.dataContractService = dataContractService;
     this.approvalWorkflowService = approvalWorkflowService;
+    this.determinationService = determinationService;
     this.clock = clock;
     this.generator = generator;
   }
@@ -63,6 +67,7 @@ public class EvidencePackService {
     List<Map<String, Object>> approvals = approvalWorkflowService.listBySystemId(system.id()).stream()
         .map(this::workflowEvidence)
         .toList();
+    Map<String, Object> determination = determinationService.latestSnapshotForPack(system.id());
     Map<String, Object> riskClassification = riskClassification(system);
     List<Map<String, Object>> evidence = List.of(Map.of(
         "coverage", system.evidenceCoverage(),
@@ -83,7 +88,8 @@ public class EvidencePackService {
         evalRuns,
         dataContracts,
         approvals,
-        auditEvents);
+        auditEvents,
+        determination);
     String contentSha256 = EvidencePackSealer.contentSha256(sealPayload);
 
     Map<String, Object> auditPayload = new LinkedHashMap<>();
@@ -108,6 +114,7 @@ public class EvidencePackService {
         dataContracts,
         approvals,
         auditEvents,
+        determination,
         PACK_VERSION,
         contentSha256,
         generator,

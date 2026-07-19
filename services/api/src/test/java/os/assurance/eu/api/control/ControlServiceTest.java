@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.sector.SectorPackRegistry;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import os.assurance.eu.api.system.DataContractStatus;
@@ -29,6 +30,7 @@ class ControlServiceTest {
   private ReleaseGateService releaseGateService;
   private AuditService auditService;
   private TenantContext tenantContext;
+  private SectorPackRegistry sectorPackRegistry;
   private ControlService service;
 
   private static final UUID TENANT = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -42,10 +44,14 @@ class ControlServiceTest {
     releaseGateService = mock(ReleaseGateService.class);
     auditService = mock(AuditService.class);
     tenantContext = mock(TenantContext.class);
+    sectorPackRegistry = mock(SectorPackRegistry.class);
     when(tenantContext.tenantId()).thenReturn(TENANT);
     when(tenantContext.actorId()).thenReturn(UUID.randomUUID());
+    when(sectorPackRegistry.enabledPacks()).thenReturn(List.of());
+    when(sectorPackRegistry.resolveForSector(any())).thenReturn(java.util.Optional.empty());
     service = new ControlService(
-        controls, systemControls, systems, releaseGateService, auditService, tenantContext);
+        controls, systemControls, systems, releaseGateService, auditService, tenantContext,
+        sectorPackRegistry);
   }
 
   @Test

@@ -24,3 +24,25 @@ Requires `curl` and either `jq` or `python3`. Full contract: `docs/OPS.md`.
 ## `postgres-ci.sh`
 
 Local/CI helpers for Postgres-backed smoke (see `services/api/scripts` and README).
+
+## `compose-with-minio.sh` (Part 9)
+
+Starts Compose with the `minio` profile and storage env pointed at MinIO.
+
+```bash
+./scripts/compose-with-minio.sh
+```
+
+## `compose-evidence-smoke.sh` (Part 9)
+
+Against a running API: login → evidence document → RAG query.
+
+```bash
+ASSURANCE_API_BASE=http://localhost:8080 ./scripts/compose-evidence-smoke.sh
+```
+
+Local bootstrap user: `compliance@example.com` / `dev-local-password-only` (never production).
+
+## `terraform-validate.sh` (Part 9)
+
+`fmt -check` + `init -backend=false` + `validate` for `infra/terraform` (null provider; no cloud credentials).

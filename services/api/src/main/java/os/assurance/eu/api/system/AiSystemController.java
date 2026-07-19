@@ -148,7 +148,10 @@ public class AiSystemController {
         request.affectedUsers() == null ? existing.affectedUsers() : new ArrayList<>(request.affectedUsers()),
         existing.createdAt(),
         Instant.now());
-    if (request.riskClass() != null && request.riskClass() != existing.riskClass()) {
+    boolean riskChanged = request.riskClass() != null && request.riskClass() != existing.riskClass();
+    boolean sectorChanged = request.sector() != null
+        && !request.sector().equalsIgnoreCase(existing.sector() == null ? "" : existing.sector());
+    if (riskChanged || sectorChanged) {
       controlService.attachApplicableControls(draft);
     }
     AiSystem saved = saveWithCalculatedDecision(draft);

@@ -6,14 +6,46 @@ import { SystemCard } from "@/components/system-card";
 import { ReleaseGateTable } from "@/components/release-gate-table";
 import { useDashboard } from "@/context/dashboard-context";
 import { RegisterSystemModal } from "@/components/register-system-modal";
-import { Plus } from "lucide-react";
+import { ObligationMapWizard } from "@/components/obligation-map-wizard";
+import { Button } from "@/components/ui/button";
+import { Plus, Scale } from "lucide-react";
 
 export default function SystemsPage() {
   const { allSystems, registerSystem } = useDashboard();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [obligationSystemId, setObligationSystemId] = useState<string | null>(null);
+
+  const obligationSystem = allSystems.find((s) => s.id === obligationSystemId) ?? null;
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15 px-4 py-3">
+        <p className="text-[11px] font-semibold text-foreground mb-0.5">
+          Assisted obligation determination
+        </p>
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          Open a system and run the obligation map wizard for a{" "}
+          <strong className="font-semibold text-foreground">suggested applicability / obligation map</strong>.
+          Not legal advice; requires human legal review. Not certification or official conformity assessment.
+        </p>
+        {allSystems.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {allSystems.slice(0, 4).map((system) => (
+              <Button
+                key={system.id}
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px]"
+                onClick={() => setObligationSystemId(system.id)}
+              >
+                <Scale className="w-3 h-3 mr-1" />
+                {system.name}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-3 gap-4">
         {/* Dash-border Register Card */}
         <div
@@ -51,6 +83,15 @@ export default function SystemsPage() {
         onClose={() => setIsRegisterOpen(false)}
         onRegister={registerSystem}
       />
+
+      {obligationSystem && (
+        <ObligationMapWizard
+          isOpen={obligationSystemId !== null}
+          onClose={() => setObligationSystemId(null)}
+          systemId={obligationSystem.id}
+          systemName={obligationSystem.name}
+        />
+      )}
     </div>
   );
 }
