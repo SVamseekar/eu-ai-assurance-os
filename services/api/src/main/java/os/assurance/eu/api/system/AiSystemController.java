@@ -3,25 +3,21 @@ package os.assurance.eu.api.system;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import os.assurance.eu.api.audit.AuditEvent;
 import os.assurance.eu.api.audit.AuditService;
-import os.assurance.eu.api.contract.DataContract;
-import os.assurance.eu.api.contract.DataContractService;
-import os.assurance.eu.api.contract.DriftEvent;
-import os.assurance.eu.api.contract.DriftStatus;
-import os.assurance.eu.api.workflow.ApprovalStage;
-import os.assurance.eu.api.workflow.ApprovalWorkflow;
-import os.assurance.eu.api.workflow.ApprovalWorkflowService;
 import os.assurance.eu.api.control.ControlService;
+import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.observability.NfrMetrics;
 import os.assurance.eu.api.tenant.TenantAuthorizationService;
 import os.assurance.eu.api.tenant.UserRole;
+import os.assurance.eu.api.workflow.ApprovalWorkflowService;
 import os.assurance.eu.api.workflow.WorkflowTrigger;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,29 +34,32 @@ public class AiSystemController {
   private final AiSystemRepository repository;
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
-  private final DataContractService dataContractService;
   private final ApprovalWorkflowService approvalWorkflowService;
   private final ControlService controlService;
   private final TenantAuthorizationService authorizationService;
   private final NfrMetrics nfrMetrics;
+  private final AssuranceMetrics assuranceMetrics;
+  private final EvidencePackService evidencePackService;
 
   public AiSystemController(
       AiSystemRepository repository,
       ReleaseGateService releaseGateService,
       AuditService auditService,
-      DataContractService dataContractService,
       ApprovalWorkflowService approvalWorkflowService,
       ControlService controlService,
       TenantAuthorizationService authorizationService,
-      NfrMetrics nfrMetrics) {
+      NfrMetrics nfrMetrics,
+      AssuranceMetrics assuranceMetrics,
+      EvidencePackService evidencePackService) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
-    this.dataContractService = dataContractService;
     this.approvalWorkflowService = approvalWorkflowService;
     this.controlService = controlService;
     this.authorizationService = authorizationService;
     this.nfrMetrics = nfrMetrics;
+    this.assuranceMetrics = assuranceMetrics;
+    this.evidencePackService = evidencePackService;
   }
 
   @GetMapping
@@ -149,7 +148,10 @@ public class AiSystemController {
         request.affectedUsers() == null ? existing.affectedUsers() : new ArrayList<>(request.affectedUsers()),
         existing.createdAt(),
         Instant.now());
-    if (request.riskClass() != null && request.riskClass() != existing.riskClass()) {
+    boolean riskChanged = request.riskClass() != null && request.riskClass() != existing.riskClass();
+    boolean sectorChanged = request.sector() != null
+        && !request.sector().equalsIgnoreCase(existing.sector() == null ? "" : existing.sector());
+    if (riskChanged || sectorChanged) {
       controlService.attachApplicableControls(draft);
     }
     AiSystem saved = saveWithCalculatedDecision(draft);
@@ -225,6 +227,7 @@ public class AiSystemController {
   public ReleaseGateResponse getReleaseGate(@PathVariable UUID systemId) {
     AiSystem system = getSystem(systemId);
     ReleaseGateResponse response = releaseGateService.calculate(system);
+    assuranceMetrics.releaseGateDecision(response.decision());
     auditService.append(
         system.id(),
         "release_gate.calculated",
@@ -234,116 +237,48 @@ public class AiSystemController {
     return response;
   }
 
+  /**
+   * Primary sealed JSON evidence pack (PRD MVP). Includes contentSha256 seal fields.
+   */
   @GetMapping("/{systemId}/evidence-pack")
   public EvidencePackResponse getEvidencePack(@PathVariable UUID systemId) {
+    requireEvidencePackRole();
+    try {
+      return evidencePackService.buildAndExport(systemId, "json");
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+  }
+
+  /**
+   * Phase 6 PDF export of the same sealed pack. Prefer JSON for machine verification.
+   * Route: {@code GET /api/v1/systems/{id}/evidence-pack.pdf}
+   */
+  @GetMapping(value = "/{systemId}/evidence-pack.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+  public ResponseEntity<byte[]> getEvidencePackPdf(@PathVariable UUID systemId) {
+    requireEvidencePackRole();
+    try {
+      EvidencePackResponse pack = evidencePackService.buildAndExport(systemId, "pdf");
+      AiSystem system = getSystem(systemId);
+      byte[] pdf = evidencePackService.renderPdf(pack, system.name());
+      String filename = evidencePackService.pdfFilename(pack);
+      return ResponseEntity.ok()
+          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+          .header("X-Content-Sha256", pack.contentSha256())
+          .contentType(MediaType.APPLICATION_PDF)
+          .body(pdf);
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+  }
+
+  private void requireEvidencePackRole() {
     authorizationService.requireAnyRole(
         UserRole.ADMIN,
         UserRole.AI_ENGINEERING_LEAD,
         UserRole.COMPLIANCE_OFFICER,
         UserRole.LEGAL_COUNSEL,
         UserRole.AUDITOR);
-    AiSystem system = getSystem(systemId);
-    ReleaseGateResponse releaseGate = releaseGateService.calculate(system);
-    auditService.append(
-        system.id(),
-        "evidence_pack.exported",
-        "ai_system",
-        system.id().toString(),
-        Map.of("decision", releaseGate.decision()));
-    List<AuditEvent> auditEvents = auditService.findBySystemId(system.id());
-    List<Map<String, Object>> dataContracts = dataContractService.listContracts(system.id()).stream()
-        .map(contract -> contractEvidence(system, contract))
-        .toList();
-    List<Map<String, Object>> approvals = approvalWorkflowService.listBySystemId(system.id()).stream()
-        .map(this::workflowEvidence)
-        .toList();
-    return new EvidencePackResponse(
-        system.id(),
-        Instant.now(),
-        releaseGate.decision(),
-        Map.of(
-            "riskClass", system.riskClass(),
-            "basis", system.riskBasis(),
-            "deploymentRegion", system.deploymentRegion(),
-            "vendorName", system.vendorName() == null ? "" : system.vendorName(),
-            "modelName", system.modelName() == null ? "" : system.modelName(),
-            "modelVersion", system.modelVersion() == null ? "" : system.modelVersion(),
-            "dataSources", system.dataSources(),
-            "sector", system.sector() == null ? "" : system.sector(),
-            "decisionImpact", system.decisionImpact() == null ? "" : system.decisionImpact(),
-            "affectedUsers", system.affectedUsers()),
-        List.of(Map.of(
-            "coverage", system.evidenceCoverage(),
-            "openGaps", system.openGaps())),
-        List.of(Map.of(
-            "latestScore", system.evalScore(),
-            "releaseDecision", system.releaseDecision())),
-        dataContracts,
-        approvals,
-        auditEvents);
-  }
-
-  private Map<String, Object> workflowEvidence(ApprovalWorkflow workflow) {
-    Map<String, Object> evidence = new LinkedHashMap<>();
-    evidence.put("workflowId", workflow.id());
-    evidence.put("trigger", workflow.trigger());
-    evidence.put("status", workflow.status());
-    evidence.put("openedAt", workflow.openedAt());
-    evidence.put("closedAt", workflow.closedAt());
-    evidence.put("stages", workflow.stages().stream().map(this::stageEvidence).toList());
-    return evidence;
-  }
-
-  private Map<String, Object> stageEvidence(ApprovalStage stage) {
-    Map<String, Object> evidence = new LinkedHashMap<>();
-    evidence.put("stageType", stage.stageType());
-    evidence.put("status", stage.status());
-    evidence.put("actorId", stage.actorId());
-    evidence.put("rationale", stage.rationale());
-    evidence.put("actedAt", stage.actedAt());
-    return evidence;
-  }
-
-  private Map<String, Object> contractEvidence(AiSystem system, DataContract contract) {
-    List<DriftEvent> driftEvents = dataContractService.listDriftEvents(contract.id());
-    List<Map<String, Object>> drift = driftEvents.stream()
-        .map(this::driftEvidence)
-        .toList();
-    List<UUID> openDriftEventIds = driftEvents.stream()
-        .filter(event -> event.status() == DriftStatus.OPEN)
-        .map(DriftEvent::id)
-        .toList();
-    Map<String, Object> lineage = new LinkedHashMap<>();
-    lineage.put("systemId", system.id());
-    lineage.put("systemName", system.name());
-    lineage.put("contractId", contract.id());
-    lineage.put("contractName", contract.name());
-    lineage.put("owner", contract.owner());
-    lineage.put("version", contract.version());
-    lineage.put("openDriftEventIds", openDriftEventIds);
-
-    Map<String, Object> evidence = new LinkedHashMap<>();
-    evidence.put("id", contract.id());
-    evidence.put("name", contract.name());
-    evidence.put("owner", contract.owner());
-    evidence.put("version", contract.version());
-    evidence.put("status", contract.status());
-    evidence.put("coverage", contract.coverage());
-    evidence.put("lineage", lineage);
-    evidence.put("driftEvents", drift);
-    return evidence;
-  }
-
-  private Map<String, Object> driftEvidence(DriftEvent event) {
-    Map<String, Object> drift = new LinkedHashMap<>();
-    drift.put("id", event.id());
-    drift.put("severity", event.severity());
-    drift.put("field", event.field());
-    drift.put("description", event.description());
-    drift.put("status", event.status());
-    drift.put("createdAt", event.createdAt());
-    drift.put("updatedAt", event.updatedAt());
-    return drift;
   }
 
   private AiSystem saveWithCalculatedDecision(AiSystem draft) {

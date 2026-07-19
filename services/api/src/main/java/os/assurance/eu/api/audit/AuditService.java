@@ -2,9 +2,11 @@ package os.assurance.eu.api.audit;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,16 +17,19 @@ public class AuditService {
   private final AuditEventJpaRepository repository;
   private final TenantContext tenantContext;
   private final AuditChainHasher chainHasher;
+  private final AssuranceMetrics assuranceMetrics;
   private final int retentionYears;
 
   public AuditService(
       AuditEventJpaRepository repository,
       TenantContext tenantContext,
       AuditChainHasher chainHasher,
+      AssuranceMetrics assuranceMetrics,
       @Value("${assurance.audit.retention-years:7}") int retentionYears) {
     this.repository = repository;
     this.tenantContext = tenantContext;
     this.chainHasher = chainHasher;
+    this.assuranceMetrics = assuranceMetrics;
     this.retentionYears = Math.max(1, retentionYears);
   }
 
@@ -37,7 +42,8 @@ public class AuditService {
       Map<String, Object> payload) {
     UUID tenantId = tenantContext.tenantId();
     UUID id = UUID.randomUUID();
-    Instant createdAt = Instant.now();
+    // Truncate to millis so hash input matches JDBC/H2 timestamp round-trip precision.
+    Instant createdAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     Instant retainUntil = createdAt.atZone(ZoneOffset.UTC).plusYears(retentionYears).toInstant();
     String prevHash = repository.findLatestByTenantId(tenantId)
         .map(AuditEventEntity::eventHash)
@@ -65,7 +71,9 @@ public class AuditService {
         prevHash,
         eventHash,
         retainUntil);
-    return repository.save(event).toDomain();
+    AuditEvent saved = repository.save(event).toDomain();
+    assuranceMetrics.auditAppend();
+    return saved;
   }
 
   @Transactional(readOnly = true)
@@ -81,6 +89,16 @@ public class AuditService {
             tenantContext.tenantId(), systemId).stream()
         .map(AuditEventEntity::toDomain)
         .toList();
+  }
+
+  /**
+   * Tip of the tenant audit hash chain (latest eventHash), if any chained event exists.
+   */
+  @Transactional(readOnly = true)
+  public java.util.Optional<String> chainHeadHash() {
+    return repository.findLatestByTenantId(tenantContext.tenantId())
+        .map(AuditEventEntity::eventHash)
+        .filter(hash -> hash != null && !hash.isBlank());
   }
 
   @Transactional(readOnly = true)

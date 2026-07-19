@@ -12,31 +12,41 @@ This document records **PRD §7** targets honestly: they are **product goals**, 
 | Tenant data isolation | No cross-tenant leakage | **Enforced** — regression suite in CI |
 | Encryption in transit / at rest | TLS + provider disk encryption | **Documented** — see below and `SECURITY.md` |
 | Audit retention | Configurable ≥ 7 years | Implemented (Part 6); see audit config |
-| Evidence pack deterministic / traceable | Export + audit event | Partial (JSON export); PDF seal is Part 7 |
+| Evidence pack deterministic / traceable | Export + audit event | **Implemented** (Part 7): sealed JSON + PDF; `contentSha256` in export audit |
 
 ## Latency measurement hooks
 
-Micrometer timers (Spring Actuator / Prometheus scrape when enabled):
+Micrometer timers (Spring Actuator / Prometheus scrape when enabled — see `docs/OPS.md`):
 
 | Metric name | Tag | Covers |
 |---|---|---|
 | `assurance.api.registry.read` | `operation` = `list` \| `get` | `GET /api/v1/systems`, `GET /api/v1/systems/{id}` |
-| `assurance.api.evidence.query` | `operation` = `answer` | `POST /api/v1/evidence/query` |
+| `assurance.api.evidence.query` | `operation` = `answer` | `POST /api/v1/evidence/query` (Part 8 “evidence query latency”) |
+
+### Product counters (Part 8)
+
+| Metric name | Tags | Covers |
+|---|---|---|
+| `assurance.release_gate.decision` | `decision` = PASS \| REVIEW \| BLOCKED | UI + CI release-gate reads |
+| `assurance.audit.append` | — | Hash-chained audit appends |
+| `assurance.auth.login.failures` | `reason` = invalid_credentials | Failed logins (no user/email enumeration) |
 
 ### How to query p95 (example)
 
-With Actuator metrics exposed (`management.endpoints.web.exposure.include` includes `metrics` / Prometheus):
+With Actuator metrics exposed (`management.endpoints.web.exposure.include` includes `metrics` / `prometheus`):
 
 ```bash
-# Micrometer timer snapshot (exact property names depend on registry backend)
-curl -s http://localhost:8080/actuator/metrics/assurance.api.registry.read \
+# Requires API key or JWT (metrics are not public)
+curl -s -H "X-Api-Key: $API_KEY" \
+  http://localhost:8080/actuator/metrics/assurance.api.registry.read \
   | jq '.measurements'
 
 # Prefer Prometheus histogram quantiles in production:
 # histogram_quantile(0.95, sum(rate(assurance_api_registry_read_seconds_bucket[5m])) by (le))
+# histogram_quantile(0.95, sum(rate(assurance_api_evidence_query_seconds_bucket[5m])) by (le))
 ```
 
-**Do not** treat green unit tests or a single local `curl` as p95 compliance. p95 requires production (or load-test) volume under realistic concurrency and payload sizes.
+**Do not** treat green unit tests or a single local `curl` as p95 compliance. p95 requires production (or load-test) volume under realistic concurrency and payload sizes. CI only checks that timers **register** after traffic — never that p95 is under target.
 
 ### Honest limits of local measurement
 
@@ -54,10 +64,10 @@ curl -s http://localhost:8080/actuator/metrics/assurance.api.registry.read \
    - Dashboard origin (landing + `/login`)
    - API `GET /actuator/health` (and `/actuator/health/liveness`, `/readiness` when deployed)
 2. **Platform status** — Vercel (dashboard) + host/DB provider (API/Postgres) incident feeds
-3. **Actuator** — liveness/readiness for orchestrators (K8s, ECS, etc.) once Part 9 ships containers
+3. **Actuator** — liveness/readiness for orchestrators (K8s, ECS, Compose — Part 9 containers in `infra/`)
 4. **Alerting** — page on multi-region failure of health + login path, not on single-instance process restarts alone
 
-Until production deploy + monitoring exist, **do not advertise 99.9% as measured**.
+Until production deploy + monitoring exist, **do not advertise 99.9% as measured**. Deploy runbook: `docs/DEPLOYMENT.md`.
 
 ## Encryption and secrets (NFR)
 
@@ -81,10 +91,12 @@ Until production deploy + monitoring exist, **do not advertise 99.9% as measured
 | `EVAL_CALLBACK_SECRET` | Env / secret manager | Required; empty fails closed outside permissive local config |
 | `AUDIT_CHAIN_SECRET` | Env / secret manager | Hash-chain HMAC; set in production |
 | `DATABASE_PASSWORD` | Env / secret manager | Never commit |
-| OAuth client secrets (Part 4) | Env / secret manager | Not in git |
+| `ASSURANCE_STORAGE_*` keys | Env / secret manager | Optional S3/MinIO credentials (Part 9) |
+| OAuth client secrets (Part 4) | Env / secret manager | Google/Microsoft apps in root `.env.example`; **code wired**, production smoke pending (`docs/oauth-production-smoke-test.md`) |
 
-- **No secrets in the repository** — gitleaks (Part 1) and code review.
+- **No secrets in the repository** — gitleaks (Part 1) and code review. Use root `.env.example` only as a template (never commit a filled `.env`).
 - Rotate eval callback and audit chain secrets via secret manager; redeploy workers/API together for callback secret changes.
+- Env matrix and deploy order: `docs/DEPLOYMENT.md`.
 
 ## Tenant isolation (measured in CI)
 

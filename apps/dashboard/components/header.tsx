@@ -2,16 +2,25 @@
 
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, Download, RefreshCw } from "lucide-react";
+import { Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
-  onExportPack: () => void;
+  onExportJson: () => void;
+  onExportPdf: () => void;
   onRunControls: () => void;
+  exportBusy?: boolean;
 }
 
-export function Header({ title, subtitle, onExportPack, onRunControls }: HeaderProps) {
+export function Header({
+  title,
+  subtitle,
+  onExportJson,
+  onExportPdf,
+  onRunControls,
+  exportBusy,
+}: HeaderProps) {
   const { theme, setTheme } = useTheme();
 
   return (
@@ -28,9 +37,25 @@ export function Header({ title, subtitle, onExportPack, onRunControls }: HeaderP
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
-        <Button variant="outline" size="sm" className="h-8 text-xs font-medium" onClick={onExportPack}>
-          <Download className="h-3.5 w-3.5 mr-1.5" />
-          Export pack
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-medium"
+          onClick={onExportJson}
+          disabled={exportBusy}
+        >
+          <FileJson className="h-3.5 w-3.5 mr-1.5" />
+          Export JSON
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-medium"
+          onClick={onExportPdf}
+          disabled={exportBusy}
+        >
+          <FileText className="h-3.5 w-3.5 mr-1.5" />
+          Export PDF
         </Button>
         <Button size="sm" className="h-8 text-xs font-medium" onClick={onRunControls}>
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />

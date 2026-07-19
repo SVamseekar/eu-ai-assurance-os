@@ -10,12 +10,17 @@ export function CtaSection() {
           Ready to see your release gate?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Open the dashboard to register a system, run an eval gate, and get your first
-          PASS, REVIEW, or BLOCKED decision.
+          Request a tailored demo for your AI systems, or sign in if you already
+          have a workspace.
         </p>
-        <Button size="lg" className="mt-6" render={<Link href="/command" />}>
-          Open Dashboard
-        </Button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button size="lg" render={<Link href="/request-demo" />}>
+            Request demo
+          </Button>
+          <Button size="lg" variant="outline" render={<Link href="/login" />}>
+            Sign in
+          </Button>
+        </div>
       </div>
     </section>
   );

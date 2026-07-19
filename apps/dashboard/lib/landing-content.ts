@@ -5,6 +5,7 @@ import {
   FlaskConical,
   GitBranch,
   ClipboardCheck,
+  BadgeCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,6 +51,12 @@ export const capabilities: Capability[] = [
     title: "Approval Workflow & Audit Ledger",
     description:
       "Route blocked or in-review systems through owner, compliance, legal, and human-oversight approvals, with an append-only audit trail of every decision.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Certification readiness automation",
+    description:
+      "Weighted readiness score (0–100) and structured gap report toward conformity documentation — never a legal certificate or notified-body attestation.",
   },
 ];
 

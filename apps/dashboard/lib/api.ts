@@ -2,15 +2,23 @@ import type {
   AiSystem,
   ApprovalWorkflow,
   AuditEvent,
+  CertificationReadiness,
   Control,
   ControlStatus,
   DataContract,
+  DeterminationQuestionnaire,
+  DeterminationRun,
   DriftEvent,
   EvalRun,
   EvalRunOperationsView,
   EvidenceDocument,
+  EvidencePack,
   EvidenceQueryResponse,
+  RegItem,
+  RegMonitorFeed,
   ReleaseGateResponse,
+  SectorPack,
+  SectorPacksResponse,
   SystemControl,
   WorkflowNotification,
 } from "./types";
@@ -19,17 +27,30 @@ const BASE = "/api/proxy";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  headers.set("Content-Type", "application/json");
+  if (init?.body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const res = await fetch(`${BASE}${path}`, {
-    headers,
     ...init,
+    headers,
   });
   if (res.status === 401 && typeof window !== "undefined") {
     window.location.href = "/login";
   }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.status === 204 ? (null as T) : res.json();
+}
+
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export const api = {
@@ -43,6 +64,52 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ status, notes }),
       }),
+    /** Primary sealed JSON evidence pack (authenticated proxy). */
+    evidencePack: (id: string) => request<EvidencePack>(`/systems/${id}/evidence-pack`),
+    /**
+     * Phase 6 PDF export of the sealed pack. Returns contentSha256 from response header.
+     */
+    evidencePackPdf: async (id: string): Promise<{ contentSha256: string; filename: string }> => {
+      const res = await fetch(`${BASE}/systems/${id}/evidence-pack.pdf`);
+      if (res.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const contentSha256 = res.headers.get("X-Content-Sha256") ?? "";
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="?([^";]+)"?/i.exec(disposition);
+      const filename =
+        match?.[1] ?? `evidence-pack-${id}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const blob = await res.blob();
+      triggerBrowserDownload(blob, filename);
+      return { contentSha256, filename };
+    },
+    /** Certification readiness score + gaps (not legal certification). */
+    certificationReadiness: (id: string) =>
+      request<CertificationReadiness>(`/systems/${id}/certification-readiness`),
+    certificationReadinessExport: async (
+      id: string,
+      format: "json" | "pdf" = "json"
+    ): Promise<{ readinessStatus: string; filename: string }> => {
+      const res = await fetch(`${BASE}/systems/${id}/certification-readiness/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format }),
+      });
+      if (res.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const readinessStatus = res.headers.get("X-Readiness-Status") ?? "";
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="?([^";]+)"?/i.exec(disposition);
+      const filename =
+        match?.[1] ??
+        `certification-readiness-${id}.${format === "pdf" ? "pdf" : "json"}`;
+      const blob = await res.blob();
+      triggerBrowserDownload(blob, filename);
+      return { readinessStatus, filename };
+    },
   },
   controls: {
     catalog: () => request<Control[]>("/controls"),
@@ -131,5 +198,39 @@ export const api = {
       request<AuditEvent[]>(
         systemId ? `/audit-events?systemId=${systemId}` : "/audit-events"
       ),
+  },
+  determination: {
+    questionnaire: () => request<DeterminationQuestionnaire>("/determination/questionnaire"),
+    createRun: (systemId: string, answers: Record<string, unknown>) =>
+      request<DeterminationRun>(`/systems/${systemId}/determination/runs`, {
+        method: "POST",
+        body: JSON.stringify({ answers }),
+      }),
+    getRun: (systemId: string, runId: string) =>
+      request<DeterminationRun>(`/systems/${systemId}/determination/runs/${runId}`),
+    listRuns: (systemId: string) =>
+      request<DeterminationRun[]>(`/systems/${systemId}/determination/runs`),
+  },
+  regMonitor: {
+    items: (params?: { since?: string; reviewed?: boolean }) => {
+      const q = new URLSearchParams();
+      if (params?.since) q.set("since", params.since);
+      if (params?.reviewed !== undefined) q.set("reviewed", String(params.reviewed));
+      const suffix = q.toString() ? `?${q.toString()}` : "";
+      return request<RegMonitorFeed>(`/reg-monitor/items${suffix}`);
+    },
+    relevant: (systemId: string) =>
+      request<RegMonitorFeed>(`/systems/${systemId}/reg-monitor/relevant`),
+    markReviewed: (itemId: string, notes?: string) =>
+      request<RegItem>(`/reg-monitor/items/${itemId}/review`, {
+        method: "POST",
+        body: JSON.stringify({ notes }),
+      }),
+  },
+  sectorPacks: {
+    list: () => request<SectorPacksResponse>("/sector-packs"),
+    get: (packId: string) => request<SectorPack>(`/sector-packs/${packId}`),
+    resolve: (sector: string) =>
+      request<SectorPack>(`/sector-packs/resolve?sector=${encodeURIComponent(sector)}`),
   },
 };

@@ -43,7 +43,8 @@ Implemented MVP endpoints:
 - `PATCH /api/v1/systems/{id}`
 - `POST /api/v1/systems/{id}/risk-classification`
 - `GET /api/v1/systems/{id}/release-gate`
-- `GET /api/v1/systems/{id}/evidence-pack`
+- `GET /api/v1/systems/{id}/evidence-pack` (sealed JSON)
+- `GET /api/v1/systems/{id}/evidence-pack.pdf` (Phase 6 PDF export)
 - `POST /api/v1/evidence/documents`
 - `GET /api/v1/evidence/systems/{id}/documents`
 - `POST /api/v1/evidence/query`
@@ -105,6 +106,19 @@ Eval worker knobs:
 - `assurance.eval.callback.secret`
 - `assurance.eval.callback.signature-tolerance-seconds`
 
+Regulatory change monitoring (Part 14) knobs:
+
+- `assurance.reg-monitor.enabled` — scheduled poller (default true)
+- `assurance.reg-monitor.poll-interval-ms` — scheduler fixed delay (default 60000)
+- `assurance.reg-monitor.bootstrap-fixtures` — load curated offline fixtures (default true)
+- `assurance.reg-monitor.max-fetch-characters`
+- `assurance.reg-monitor.connect-timeout-seconds` / `response-timeout-seconds`
+
+The feed is **near-real-time polled** (not continuous legal push) and is an
+**assistive** feed, not an official legal bulletin. Impact hints prefer
+`UNCERTAIN` and never auto-change risk class or control status. Remote sources
+use SSRF-safe HTTPS fetch (DNS pin, redirects disabled).
+
 `EVAL_CALLBACK_SECRET` must be set in every runnable environment. Callback
 requests to `PATCH /api/v1/eval-runs/{id}/result` must include
 `X-Eval-Timestamp` and `X-Eval-Signature`, where the signature is
@@ -112,9 +126,10 @@ requests to `PATCH /api/v1/eval-runs/{id}/result` must include
 
 Operational endpoints:
 
-- `/actuator/health`
-- `/actuator/info`
-- `/actuator/metrics`
+- `/actuator/health` (public probes; liveness/readiness)
+- `/actuator/info` (authenticated)
+- `/actuator/metrics` (authenticated)
+- `/actuator/prometheus` (authenticated scrape format)
 
 Eval metrics include:
 
@@ -124,6 +139,15 @@ Eval metrics include:
 - `assurance.eval.run.failed`
 - `assurance.eval.run.retried`
 - `assurance.eval.callback.signature.rejected`
+
+Part 8 product metrics:
+
+- `assurance.release_gate.decision` (tag `decision`)
+- `assurance.audit.append`
+- `assurance.auth.login.failures`
+- Latency timers: `assurance.api.registry.read`, `assurance.api.evidence.query` (see `docs/NFR.md`, `docs/OPS.md`)
+
+CI release gate: `GET /api/v1/ci/release-gate?systemId=` + `scripts/ci-release-gate.sh`.
 
 The default profile uses portable text embeddings for H2 validation. The
 `postgres` profile also loads `classpath:db/postgresql`, including the pgvector

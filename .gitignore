@@ -5,7 +5,13 @@ build/
 target/
 .env
 .env.*
+!.env.example
 *.log
+# Terraform local state / plugins (skeleton uses null provider; never commit state)
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/terraform.tfvars
 coverage/
 .idea/
 .vscode/
