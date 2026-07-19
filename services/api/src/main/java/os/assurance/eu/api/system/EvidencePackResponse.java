@@ -21,6 +21,7 @@ public record EvidencePackResponse(
     List<Map<String, Object>> dataContracts,
     List<Map<String, Object>> approvals,
     List<AuditEvent> auditEvents,
+    Map<String, Object> determination,
     String evidencePackVersion,
     String contentSha256,
     String generator,

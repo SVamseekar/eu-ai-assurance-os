@@ -2,6 +2,7 @@ package os.assurance.eu.api.audit;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,7 +42,8 @@ public class AuditService {
       Map<String, Object> payload) {
     UUID tenantId = tenantContext.tenantId();
     UUID id = UUID.randomUUID();
-    Instant createdAt = Instant.now();
+    // Truncate to millis so hash input matches JDBC/H2 timestamp round-trip precision.
+    Instant createdAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     Instant retainUntil = createdAt.atZone(ZoneOffset.UTC).plusYears(retentionYears).toInstant();
     String prevHash = repository.findLatestByTenantId(tenantId)
         .map(AuditEventEntity::eventHash)

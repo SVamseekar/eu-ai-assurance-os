@@ -1,3 +1,17 @@
-# No overrides needed — profile isolation is handled directly in docker-compose.yml.
-# docker compose up            → starts postgres only
-# docker compose --profile full up → starts postgres + api
+# Local developer overrides (optional).
+# Compose auto-loads this file when present next to docker-compose.yml.
+#
+# Default stack is postgres + api (no profile flag required).
+# Optional profiles:
+#   docker compose --profile dashboard up --build
+#   docker compose --profile minio up --build
+#   docker compose --profile full up --build
+#
+# To point the API at MinIO when using the minio profile, either:
+#   1) Use scripts/compose-with-minio.sh, or
+#   2) Set in root .env:
+#        ASSURANCE_STORAGE_ENABLED=true
+#        ASSURANCE_STORAGE_ENDPOINT=http://minio:9000
+#        ASSURANCE_STORAGE_ACCESS_KEY_ID=minioadmin
+#        ASSURANCE_STORAGE_SECRET_ACCESS_KEY=minioadmin
+#        ASSURANCE_STORAGE_PATH_STYLE=true

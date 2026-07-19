@@ -1,8 +1,10 @@
 # Implementation Roadmap
 
+Honest status against `origin/main`. Program index: `docs/superpowers/plans/2026-07-20-INDEX.md`. Metrics: `docs/METRICS_CANONICAL.md`. Signoff: `docs/investigations/2026-07-20-roadmap-completion-signoff.md`.
+
 ## Phase 0: Prototype
 
-Status: complete.
+Status: **Complete**.
 
 - Static dashboard.
 - Simulated system registry.
@@ -12,74 +14,116 @@ Status: complete.
 - Evidence pack export.
 - README and engineering docs.
 
+Legacy static UI retained at `apps/web/` for reference only.
+
 ## Phase 1: Backend Foundation
 
-Status: complete.
+Status: **Complete**.
 
-- Choose backend stack: Spring Boot 3 recommended for this project.
-- Add PostgreSQL schema with Flyway.
-- Implement tenant, user, and role model.
-- Implement AI system registry APIs.
-- Implement audit event append API.
-- Add release gate calculation service.
-- Add backend tests for release gate logic.
+- Backend stack: Spring Boot 3.3 / Java 17 (`services/api`).
+- PostgreSQL schema with Flyway (H2 for local/default tests).
+- Tenant, user, and role model.
+- AI system registry APIs.
+- Audit event append API.
+- Release gate calculation service.
+- Backend tests for release gate logic.
 
 ## Phase 2: Evidence and RAG
 
-Status: production-hardened foundation complete.
+Status: **Complete** (production-hardened foundation).
 
 - Evidence document upload metadata: implemented.
 - Text extraction pipeline: implemented for provided text with metadata fallback.
-- Chunking and embedding: implemented with deterministic local embeddings.
-- Embedding provider seam: implemented with local deterministic provider and profile-based provider selection.
-- pgvector similarity search: local cosine search implemented; PostgreSQL profile includes pgvector/HNSW migration path.
+- Chunking and embedding: implemented with deterministic local embeddings (`local-hash`).
+- Embedding provider seam: implemented; postgres profile default `djl-sentence` (DJL + ONNX all-MiniLM-L6-v2).
+- pgvector similarity search: local cosine search + PostgreSQL HNSW migration path (`db/postgresql/V4`).
 - Citation-required answer generation: implemented.
-- Prompt injection safeguards for evidence documents: implemented.
-- Upload/query guardrails: implemented for source URI scheme, checksum, content length, metadata shape, query length, chunk size, provider provenance, and content hashing.
-- Static web app upload/list/query flow: implemented with API fallback to demo mode.
+- Prompt injection safeguards and upload/query guardrails: implemented.
+- Dashboard evidence upload/list/query flow: Next.js production UI.
 
-Deployment integrations remain: object-store/PDF extraction, non-local embedding
-provider implementation, production auth/RBAC, and operational monitoring.
+### Phase 2 leftovers (resolved or deferred with links)
+
+| Leftover | Status |
+|---|---|
+| Object-store / binary upload path | **Resolved (Part 9)** — optional S3/MinIO via `ASSURANCE_STORAGE_*`; Compose MinIO profile |
+| Non-local embedding provider | **Resolved** — DJL/ONNX on postgres profile |
+| Production auth / RBAC | **Resolved** — JWT + API keys (V7/V9); roles in `ROLE_MATRIX.md`; OAuth Part 4 |
+| Operational monitoring | **Resolved (Part 8)** — Actuator metrics + product counters; see `docs/OPS.md` |
+| PDF binary extraction from object store | **Deferred** — text/content upload + synthetic URI path remain primary |
 
 ## Phase 3: Eval Gates
 
-Status: API slice plus durable MVP worker queue implemented.
+Status: **Complete**.
 
-- Eval dataset registry: implemented for create/list with tenant scope.
-- Eval run creation and status tracking: implemented for registered datasets.
-- Metrics capture: implemented for completed runs via API result callback.
-- Threshold-based release decision update: implemented for system eval score and release gate recalculation.
-- Worker-owned metric execution for faithfulness, relevance, safety refusal, bias slices, latency, and cost: implemented as deterministic MVP execution.
-- Async worker queue: implemented with durable run state, background dispatch, retry metadata, and failure capture.
+- Eval dataset registry: create/list with tenant scope.
+- Eval run creation and status tracking for registered datasets.
+- Metrics capture via API result callback (HMAC-SHA-256).
+- Threshold-based release decision update and gate recalculation.
+- Worker-owned metric execution (deterministic MVP metrics).
+- Async worker queue: durable DB state, background dispatch, retry metadata, failure capture (`SELECT … FOR UPDATE SKIP LOCKED`). Kafka is **not** required.
 
 ## Phase 4: Data Contracts
 
-Status: complete.
+Status: **Complete**.
 
-- Data contract CRUD: implemented for create/list/read/update with tenant scope.
-- Drift event ingestion: implemented with open, acknowledged, and resolved states.
-- Contract-to-system mapping: implemented through persisted `system_id`.
-- Lineage display: implemented as interactive React Flow DAG (data source → contract → AI system) in Next.js dashboard at `/contracts`. Animated edges for breach/warning contracts.
-- Release gate integration: implemented for warning and breach rollups.
-- Frontend rewrite: vanilla JS prototype replaced with Next.js 16 + TypeScript + Tailwind CSS + shadcn/ui + TanStack Query production dashboard at `apps/dashboard/`.
+- Data contract CRUD with tenant scope.
+- Drift event ingestion (open / acknowledged / resolved).
+- Contract-to-system mapping via `system_id`.
+- Lineage display: React Flow DAG in Next.js dashboard at `/contracts`.
+- Release gate integration for warning and breach rollups.
+- Frontend rewrite: Next.js 16 + TypeScript + Tailwind + shadcn/ui + TanStack Query at `apps/dashboard/`.
 
 ## Phase 5: Workflow
 
-Status: complete.
+Status: **Complete** (V8/V10; Part 0 finish).
 
-- Approval stages: implemented for engineering lead, compliance, and legal signoff.
-- Reviewer assignment: implemented by tenant role with assigned reviewer tracking.
-- Override workflow: implemented for ADMIN actors with required rationale and audit events.
-- Human oversight evidence capture: implemented for legal signoff approval.
-- Notifications: implemented as persisted reviewer workflow notifications.
-- Approvals dashboard: implemented against live workflow APIs for open, assigned, and notification views.
+- Approval stages: engineering lead, compliance, legal signoff.
+- Reviewer assignment by tenant role.
+- Override workflow for ADMIN with rationale + audit.
+- Human oversight evidence capture for legal signoff.
+- Notifications: persisted reviewer workflow notifications.
+- Approvals dashboard against live workflow APIs.
+
+Evidence: PR #1 (Part 0), workflow migrations V8/V10.
 
 ## Phase 6: Enterprise Readiness
 
-- SSO/OIDC.
-- Tenant isolation hardening.
-- Immutable audit storage.
-- Evidence pack PDF/JSON export.
-- CI/CD release gate integration.
-- Observability dashboards.
-- Deployment with Docker and Terraform.
+Status: **Complete** (items landed on `main`; residual: OAuth **production smoke** not signed off).
+
+| Item | Status | Evidence |
+|---|---|---|
+| SSO/OIDC (Google + Microsoft) | **Complete (code + tests)**; prod smoke pending | Part 4 · PR #27 · `docs/oauth-production-smoke-test.md` |
+| Tenant isolation hardening | **Complete** | Part 10 · PR #7 · `TenantIsolationTest` |
+| Immutable audit storage (hash-chained) | **Complete** | Part 6 · PR #5 · Flyway V13 · verify endpoints |
+| Evidence pack PDF/JSON export | **Complete** | Part 7 · PR #9 · sealed `contentSha256` |
+| CI/CD release gate integration | **Complete** | Part 8 · PR #24 · `GET /api/v1/ci/release-gate` · `scripts/ci-release-gate.sh` |
+| Observability (metrics / health) | **Complete** | Part 8 · Actuator + product counters · `docs/OPS.md` |
+| Deployment with Docker and Terraform | **Complete** | Part 9 · PR #26 · `infra/docker-compose.yml` · `infra/terraform/` |
+
+## Phase 7: Program expansions (assisted + readiness + reg + sector)
+
+Status: **Complete** (assisted naming forever — never final legal authority).
+
+| Item | Status | Evidence |
+|---|---|---|
+| Assisted obligation determination | **Complete** | Part 12 · PR #28 · Flyway V15 · `/determination/*` |
+| Certification readiness score + gaps | **Complete** | Part 13 · PR #30 · **not** legal certification |
+| Polled regulatory change monitoring feed | **Complete** | Part 14 · PR #32 · Flyway V16 · not an official legal bulletin |
+| Sector packs: insurance, HR, finance + SPI | **Complete** | Part 15 · PR #34 · stubs only; see `docs/SECTOR_PACKS.md` |
+
+## Cross-cutting delivery (Wave F and docs)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Industry-grade GitHub (CI, license, CONTRIBUTING) | **Complete** | Part 1 · PR #2 |
+| Landing legal pages + demo form + SEO | **Complete** | Part 3 · PR #36 |
+| Metrics canon freeze | **Complete** | Part 2 · PR #38 · `docs/METRICS_CANONICAL.md` |
+| Docs alignment (PRD / ROADMAP / README / arch) | **Complete** | Part 11 · PR #40 |
+| CV / pitch / portfolio binaries | **Planned** | Part 16 — no binary edits in Part 11 |
+
+## Still not claimed
+
+- Notified-body / official conformity assessment / “you are certified”.
+- Production OAuth smoke verified until smoke runbook is executed.
+- Live proprietary vendor connectors (Workday, Guidewire, core banking, …).
+- Customer counts, ARR, or invented commercial metrics.

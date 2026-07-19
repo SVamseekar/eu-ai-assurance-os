@@ -11,17 +11,24 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class ApiWebConfig implements WebMvcConfigurer {
   @Override
   public void addCorsMappings(CorsRegistry registry) {
+    String[] localOrigins = {
+        "http://localhost:3000",
+        "http://localhost:4173",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:4173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8000"
+    };
     registry.addMapping("/api/**")
-        .allowedOrigins(
-            "http://localhost:3000",
-            "http://localhost:4173",
-            "http://localhost:5173",
-            "http://localhost:8000",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:4173",
-            "http://127.0.0.1:5173",
-            "http://127.0.0.1:8000")
+        .allowedOrigins(localOrigins)
         .allowedMethods("GET", "POST", "PUT", "PATCH", "OPTIONS")
+        .allowedHeaders("*");
+    // OAuth start may be hit from the dashboard origin before redirecting to the IdP.
+    registry.addMapping("/auth/**")
+        .allowedOrigins(localOrigins)
+        .allowedMethods("GET", "POST", "OPTIONS")
         .allowedHeaders("*");
   }
 

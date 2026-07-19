@@ -9,6 +9,8 @@ import { DecisionBadge } from "./decision-badge";
 import { normaliseDecision, cn, formatDate } from "@/lib/utils";
 import type { AiSystem, DataContract, DriftEvent, AuditEvent } from "@/lib/types";
 import { useDashboard } from "@/context/dashboard-context";
+import { ObligationMapWizard } from "./obligation-map-wizard";
+import { Button } from "./ui/button";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -19,7 +21,8 @@ import {
   Calendar,
   Activity,
   Layers,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Scale,
 } from "lucide-react";
 
 interface SystemDetailsSheetProps {
@@ -31,6 +34,7 @@ interface SystemDetailsSheetProps {
 
 export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: SystemDetailsSheetProps) {
   const [activeTab, setActiveTab] = useState<"details" | "approval">("details");
+  const [obligationWizardOpen, setObligationWizardOpen] = useState(false);
   const { activeRole } = useDashboard();
 
   if (!system) return null;
@@ -91,6 +95,13 @@ export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: Sys
         </button>
       </div>
 
+      <ObligationMapWizard
+        isOpen={obligationWizardOpen}
+        onClose={() => setObligationWizardOpen(false)}
+        systemId={system.id}
+        systemName={system.name}
+      />
+
       {activeTab === "details" && (
         <>
       {/* Risk and Decision badges */}
@@ -125,6 +136,21 @@ export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: Sys
         <p className="text-xs text-muted-foreground leading-relaxed italic bg-muted/20 border border-border p-3 rounded-lg">
           {system.riskBasis}
         </p>
+      </div>
+
+      {/* Assisted obligation map */}
+      <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-2">
+        <h4 className="text-xs font-semibold text-foreground uppercase tracking-widest flex items-center gap-1.5">
+          <Scale className="w-3.5 h-3.5 text-muted-foreground" />
+          Obligation map
+        </h4>
+        <p className="text-[10px] text-muted-foreground leading-snug">
+          Suggested applicability / obligation map only. Assisted determination — not legal advice.
+          Requires human legal review. Never a compliance or certification claim.
+        </p>
+        <Button size="sm" variant="outline" className="w-full" onClick={() => setObligationWizardOpen(true)}>
+          Open obligation map wizard
+        </Button>
       </div>
 
       {/* Metrics */}

@@ -119,6 +119,9 @@ class TenantContextFilterTest {
         assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/health")).isTrue();
         assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/health/liveness")).isTrue();
         assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/health/readiness")).isTrue();
+        // Part 4 OAuth start + callback
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/auth/oauth/google/start")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/auth/oauth/microsoft/callback")).isTrue();
 
         // Everything else requires credentials — including metrics, systems, and eval callbacks.
         assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/metrics")).isFalse();
