@@ -66,6 +66,8 @@ public class EvalRunController {
   @PostMapping
   @ResponseStatus(HttpStatus.ACCEPTED)
   public EvalRunResponse createEvalRun(@Valid @RequestBody CreateEvalRunRequest request) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(request.systemId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
     EvalDataset dataset = datasets.findByName(request.dataset())

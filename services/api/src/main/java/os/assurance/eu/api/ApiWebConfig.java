@@ -18,7 +18,7 @@ public class ApiWebConfig implements WebMvcConfigurer {
             "http://127.0.0.1:4173",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:8000")
-        .allowedMethods("GET", "POST", "PATCH", "OPTIONS")
+        .allowedMethods("GET", "POST", "PUT", "PATCH", "OPTIONS")
         .allowedHeaders("*");
   }
 }

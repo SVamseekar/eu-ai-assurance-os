@@ -7,17 +7,30 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import os.assurance.eu.api.auth.JwtService;
 
+/**
+ * Real authentication gate for the API. Spring Security is intentionally {@code permitAll};
+ * this filter must never be bypassed for application routes.
+ *
+ * <p>Unauthenticated allowlist is intentionally narrow: JWKS, auth token endpoints, and health probes only.
+ * Client-supplied {@code X-Tenant-Id} / {@code X-Actor-Id} are never trusted.
+ */
 @Component
+@Order(2)
 public class TenantContextFilter extends OncePerRequestFilter {
     static final String API_KEY_HEADER = "X-Api-Key";
     static final String AUTHORIZATION_HEADER = "Authorization";
     static final String BEARER_PREFIX = "Bearer ";
 
-    private static final Set<String> UNAUTHENTICATED_PATHS = Set.of(
+    /**
+     * Paths that skip credential checks. Keep health, auth, and JWKS only.
+     * Subpaths under {@code /actuator/health} (liveness/readiness) are also allowed.
+     */
+    static final Set<String> UNAUTHENTICATED_PATHS = Set.of(
         "/.well-known/jwks.json",
         "/auth/login",
         "/auth/refresh",
@@ -37,6 +50,13 @@ public class TenantContextFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
+    static boolean isUnauthenticatedPath(String requestUri) {
+        if (requestUri == null) {
+            return false;
+        }
+        return UNAUTHENTICATED_PATHS.contains(requestUri) || requestUri.startsWith("/actuator/health");
+    }
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -44,7 +64,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         String requestUri = request.getRequestURI();
-        if (UNAUTHENTICATED_PATHS.contains(requestUri) || requestUri.startsWith("/actuator/health")) {
+        if (isUnauthenticatedPath(requestUri)) {
             filterChain.doFilter(request, response);
             return;
         }

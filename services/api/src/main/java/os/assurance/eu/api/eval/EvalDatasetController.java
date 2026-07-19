@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.tenant.TenantAuthorizationService;
+import os.assurance.eu.api.tenant.UserRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,10 +22,15 @@ import org.springframework.web.server.ResponseStatusException;
 public class EvalDatasetController {
   private final EvalDatasetRepository datasets;
   private final AuditService auditService;
+  private final TenantAuthorizationService authorizationService;
 
-  public EvalDatasetController(EvalDatasetRepository datasets, AuditService auditService) {
+  public EvalDatasetController(
+      EvalDatasetRepository datasets,
+      AuditService auditService,
+      TenantAuthorizationService authorizationService) {
     this.datasets = datasets;
     this.auditService = auditService;
+    this.authorizationService = authorizationService;
   }
 
   @GetMapping
@@ -34,6 +41,7 @@ public class EvalDatasetController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public EvalDataset createDataset(@Valid @RequestBody CreateEvalDatasetRequest request) {
+    authorizationService.requireAnyRole(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD);
     if (datasets.existsByNameAndVersion(request.name(), request.version())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Eval dataset version already exists");
     }

@@ -109,4 +109,28 @@ class TenantContextFilterTest {
         // 401 (bad credentials) is fine here — the point is it's not blocked by the tenant filter before reaching the controller.
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
+
+    @Test
+    void unauthenticatedAllowlistIsNarrow() {
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/.well-known/jwks.json")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/auth/login")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/auth/refresh")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/auth/logout")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/health")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/health/liveness")).isTrue();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/health/readiness")).isTrue();
+
+        // Everything else requires credentials — including metrics, systems, and eval callbacks.
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/actuator/metrics")).isFalse();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/api/v1/systems")).isFalse();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/api/v1/eval-runs/x/result")).isFalse();
+        assertThat(TenantContextFilter.isUnauthenticatedPath("/auth/register")).isFalse();
+    }
+
+    @Test
+    void actuatorMetricsRequiresAuthentication() {
+        var response = rest.getForEntity("/actuator/metrics", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
 }

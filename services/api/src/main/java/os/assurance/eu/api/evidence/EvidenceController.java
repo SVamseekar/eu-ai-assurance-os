@@ -4,8 +4,11 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.util.StringUtils;
+import os.assurance.eu.api.observability.NfrMetrics;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
+import os.assurance.eu.api.tenant.TenantAuthorizationService;
+import os.assurance.eu.api.tenant.UserRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,16 +28,27 @@ public class EvidenceController {
   private final AiSystemRepository systems;
   private final EvidenceService evidenceService;
   private final FileStorageService fileStorage;
+  private final TenantAuthorizationService authorizationService;
+  private final NfrMetrics nfrMetrics;
 
-  public EvidenceController(AiSystemRepository systems, EvidenceService evidenceService, FileStorageService fileStorage) {
+  public EvidenceController(
+      AiSystemRepository systems,
+      EvidenceService evidenceService,
+      FileStorageService fileStorage,
+      TenantAuthorizationService authorizationService,
+      NfrMetrics nfrMetrics) {
     this.systems = systems;
     this.evidenceService = evidenceService;
     this.fileStorage = fileStorage;
+    this.authorizationService = authorizationService;
+    this.nfrMetrics = nfrMetrics;
   }
 
   @PostMapping("/documents")
   @ResponseStatus(HttpStatus.CREATED)
   public EvidenceDocumentResponse createDocument(@Valid @RequestBody CreateEvidenceDocumentRequest request) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(request.systemId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
     return evidenceService.ingest(request);
@@ -48,6 +62,8 @@ public class EvidenceController {
           @RequestParam String title,
           @RequestPart("file") MultipartFile file,
           @RequestParam(required = false) String checksum) throws Exception {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(systemId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
     String filename = StringUtils.hasText(file.getOriginalFilename())
@@ -69,8 +85,10 @@ public class EvidenceController {
 
   @PostMapping("/query")
   public EvidenceQueryResponse queryEvidence(@Valid @RequestBody EvidenceQueryRequest request) {
-    AiSystem system = systems.findById(request.systemId())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
-    return evidenceService.answer(system, request.question());
+    return nfrMetrics.recordEvidenceQuery(() -> {
+      AiSystem system = systems.findById(request.systemId())
+          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+      return evidenceService.answer(system, request.question());
+    });
   }
 }
