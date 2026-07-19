@@ -86,6 +86,7 @@ Full template: [`.env.example`](./.env.example). Deploy matrix: [docs/DEPLOYMENT
 | `ASSURANCE_API_BASE_URL` | Dashboard | Upstream API base (default `http://localhost:8080`) |
 | `NEXT_PUBLIC_SITE_URL` | Dashboard | Canonical site URL for SEO/metadata |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Dashboard | Optional GA4 measurement id |
+| `DISCORD_WEBHOOK_URL` / `DISCORD_DEMO_WEBHOOK_URL` | Dashboard | Server-only: demo form → Discord (Part 3) |
 | `ASSURANCE_STORAGE_*` | API | Optional S3/MinIO object store for evidence uploads |
 | `EVIDENCE_EMBEDDING_PROVIDER` | API | `local-hash` (H2) or `djl-sentence` (postgres default) |
 
@@ -96,7 +97,8 @@ Full template: [`.env.example`](./.env.example). Deploy matrix: [docs/DEPLOYMENT
 | 0–4 Core product (systems, evidence, evals, contracts) | Complete |
 | 5 Approval workflows + notifications + oversight | Complete (V10) |
 | 6 Enterprise (OAuth, immutable audit, PDF packs, Docker/TF, deeper tenant NFRs) | Partial / in progress |
-| Landing legal pages, industry CI, metrics freeze | In progress via `docs/superpowers/plans/` |
+| Landing legal pages + demo form + SEO (Part 3) | Shipping — metrics customer freeze is Part 2 |
+| Metrics freeze + docs alignment (Parts 2, 11) | Planned via `docs/superpowers/plans/` |
 
 See [docs/ROADMAP.md](./docs/ROADMAP.md) and [docs/superpowers/plans/2026-07-20-INDEX.md](./docs/superpowers/plans/2026-07-20-INDEX.md).
 

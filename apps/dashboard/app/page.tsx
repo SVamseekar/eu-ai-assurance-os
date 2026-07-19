@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingHero } from "@/components/landing/landing-hero";
+import { MetricsStrip } from "@/components/landing/metrics-strip";
 import { ProblemSection } from "@/components/landing/problem-section";
 import { CapabilitiesSection } from "@/components/landing/capabilities-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
@@ -34,6 +35,19 @@ function JsonLd() {
         name: siteConfig.name,
         url: siteConfig.url,
         description: siteConfig.description,
+        email: siteConfig.supportEmail,
+      },
+      {
+        "@type": "WebSite",
+        name: siteConfig.name,
+        url: siteConfig.url,
+        description: siteConfig.description,
+        inLanguage: "en-GB",
+        publisher: {
+          "@type": "Organization",
+          name: siteConfig.name,
+          url: siteConfig.url,
+        },
       },
       {
         "@type": "SoftwareApplication",
@@ -73,6 +87,7 @@ export default function LandingPage() {
       <LandingHeader />
       <main>
         <LandingHero />
+        <MetricsStrip />
         <ProblemSection />
         <CapabilitiesSection />
         <HowItWorksSection />

@@ -139,8 +139,8 @@ Terraform under `infra/terraform/` is a **skeleton** (validate/fmt only). Fill p
 | `ASSURANCE_API_BASE_URL` | — | **Required** | Server-side only (BFF) |
 | `NEXT_PUBLIC_SITE_URL` | — | Recommended | Canonical SEO URL |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | — | Optional | GA4 |
-| OAuth client ids/secrets | Future Part 4 | Future Part 4 | Placeholders in `.env.example` |
-| `DISCORD_*` | Optional ops | Optional | Never commit tokens |
+| OAuth client ids/secrets | Dashboard / IdP | Dashboard | See Part 4 smoke doc |
+| `DISCORD_WEBHOOK_URL` or `DISCORD_DEMO_WEBHOOK_URL` | — | Optional (required for live demo form delivery) | Server-only; never commit tokens |
 
 Full template: [`.env.example`](../.env.example). Secrets handling: [NFR.md](./NFR.md#encryption-and-secrets-nfr).
 
@@ -172,7 +172,9 @@ Full template: [`.env.example`](../.env.example). Secrets handling: [NFR.md](./N
    - `ASSURANCE_API_BASE_URL=https://api.example.com`
    - `NEXT_PUBLIC_SITE_URL=https://euassuranceai.example.com`
    - Optional `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+   - Optional `DISCORD_DEMO_WEBHOOK_URL` or `DISCORD_WEBHOOK_URL` for `/request-demo` delivery
 3. Deploy production; verify login + `/api/proxy` against the API.
+4. Smoke public marketing paths: `/privacy`, `/terms`, `/refunds`, `/request-demo` return 200.
 
 ### D. Post-deploy checks
 
