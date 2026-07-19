@@ -7,18 +7,22 @@ import {
 } from "@/components/ui/select";
 import { RiskTopology } from "@/components/risk-topology";
 import { useContracts } from "@/hooks/use-contracts";
+import { useOpenWorkflows } from "@/hooks/use-open-workflows";
+import { useSystems } from "@/hooks/use-systems";
 import { MOCK_CONTRACTS } from "@/lib/mock-data";
 import { normaliseDecision, cn, formatDate } from "@/lib/utils";
 import {
   TrendingUp, TrendingDown, Minus,
   ShieldAlert, AlertTriangle, CheckCircle2, Clock,
-  ShieldCheck, FileText, Sparkles
+  ShieldCheck, FileText, GitBranch
 } from "lucide-react";
 import { DecisionBadge } from "@/components/decision-badge";
 import { useDashboard } from "@/context/dashboard-context";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { ApiStatusPill } from "@/components/api-status-pill";
+import { CertificationReadinessCard } from "@/components/certification-readiness-card";
 
 const ACTOR_NAMES: Record<string, string> = {
   "actor-priya": "Priya Nair",
@@ -46,9 +50,19 @@ function toTitle(s: string) {
 }
 
 export default function CommandPage() {
-  const { allSystems: systems, openSystemDetails, allAudits: auditEvents, overrideGate } = useDashboard();
+  const { allSystems: systems, openSystemDetails, allAudits: auditEvents, overrideGate } =
+    useDashboard();
   const { data: contracts = MOCK_CONTRACTS } = useContracts();
-  
+  const { data: openWorkflows = [] } = useOpenWorkflows();
+  const { isError: systemsError, isSuccess: systemsSuccess, data: systemsData } = useSystems();
+  // Same heuristic as Evidence: live API when systems query succeeds with real IDs
+  const apiOnline =
+    systemsSuccess &&
+    !systemsError &&
+    Array.isArray(systemsData) &&
+    systemsData.length > 0 &&
+    !String(systemsData[0]?.id ?? "").startsWith("mock-");
+
   const [riskFilter, setRiskFilter] = useState<"all" | "high" | "limited" | "minimal">("all");
 
   // Override Modal States
@@ -58,9 +72,14 @@ export default function CommandPage() {
 
   const blocked   = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Blocked");
   const review    = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Review");
+  const passing   = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Pass");
   const highRisk  = systems.filter((s) => s.riskClass === "high").length;
-  const avgEval   = Math.round(systems.reduce((sum, s) => sum + s.evalScore, 0) / systems.length);
-  const avgEvidence = Math.round(systems.reduce((sum, s) => sum + s.evidenceCoverage, 0) / systems.length);
+  const avgEval   = systems.length
+    ? Math.round(systems.reduce((sum, s) => sum + s.evalScore, 0) / systems.length)
+    : 0;
+  const avgEvidence = systems.length
+    ? Math.round(systems.reduce((sum, s) => sum + s.evidenceCoverage, 0) / systems.length)
+    : 0;
   const breaches  = contracts.filter((c) => c.status === "BREACH").length;
   const warnings  = contracts.filter((c) => c.status === "WARNING").length;
 
@@ -72,21 +91,29 @@ export default function CommandPage() {
       trend: "neutral" as const,
     },
     {
-      label: "Release Blockers",
-      value: blocked.length,
-      sub: blocked.length > 0 ? blocked.map((s) => s.name).join(", ") : "All systems clear",
-      trend: (blocked.length > 0 ? "down" : "up") as "up" | "down" | "neutral",
+      label: "Release Gate Decisions",
+      value: `${blocked.length} / ${review.length} / ${passing.length}`,
+      sub: "Blocked · Review · Pass",
+      trend: (blocked.length > 0 ? "down" : review.length > 0 ? "neutral" : "up") as
+        | "up"
+        | "down"
+        | "neutral",
     },
     {
-      label: "Avg. Eval Score",
-      value: `${avgEval}%`,
-      sub: avgEval >= 85 ? `${avgEvidence}% evidence avg · on target` : `${avgEvidence}% evidence avg · below 85% gate`,
-      trend: (avgEval >= 85 ? "up" : "down") as "up" | "down" | "neutral",
+      label: "Open Workflows",
+      value: openWorkflows.length,
+      sub:
+        openWorkflows.length > 0
+          ? `${openWorkflows.length} approval cycle${openWorkflows.length === 1 ? "" : "s"} pending`
+          : "No open approval cycles",
+      trend: (openWorkflows.length > 0 ? "neutral" : "up") as "up" | "down" | "neutral",
     },
     {
       label: "Contract Health",
       value: breaches > 0 ? `${breaches} breach${breaches > 1 ? "es" : ""}` : warnings > 0 ? `${warnings} warning${warnings > 1 ? "s" : ""}` : "All healthy",
-      sub: breaches > 0 ? `${warnings} warning${warnings !== 1 ? "s" : ""} · ${contracts.length - breaches - warnings} healthy` : `${contracts.length} contracts monitored`,
+      sub: breaches > 0
+        ? `${warnings} warning${warnings !== 1 ? "s" : ""} · open breaches block release`
+        : `${contracts.length} contracts · avg eval ${avgEval}% · evidence ${avgEvidence}%`,
       trend: (breaches > 0 ? "down" : warnings > 0 ? "neutral" : "up") as "up" | "down" | "neutral",
     },
   ];
@@ -132,6 +159,15 @@ export default function CommandPage() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs text-muted-foreground">
+            Ops summary — gate decisions, open approvals, contract breaches (from live APIs or demo data).
+          </p>
+        </div>
+        <ApiStatusPill online={apiOnline} />
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         {metrics.map((m) => (
@@ -139,22 +175,6 @@ export default function CommandPage() {
             <CardContent className="pt-5 pb-4 relative overflow-hidden">
               <p className="text-xs text-muted-foreground mb-3">{m.label}</p>
               <p className="text-2xl font-bold tracking-tight mb-2">{m.value}</p>
-              
-              {/* Compliance index mini line graph */}
-              {m.label === "Avg. Eval Score" && (
-                <div className="w-full h-7 mb-2 overflow-visible">
-                  <svg viewBox="0 0 100 20" className="w-full h-full text-primary fill-none overflow-visible">
-                    <path
-                      d="M 5,15 L 20,13 L 35,16 L 50,11 L 65,14 L 80,9 L 95,5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <circle cx="95" cy="5" r="1.5" fill="currentColor" />
-                  </svg>
-                </div>
-              )}
 
               <div className="flex items-center gap-1.5">
                 {m.trend === "up"      && <TrendingUp  className="w-3 h-3 text-emerald-500 shrink-0" />}
@@ -173,6 +193,60 @@ export default function CommandPage() {
           </Card>
         ))}
       </div>
+
+      {/* Certification readiness (score + gaps — not legal certification) */}
+      {systems.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          {systems.slice(0, 2).map((s) => (
+            <CertificationReadinessCard
+              key={s.id}
+              systemId={s.id}
+              systemName={s.name}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Open workflows ops strip */}
+      {openWorkflows.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <GitBranch className="w-4 h-4 text-muted-foreground" />
+              Open approval workflows
+            </CardTitle>
+            <CardDescription>
+              Pending human oversight cycles that may block high-risk releases.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="divide-y divide-border max-h-36 overflow-y-auto">
+              {openWorkflows.slice(0, 8).map((wf) => {
+                const system = systems.find((s) => s.id === wf.systemId);
+                return (
+                  <div
+                    key={wf.id}
+                    className="flex items-center justify-between gap-3 px-6 py-2.5 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">
+                        {system?.name ?? wf.systemId}
+                      </p>
+                      <p className="text-muted-foreground truncate">
+                        {wf.trigger} · {wf.stages?.find((st) => st.status === "PENDING")?.requiredRole
+                          ?? "in progress"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-md bg-amber-50 px-2 py-0.5 font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                      OPEN
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Row 2: Analytics Donut & Release Overrides widget */}
       <div className="grid grid-cols-3 gap-4">

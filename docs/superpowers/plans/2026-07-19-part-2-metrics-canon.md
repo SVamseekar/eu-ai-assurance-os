@@ -62,6 +62,8 @@ Include before/after for each bullet.
 
 ### Done when
 
-- [ ] Canon file committed with measured date  
-- [ ] Instruction packet ready for Claude Chat / other agents  
-- [ ] No channel still claims FAISS or HMAC audit stream for this product  
+- [x] Canon file committed with measured date (`docs/METRICS_CANONICAL.md`, 2026-07-20 @ c0d5cd4)  
+- [x] Instruction packet ready for Claude Chat / other agents (`docs/investigations/2026-07-19-channel-update-instructions.md`)  
+- [x] Landing strip wired to `apps/dashboard/lib/metrics-canon.ts`  
+- [x] Forbidden phrases documented (FAISS, HMAC audit-stream-only, Next 14, V1–V6-only, “certified”, unqualified legal determination)  
+- [x] PR merged; INDEX Part 2 → Complete (channel **binaries** remain Part 16)  

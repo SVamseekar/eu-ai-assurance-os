@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 
@@ -15,6 +16,7 @@ public class AuthController {
     private final UserJpaRepository users;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final AssuranceMetrics assuranceMetrics;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     // Constant-time defense against email-enumeration via login latency: bcrypt verification
@@ -23,10 +25,15 @@ public class AuthController {
     private final String dummyHashForTimingParity = new BCryptPasswordEncoder(12)
         .encode("dummy-password-never-matches-anything");
 
-    public AuthController(UserJpaRepository users, JwtService jwtService, RefreshTokenService refreshTokenService) {
+    public AuthController(
+            UserJpaRepository users,
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService,
+            AssuranceMetrics assuranceMetrics) {
         this.users = users;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.assuranceMetrics = assuranceMetrics;
     }
 
     @PostMapping("/auth/login")
@@ -37,6 +44,8 @@ public class AuthController {
             : dummyHashForTimingParity;
         boolean passwordMatches = passwordEncoder.matches(request.password(), hashToVerifyAgainst);
         if (user == null || user.passwordHash() == null || !passwordMatches) {
+            // Single reason tag — do not distinguish unknown user vs bad password (enumeration).
+            assuranceMetrics.authLoginFailure("invalid_credentials");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
         return issueTokenPair(user.id(), user.tenantId(), user.role());

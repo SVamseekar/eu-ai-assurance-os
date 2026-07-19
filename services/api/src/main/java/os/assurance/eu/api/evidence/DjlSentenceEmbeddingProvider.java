@@ -23,8 +23,10 @@ import java.net.http.HttpResponse;
 
 public class DjlSentenceEmbeddingProvider implements EvidenceEmbeddingProvider {
 
-    private static final String MODEL_URL =
-        "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx";
+    private static final String HF_BASE =
+        "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main";
+    private static final String MODEL_URL = HF_BASE + "/onnx/model.onnx";
+    private static final String TOKENIZER_URL = HF_BASE + "/tokenizer.json";
 
     private final ZooModel<NDList, NDList> model;
     private final HuggingFaceTokenizer tokenizer;
@@ -32,17 +34,15 @@ public class DjlSentenceEmbeddingProvider implements EvidenceEmbeddingProvider {
     public DjlSentenceEmbeddingProvider() throws Exception {
         Path modelDir = Files.createTempDirectory("all-minilm-l6-v2");
         Path modelFile = modelDir.resolve("model.onnx");
-        if (!Files.exists(modelFile)) {
-            HttpClient client = HttpClient.newBuilder()
-                .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
-                .build();
-            HttpResponse<Path> resp = client.send(
-                HttpRequest.newBuilder().uri(URI.create(MODEL_URL)).GET().build(),
-                HttpResponse.BodyHandlers.ofFile(modelFile));
-            if (resp.statusCode() != 200) {
-                throw new IllegalStateException("Failed to download ONNX model: HTTP " + resp.statusCode());
-            }
-        }
+        Path tokenizerFile = modelDir.resolve("tokenizer.json");
+        HttpClient client = HttpClient.newBuilder()
+            .followRedirects(java.net.http.HttpClient.Redirect.ALWAYS)
+            .build();
+        downloadIfMissing(client, MODEL_URL, modelFile, "ONNX model");
+        // Load tokenizer from an absolute file path. Passing a bare HuggingFace repo id
+        // breaks inside some container runtimes (RelativeUrlWithoutBase).
+        downloadIfMissing(client, TOKENIZER_URL, tokenizerFile, "tokenizer.json");
+
         Criteria<NDList, NDList> criteria = Criteria.builder()
             .setTypes(NDList.class, NDList.class)
             .optModelPath(modelDir)
@@ -51,7 +51,23 @@ public class DjlSentenceEmbeddingProvider implements EvidenceEmbeddingProvider {
             .optTranslator(new PassThroughTranslator())
             .build();
         this.model = criteria.loadModel();
-        this.tokenizer = HuggingFaceTokenizer.newInstance("sentence-transformers/all-MiniLM-L6-v2");
+        this.tokenizer = HuggingFaceTokenizer.builder()
+            .optTokenizerPath(tokenizerFile)
+            .build();
+    }
+
+    private static void downloadIfMissing(HttpClient client, String url, Path dest, String label)
+            throws Exception {
+        if (Files.exists(dest) && Files.size(dest) > 0) {
+            return;
+        }
+        HttpResponse<Path> resp = client.send(
+            HttpRequest.newBuilder().uri(URI.create(url)).GET().build(),
+            HttpResponse.BodyHandlers.ofFile(dest));
+        if (resp.statusCode() != 200) {
+            throw new IllegalStateException(
+                "Failed to download " + label + " from " + url + ": HTTP " + resp.statusCode());
+        }
     }
 
     @Override
