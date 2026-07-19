@@ -20,7 +20,7 @@ jobs:
       dashboard: ${{ steps.filter.outputs.dashboard }}
       terraform: ${{ steps.filter.outputs.terraform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -41,7 +41,7 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -61,7 +61,7 @@ jobs:
       # H2 tests must not require production secrets
       EVAL_CALLBACK_SECRET: ""
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Skip — no API changes
         if: needs.changes.outputs.api != 'true' && github.event_name == 'pull_request'
@@ -100,7 +100,7 @@ jobs:
     env:
       EVAL_CALLBACK_SECRET: ""
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Skip — no API changes
         if: needs.changes.outputs.api != 'true' && github.event_name == 'pull_request'
@@ -140,7 +140,7 @@ jobs:
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ""
       ASSURANCE_API_BASE_URL: http://localhost:8080
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Skip — no dashboard changes
         if: needs.changes.outputs.dashboard != 'true' && github.event_name == 'pull_request'
@@ -171,7 +171,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Skip — no Terraform changes
         if: needs.changes.outputs.terraform != 'true' && github.event_name == 'pull_request'
