@@ -27,8 +27,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
     static final String BEARER_PREFIX = "Bearer ";
 
     /**
-     * Paths that skip credential checks. Keep health, auth, and JWKS only.
+     * Paths that skip credential checks. Keep health, auth, OAuth start/callback, and JWKS only.
      * Subpaths under {@code /actuator/health} (liveness/readiness) are also allowed.
+     * OAuth routes are prefix-matched under {@code /auth/oauth/}.
      */
     static final Set<String> UNAUTHENTICATED_PATHS = Set.of(
         "/.well-known/jwks.json",
@@ -54,7 +55,11 @@ public class TenantContextFilter extends OncePerRequestFilter {
         if (requestUri == null) {
             return false;
         }
-        return UNAUTHENTICATED_PATHS.contains(requestUri) || requestUri.startsWith("/actuator/health");
+        if (UNAUTHENTICATED_PATHS.contains(requestUri) || requestUri.startsWith("/actuator/health")) {
+            return true;
+        }
+        // Part 4: Google/Microsoft OAuth start + callback must be reachable without a session.
+        return requestUri.startsWith("/auth/oauth/");
     }
 
     @Override

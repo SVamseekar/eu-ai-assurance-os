@@ -28,6 +28,12 @@ public class UserEntity {
   @Column(name = "password_hash")
   private String passwordHash;
 
+  @Column(name = "oauth_provider")
+  private String oauthProvider;
+
+  @Column(name = "oauth_subject")
+  private String oauthSubject;
+
   @Column(nullable = false)
   private Instant createdAt;
 
@@ -35,15 +41,29 @@ public class UserEntity {
   }
 
   public UserEntity(UUID id, UUID tenantId, String email, UserRole role, Instant createdAt) {
-    this(id, tenantId, email, role, null, createdAt);
+    this(id, tenantId, email, role, null, null, null, createdAt);
   }
 
   public UserEntity(UUID id, UUID tenantId, String email, UserRole role, String passwordHash, Instant createdAt) {
+    this(id, tenantId, email, role, passwordHash, null, null, createdAt);
+  }
+
+  public UserEntity(
+      UUID id,
+      UUID tenantId,
+      String email,
+      UserRole role,
+      String passwordHash,
+      String oauthProvider,
+      String oauthSubject,
+      Instant createdAt) {
     this.id = id;
     this.tenantId = tenantId;
     this.email = email;
     this.role = role;
     this.passwordHash = passwordHash;
+    this.oauthProvider = oauthProvider;
+    this.oauthSubject = oauthSubject;
     this.createdAt = createdAt;
   }
 
@@ -65,5 +85,18 @@ public class UserEntity {
 
   public String passwordHash() {
     return passwordHash;
+  }
+
+  public String oauthProvider() {
+    return oauthProvider;
+  }
+
+  public String oauthSubject() {
+    return oauthSubject;
+  }
+
+  public void linkOAuth(String provider, String subject) {
+    this.oauthProvider = provider;
+    this.oauthSubject = subject;
   }
 }
