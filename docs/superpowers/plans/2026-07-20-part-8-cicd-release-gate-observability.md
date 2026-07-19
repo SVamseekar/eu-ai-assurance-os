@@ -16,7 +16,8 @@
 - [x] **Step 1:** Jobs: `api-test`, `dashboard-build`, `secret-scan`, optional `acceptance` (`ClaimsTriageAcceptanceTest`).
 - [x] **Step 2:** Cache Maven + npm.
 - [x] **Step 3:** Fail on test failure; upload reports as artifacts.
-- [ ] **Step 4:** Branch protection requires these checks. *(repo setting — enable `API tests`, `Dashboard checks`, `Secret scan`, `Acceptance` on main)*
+- [x] **Step 4:** Branch protection requires these checks on `main` (exact check names):
+  `API tests`, `Dashboard checks`, `Secret scan`, `Acceptance (Claims Triage)`
 
 ### Task 8.2: Release gate CI API (product feature)
 
@@ -59,4 +60,5 @@ Enable pipelines to block deploys on BLOCKED systems.
 - [x] CI jobs hardened (acceptance + artifacts)  
 - [x] `scripts/ci-release-gate.sh` blocks on BLOCKED  
 - [x] Prometheus/Actuator metrics for gate + RAG + auth  
-- [x] Operator-visible summary in dashboard
+- [x] Operator-visible summary in dashboard  
+- [x] Merged to main (PR #24); branch protection configured for required CI checks
