@@ -108,13 +108,20 @@ public class OAuthTokenClient {
   public String buildAuthorizationUrl(String provider, String state, String redirectUri) {
     OAuthProperties.Provider config = requireConfigured(provider);
     String base = authorizeEndpoint(provider);
-    return base
+    String url = base
         + "?client_id=" + enc(config.getClientId())
         + "&response_type=code"
         + "&scope=" + enc("openid email profile")
         + "&redirect_uri=" + enc(redirectUri)
-        + "&state=" + enc(state)
-        + ("microsoft".equalsIgnoreCase(provider) ? "&response_mode=query" : "");
+        + "&state=" + enc(state);
+    if ("google".equalsIgnoreCase(provider)) {
+      // Local/dev UX: always show account picker; online access is enough for sign-in.
+      url += "&access_type=online&prompt=select_account&include_granted_scopes=true";
+    }
+    if ("microsoft".equalsIgnoreCase(provider)) {
+      url += "&response_mode=query";
+    }
+    return url;
   }
 
   public String callbackRedirectUri(String provider) {

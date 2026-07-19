@@ -66,7 +66,7 @@ export async function GET(
     return loginRedirect(request, "sign_in_failed");
   }
 
-  const destination = new URL("/", request.url);
+  const destination = new URL("/command", request.url);
   const response = NextResponse.redirect(destination);
   setSessionCookies(response, tokens.accessToken, tokens.refreshToken);
   return response;
