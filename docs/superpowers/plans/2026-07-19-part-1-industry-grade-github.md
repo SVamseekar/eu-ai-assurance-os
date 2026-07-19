@@ -29,7 +29,7 @@
 
 ### Task 1.3: Branch protection & repo settings
 
-- [ ] **Step 1:** Enable protection on `main`: require PR, require CI status checks, deny force-push. *(apply after first CI green on main)*
+- [x] **Step 1:** Enable protection on `main`: require PR, require CI status checks, deny force-push. *(ruleset id 19176855 active)*
 - [x] **Step 2:** Set homepage URL to `https://euassuranceai.souravamseekar.com`.
 - [x] **Step 3:** Confirm topics remain accurate; add `license` once chosen.
 - [x] **Step 4:** Document settings in `docs/` or CONTRIBUTING (solo-admin bypass OK).
@@ -45,11 +45,19 @@
 
 - [x] **Step 1:** Expand `.gitignore` if needed (`.DS_Store` already; ensure `.vercel` stays ignored).
 - [x] **Step 2:** Optional pre-commit (gitleaks + trailing whitespace) — mirror WorkforceGuard lightly. *(deferred; Gitleaks in CI is the gate)*
-- [ ] **Step 3:** Tag release after Part 0 merge: `v0.5.0-phase5` (example).
+- [x] **Step 3:** Tag release after Part 0 merge: `v0.5.0-phase5` (example).
 
 ### Done when
 
-- [ ] PR to main fails if `mvn test` or dashboard build fails  
+- [x] PR to main fails if `mvn test` or dashboard build fails  
 - [x] LICENSE + CONTRIBUTING present  
 - [x] README describes real product  
-- [ ] Branch protection enabled (or documented if org plan limits)  
+- [x] Branch protection enabled (or documented if org plan limits)  
+
+### Session log (2026-07-20)
+
+- PR #2 merged → `origin/main` `2b30dce`
+- CI green: Secret scan, API tests, Dashboard checks
+- Tag `v0.5.0-phase5` pushed
+- Repo ruleset `main` (id 19176855): PR required, status checks API tests / Dashboard checks / Secret scan, no force-push
+- **Status: Part 1 COMPLETE** — Wave A done; next Wave B (Parts 5 ∥ 10 ∥ 6)
