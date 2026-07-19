@@ -22,6 +22,7 @@ import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ApiStatusPill } from "@/components/api-status-pill";
+import { CertificationReadinessCard } from "@/components/certification-readiness-card";
 
 const ACTOR_NAMES: Record<string, string> = {
   "actor-priya": "Priya Nair",
@@ -192,6 +193,19 @@ export default function CommandPage() {
           </Card>
         ))}
       </div>
+
+      {/* Certification readiness (score + gaps — not legal certification) */}
+      {systems.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          {systems.slice(0, 2).map((s) => (
+            <CertificationReadinessCard
+              key={s.id}
+              systemId={s.id}
+              systemName={s.name}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Open workflows ops strip */}
       {openWorkflows.length > 0 && (

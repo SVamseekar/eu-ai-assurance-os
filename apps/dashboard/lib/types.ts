@@ -213,6 +213,41 @@ export interface DeterminationObligationItem {
   severity: string;
 }
 
+/** Certification readiness only — never legal certification status. */
+export type CertificationReadinessStatus = "NOT_READY" | "READY_FOR_REVIEW" | "GAPS";
+export type ReadinessGapSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
+export interface ReadinessGap {
+  code: string;
+  severity: ReadinessGapSeverity;
+  message: string;
+  remediationHint: string;
+  dimension: string;
+}
+
+export interface ReadinessDimensionScore {
+  code: string;
+  label: string;
+  weight: number;
+  score: number;
+  weightedPoints: number;
+  status: string;
+  summary: string;
+}
+
+export interface CertificationReadiness {
+  systemId: string;
+  systemName: string;
+  score: number;
+  readinessStatus: CertificationReadinessStatus;
+  productLabel: string;
+  disclaimer: string;
+  generatedAt: string;
+  releaseDecision: ReleaseDecision;
+  dimensions: ReadinessDimensionScore[];
+  gaps: ReadinessGap[];
+}
+
 export interface DeterminationRun {
   id: string;
   systemId: string;
