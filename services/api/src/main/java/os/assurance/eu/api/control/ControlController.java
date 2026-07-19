@@ -9,14 +9,18 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import os.assurance.eu.api.tenant.TenantAuthorizationService;
+import os.assurance.eu.api.tenant.UserRole;
 
 @RestController
 @RequestMapping("/api/v1")
 public class ControlController {
   private final ControlService controlService;
+  private final TenantAuthorizationService authorizationService;
 
-  public ControlController(ControlService controlService) {
+  public ControlController(ControlService controlService, TenantAuthorizationService authorizationService) {
     this.controlService = controlService;
+    this.authorizationService = authorizationService;
   }
 
   @GetMapping("/controls")
@@ -34,6 +38,8 @@ public class ControlController {
       @PathVariable UUID systemId,
       @PathVariable UUID controlId,
       @Valid @RequestBody UpdateSystemControlRequest request) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER, UserRole.AI_ENGINEERING_LEAD);
     return controlService.updateSystemControl(systemId, controlId, request);
   }
 }

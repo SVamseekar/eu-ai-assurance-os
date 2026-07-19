@@ -17,6 +17,9 @@ import os.assurance.eu.api.workflow.ApprovalStage;
 import os.assurance.eu.api.workflow.ApprovalWorkflow;
 import os.assurance.eu.api.workflow.ApprovalWorkflowService;
 import os.assurance.eu.api.control.ControlService;
+import os.assurance.eu.api.observability.NfrMetrics;
+import os.assurance.eu.api.tenant.TenantAuthorizationService;
+import os.assurance.eu.api.tenant.UserRole;
 import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +41,8 @@ public class AiSystemController {
   private final DataContractService dataContractService;
   private final ApprovalWorkflowService approvalWorkflowService;
   private final ControlService controlService;
+  private final TenantAuthorizationService authorizationService;
+  private final NfrMetrics nfrMetrics;
 
   public AiSystemController(
       AiSystemRepository repository,
@@ -45,29 +50,35 @@ public class AiSystemController {
       AuditService auditService,
       DataContractService dataContractService,
       ApprovalWorkflowService approvalWorkflowService,
-      ControlService controlService) {
+      ControlService controlService,
+      TenantAuthorizationService authorizationService,
+      NfrMetrics nfrMetrics) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
     this.dataContractService = dataContractService;
     this.approvalWorkflowService = approvalWorkflowService;
     this.controlService = controlService;
+    this.authorizationService = authorizationService;
+    this.nfrMetrics = nfrMetrics;
   }
 
   @GetMapping
   public List<AiSystem> listSystems() {
-    return repository.findAll();
+    return nfrMetrics.recordRegistryRead("list", repository::findAll);
   }
 
   @GetMapping("/{systemId}")
   public AiSystem getSystem(@PathVariable UUID systemId) {
-    return repository.findById(systemId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    return nfrMetrics.recordRegistryRead("get", () -> repository.findById(systemId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found")));
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public CreateAiSystemResponse createSystem(@Valid @RequestBody CreateAiSystemRequest request) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     Instant now = Instant.now();
     AiSystem draft = new AiSystem(
         UUID.randomUUID(),
@@ -113,6 +124,8 @@ public class AiSystemController {
   public AiSystem updateSystem(
       @PathVariable UUID systemId,
       @Valid @RequestBody UpdateAiSystemRequest request) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     AiSystem existing = getSystem(systemId);
     AiSystem draft = new AiSystem(
         existing.id(),
@@ -153,6 +166,11 @@ public class AiSystemController {
   public RiskClassificationResponse classifyRisk(
       @PathVariable UUID systemId,
       @Valid @RequestBody RiskClassificationRequest request) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN,
+        UserRole.AI_ENGINEERING_LEAD,
+        UserRole.COMPLIANCE_OFFICER,
+        UserRole.LEGAL_COUNSEL);
     AiSystem existing = getSystem(systemId);
     List<String> openGaps = new ArrayList<>(existing.openGaps());
     if (request.humanOversightRequired() && openGaps.stream().noneMatch(this::isOversightGap)) {
@@ -218,6 +236,12 @@ public class AiSystemController {
 
   @GetMapping("/{systemId}/evidence-pack")
   public EvidencePackResponse getEvidencePack(@PathVariable UUID systemId) {
+    authorizationService.requireAnyRole(
+        UserRole.ADMIN,
+        UserRole.AI_ENGINEERING_LEAD,
+        UserRole.COMPLIANCE_OFFICER,
+        UserRole.LEGAL_COUNSEL,
+        UserRole.AUDITOR);
     AiSystem system = getSystem(systemId);
     ReleaseGateResponse releaseGate = releaseGateService.calculate(system);
     auditService.append(

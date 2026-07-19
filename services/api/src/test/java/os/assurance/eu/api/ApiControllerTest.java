@@ -487,7 +487,7 @@ class ApiControllerTest {
                   "golden": true
                 }
                 """.formatted(datasetName))
-                    .with(authenticated()))
+                    .header("X-Api-Key", ENGINEERING_API_KEY))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", not(blankOrNullString())))
         .andExpect(jsonPath("$.name").value(datasetName))
@@ -505,7 +505,7 @@ class ApiControllerTest {
                   "golden": true
                 }
                 """.formatted(datasetName))
-                    .with(authenticated()))
+                    .header("X-Api-Key", ENGINEERING_API_KEY))
         .andExpect(status().isConflict());
 
     mockMvc.perform(get("/api/v1/eval-datasets")
