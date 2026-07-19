@@ -66,4 +66,4 @@ Include before/after for each bullet.
 - [x] Instruction packet ready for Claude Chat / other agents (`docs/investigations/2026-07-19-channel-update-instructions.md`)  
 - [x] Landing strip wired to `apps/dashboard/lib/metrics-canon.ts`  
 - [x] Forbidden phrases documented (FAISS, HMAC audit-stream-only, Next 14, V1–V6-only, “certified”, unqualified legal determination)  
-- [ ] PR merged; INDEX Part 2 → Complete (channel **binaries** remain Part 16)  
+- [x] PR merged; INDEX Part 2 → Complete (channel **binaries** remain Part 16)  
