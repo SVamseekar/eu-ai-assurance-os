@@ -6,15 +6,42 @@ Base path:
 /api/v1
 ```
 
-MVP tenant context headers:
+## Authentication
+
+Most routes require one of:
+
+| Mechanism | Header / path |
+|---|---|
+| Bearer JWT | `Authorization: Bearer <access_token>` |
+| API key | `X-Api-Key: <raw-key>` (stored as SHA-256 hash) |
+
+Tenant and actor are taken from **verified credentials only**. Client-supplied
+`X-Tenant-Id` / `X-Actor-Id` are **not** trusted for authorization (see
+`docs/SECURITY.md`). Local H2 bootstrap seeds a dev-only API key
+`00000000-0000-0000-0000-000000000a01` for the default compliance user — never use in production.
+
+### Password and token lifecycle
 
 ```http
-X-Tenant-Id: 00000000-0000-0000-0000-000000000001
-X-Actor-Id: 00000000-0000-0000-0000-000000000101
+POST /auth/login
+POST /auth/refresh
+POST /auth/logout
+GET  /.well-known/jwks.json
 ```
 
-If omitted, the backend uses the bootstrapped MVP tenant and actor. If provided,
-both headers must refer to known records.
+### OAuth (Google + Microsoft) — Part 4
+
+Implemented with unit/integration tests. Production smoke pending
+(`docs/oauth-production-smoke-test.md`). Do not claim “production SSO verified”
+until that runbook is signed off.
+
+```http
+GET  /auth/oauth/{provider}/start      # 302 to IdP (provider: google | microsoft)
+POST /auth/oauth/{provider}/callback   # BFF posts code+state → JWT pair (same shape as login)
+```
+
+Unauthenticated allowlist also includes `/actuator/health` (+ liveness/readiness).
+All other API routes require auth.
 
 ## AI Systems
 

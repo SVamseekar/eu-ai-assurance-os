@@ -92,7 +92,7 @@ Until production deploy + monitoring exist, **do not advertise 99.9% as measured
 | `AUDIT_CHAIN_SECRET` | Env / secret manager | Hash-chain HMAC; set in production |
 | `DATABASE_PASSWORD` | Env / secret manager | Never commit |
 | `ASSURANCE_STORAGE_*` keys | Env / secret manager | Optional S3/MinIO credentials (Part 9) |
-| OAuth client secrets (Part 4) | Env / secret manager | Placeholders in root `.env.example`; not wired yet |
+| OAuth client secrets (Part 4) | Env / secret manager | Google/Microsoft apps in root `.env.example`; **code wired**, production smoke pending (`docs/oauth-production-smoke-test.md`) |
 
 - **No secrets in the repository** — gitleaks (Part 1) and code review. Use root `.env.example` only as a template (never commit a filled `.env`).
 - Rotate eval callback and audit chain secrets via secret manager; redeploy workers/API together for callback secret changes.
