@@ -83,3 +83,16 @@ Status: complete.
 - CI/CD release gate integration.
 - Observability dashboards.
 - Deployment with Docker and Terraform.
+
+## Phase 7: Program expansions (assisted + readiness + reg + sector)
+
+Status: determination, readiness, and reg-monitor complete; sector packs shipped as SPI verticals.
+
+- Assisted obligation determination (not a full legal determination engine).
+- Certification readiness score + gaps (never “you are certified”).
+- Polled regulatory change monitoring feed (not an official legal bulletin).
+- **Sector packs: insurance, HR, finance** + `SectorPack` / `IntegrationConnector` SPI.
+  - Metrics claim: **3 sector packs + SPI** — not “all industries integrated.”
+  - Control overlays, questionnaire defaults, sample evidence templates.
+  - Connector stubs only (no live proprietary vendor apps without OAuth).
+  - See `docs/SECTOR_PACKS.md`.

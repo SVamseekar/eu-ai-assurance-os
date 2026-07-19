@@ -17,6 +17,8 @@ import type {
   RegItem,
   RegMonitorFeed,
   ReleaseGateResponse,
+  SectorPack,
+  SectorPacksResponse,
   SystemControl,
   WorkflowNotification,
 } from "./types";
@@ -224,5 +226,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ notes }),
       }),
+  },
+  sectorPacks: {
+    list: () => request<SectorPacksResponse>("/sector-packs"),
+    get: (packId: string) => request<SectorPack>(`/sector-packs/${packId}`),
+    resolve: (sector: string) =>
+      request<SectorPack>(`/sector-packs/resolve?sector=${encodeURIComponent(sector)}`),
   },
 };

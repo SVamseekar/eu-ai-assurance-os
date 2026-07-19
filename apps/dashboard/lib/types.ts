@@ -261,6 +261,42 @@ export interface RegImpactHint {
   createdAt: string;
 }
 
+/** Sector packs (Part 15) — SPI + 3 verticals, not all industries integrated. */
+export interface SectorControlDef {
+  code: string;
+  name: string;
+  description: string;
+  appliesToRiskClass: string;
+  category: string;
+}
+
+export interface SampleEvidenceTemplate {
+  id: string;
+  title: string;
+  documentType: string;
+  resourcePath: string;
+  description: string;
+}
+
+export interface SectorPack {
+  id: string;
+  displayName: string;
+  summary: string;
+  sectorKeys: string[];
+  extraControls: SectorControlDef[];
+  questionnaireDefaults: Record<string, unknown>;
+  sampleEvidenceTemplates: SampleEvidenceTemplate[];
+  metricsLabel: string;
+  disclaimer: string;
+}
+
+export interface SectorPacksResponse {
+  packs: SectorPack[];
+  metricsLabel: string;
+  disclaimer: string;
+  notAllIndustriesNote: string;
+}
+
 export interface RegItem {
   id: string;
   sourceId: string;

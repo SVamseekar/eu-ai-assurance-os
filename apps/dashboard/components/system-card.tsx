@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { RiskBadge } from "./risk-badge";
 import { DecisionBadge } from "./decision-badge";
+import { SectorPackBadge } from "./sector-pack-badge";
 import { ReadinessRing } from "./readiness-ring";
 import { normaliseDecision } from "@/lib/utils";
 import type { AiSystem } from "@/lib/types";
@@ -25,8 +26,9 @@ export function SystemCard({ system }: SystemCardProps) {
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold leading-snug mb-1.5">{system.name}</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <RiskBadge risk={system.riskClass} />
+            <SectorPackBadge sector={system.sector} />
             <span className="text-xs text-muted-foreground">{system.owner}</span>
           </div>
         </div>
