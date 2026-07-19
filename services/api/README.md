@@ -113,9 +113,10 @@ requests to `PATCH /api/v1/eval-runs/{id}/result` must include
 
 Operational endpoints:
 
-- `/actuator/health`
-- `/actuator/info`
-- `/actuator/metrics`
+- `/actuator/health` (public probes; liveness/readiness)
+- `/actuator/info` (authenticated)
+- `/actuator/metrics` (authenticated)
+- `/actuator/prometheus` (authenticated scrape format)
 
 Eval metrics include:
 
@@ -125,6 +126,15 @@ Eval metrics include:
 - `assurance.eval.run.failed`
 - `assurance.eval.run.retried`
 - `assurance.eval.callback.signature.rejected`
+
+Part 8 product metrics:
+
+- `assurance.release_gate.decision` (tag `decision`)
+- `assurance.audit.append`
+- `assurance.auth.login.failures`
+- Latency timers: `assurance.api.registry.read`, `assurance.api.evidence.query` (see `docs/NFR.md`, `docs/OPS.md`)
+
+CI release gate: `GET /api/v1/ci/release-gate?systemId=` + `scripts/ci-release-gate.sh`.
 
 The default profile uses portable text embeddings for H2 validation. The
 `postgres` profile also loads `classpath:db/postgresql`, including the pgvector

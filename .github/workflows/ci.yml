@@ -45,7 +45,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  api:
+  api-test:
     name: API tests
     needs: changes
     runs-on: ubuntu-latest
@@ -75,7 +75,54 @@ jobs:
         if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
         run: mvn -B test
 
-  dashboard:
+      - name: Upload Surefire reports
+        if: always() && (needs.changes.outputs.api == 'true' || github.event_name != 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-surefire-reports
+          path: services/api/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  acceptance:
+    name: Acceptance (Claims Triage)
+    needs: changes
+    runs-on: ubuntu-latest
+    # Optional PR gate: runs when API changes (or always on main). Branch protection can require this check.
+    defaults:
+      run:
+        working-directory: services/api
+    env:
+      EVAL_CALLBACK_SECRET: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip — no API changes
+        if: needs.changes.outputs.api != 'true' && github.event_name == 'pull_request'
+        run: echo "No API changes in this PR; acceptance is a no-op for path filter."
+
+      - uses: actions/setup-java@v4
+        if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: services/api/pom.xml
+
+      - name: Run ClaimsTriageAcceptanceTest
+        if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
+        run: mvn -B test -Dtest=ClaimsTriageAcceptanceTest
+
+      - name: Upload acceptance Surefire reports
+        if: always() && (needs.changes.outputs.api == 'true' || github.event_name != 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-surefire-reports
+          path: services/api/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  dashboard-build:
     name: Dashboard checks
     needs: changes
     runs-on: ubuntu-latest

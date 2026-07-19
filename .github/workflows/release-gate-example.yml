@@ -1,0 +1,63 @@
+# Example: call Assurance OS release gate from a deploy pipeline.
+# This workflow is documentation / workflow_call sample — it does not run on every PR.
+#
+# Secrets (repository or environment):
+#   ASSURANCE_API_BASE  — e.g. https://api.example.com
+#   ASSURANCE_API_KEY   — service-account X-Api-Key (never commit)
+#   SYSTEM_ID           — UUID of the AI system under gate
+#
+# Auth: CI bots should use X-Api-Key (see docs/OPS.md). Do not put user passwords in CI.
+
+name: Release gate example
+
+on:
+  workflow_call:
+    inputs:
+      system_id:
+        description: AI system UUID
+        required: true
+        type: string
+      fail_on_review:
+        description: Treat REVIEW as deploy failure
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      ASSURANCE_API_BASE:
+        required: true
+      ASSURANCE_API_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      system_id:
+        description: AI system UUID
+        required: true
+        type: string
+      fail_on_review:
+        description: Treat REVIEW as deploy failure
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release-gate:
+    name: Assurance OS release gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check release gate
+        env:
+          ASSURANCE_API_BASE: ${{ secrets.ASSURANCE_API_BASE }}
+          API_KEY: ${{ secrets.ASSURANCE_API_KEY }}
+          SYSTEM_ID: ${{ inputs.system_id }}
+          FAIL_ON_REVIEW: ${{ inputs.fail_on_review && '1' || '0' }}
+        run: |
+          chmod +x scripts/ci-release-gate.sh
+          set +e
+          ./scripts/ci-release-gate.sh
+          code=$?
+          set -e
+          echo "Release gate exit code: ${code}"
+          # PASS=0, BLOCKED=1, REVIEW=2 — GitHub marks job failed for non-zero
+          exit "${code}"
