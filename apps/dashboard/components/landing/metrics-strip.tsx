@@ -1,4 +1,4 @@
-import { landingMetricChips } from "@/lib/metrics-canon";
+import { landingMetricChips, measuredScaleLine } from "@/lib/metrics-canon";
 
 export function MetricsStrip() {
   return (
@@ -27,7 +27,8 @@ export function MetricsStrip() {
           ))}
         </ul>
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Product facts only — customer counts freeze in Part 2 metrics canon.
+          Product facts from code freeze — {measuredScaleLine}. Not legal
+          certification or notified-body status.
         </p>
       </div>
     </section>
