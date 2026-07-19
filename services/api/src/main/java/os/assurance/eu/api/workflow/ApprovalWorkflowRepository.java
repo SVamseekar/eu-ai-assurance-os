@@ -39,6 +39,15 @@ public class ApprovalWorkflowRepository {
   }
 
   @Transactional(readOnly = true)
+  public List<ApprovalWorkflow> findOpen() {
+    return workflows
+        .findAllByTenantIdAndStatusOrderByCreatedAtDesc(tenantContext.tenantId(), WorkflowStatus.OPEN)
+        .stream()
+        .map(e -> e.toDomain(stagesFor(e.id())))
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
   public Optional<ApprovalWorkflow> findById(UUID id) {
     return workflows.findByTenantIdAndId(tenantContext.tenantId(), id)
         .map(e -> e.toDomain(stagesFor(e.id())));

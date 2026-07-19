@@ -1,89 +1,186 @@
 "use client";
 
-import { useDashboard } from "@/context/dashboard-context";
-import { MOCK_WORKFLOWS } from "@/lib/mock-data";
-import type { ApprovalStage } from "@/lib/types";
-import { Clock } from "lucide-react";
-import { useState } from "react";
 import { ApprovalActionModal } from "@/components/approval-action-modal";
-import { STAGE_LABELS, isActionableStage } from "@/lib/workflow-helpers";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import {
+  MOCK_MY_WORKFLOWS,
+  MOCK_NOTIFICATIONS,
+  MOCK_OPEN_WORKFLOWS,
+  MOCK_SYSTEMS,
+} from "@/lib/mock-data";
+import type { ApprovalStage, ApprovalWorkflow } from "@/lib/types";
+import { STAGE_LABELS } from "@/lib/workflow-helpers";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, Clock, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+
+type ModalState = {
+  stage: ApprovalStage;
+  action: "approve" | "reject" | "override";
+  systemId: string;
+  workflowId: string;
+} | null;
+
+function nextPendingStage(workflow: ApprovalWorkflow): ApprovalStage | undefined {
+  return workflow.stages
+    .filter((stage) => stage.status === "PENDING")
+    .sort((a, b) => a.stageOrder - b.stageOrder)[0];
+}
+
+function openedLabel(openedAt: string): string {
+  const openedMs = Date.now() - new Date(openedAt).getTime();
+  const openedDays = Math.max(0, Math.floor(openedMs / 86_400_000));
+  return openedDays === 0 ? "opened today" : `opened ${openedDays}d ago`;
+}
 
 export default function ApprovalsPage() {
-  const { allSystems, activeRole } = useDashboard();
+  const queryClient = useQueryClient();
+  const [modal, setModal] = useState<ModalState>(null);
 
-  const [modal, setModal] = useState<{
-    stage: ApprovalStage;
-    action: "approve" | "reject" | "override";
-    systemId: string;
-    workflowId: string;
-  } | null>(null);
-
-  const openWorkflows = allSystems.flatMap((system) => {
-    const wfs = MOCK_WORKFLOWS[system.id] ?? [];
-    return wfs
-      .filter((w) => w.status === "OPEN")
-      .map((w) => ({ system, workflow: w }));
+  const systems = useQuery({
+    queryKey: ["systems"],
+    queryFn: api.systems.list,
+    placeholderData: MOCK_SYSTEMS,
+  });
+  const mine = useQuery({
+    queryKey: ["workflows", "mine"],
+    queryFn: api.workflows.mine,
+    placeholderData: MOCK_MY_WORKFLOWS,
+  });
+  const open = useQuery({
+    queryKey: ["workflows", "open"],
+    queryFn: api.workflows.open,
+    placeholderData: MOCK_OPEN_WORKFLOWS,
+  });
+  const notifications = useQuery({
+    queryKey: ["workflow-notifications", "mine"],
+    queryFn: api.notifications.mine,
+    placeholderData: MOCK_NOTIFICATIONS,
   });
 
-  const myItems = openWorkflows.filter(({ workflow }) =>
-    workflow.stages.some((s) => isActionableStage(s, workflow.stages, activeRole))
-  );
+  const systemNames = new Map((systems.data ?? []).map((system) => [system.id, system.name]));
+  const myWorkflowIds = new Set((mine.data ?? []).map((workflow) => workflow.id));
+  const otherItems = (open.data ?? []).filter((workflow) => !myWorkflowIds.has(workflow.id));
 
-  const otherItems = openWorkflows.filter(
-    ({ workflow }) =>
-      !myItems.some(({ workflow: w }) => w.id === workflow.id)
-  );
+  const action = useMutation({
+    mutationFn: async ({
+      actionType,
+      systemId,
+      workflowId,
+      stageId,
+      rationale,
+      oversightEvidence,
+    }: {
+      actionType: "approve" | "reject" | "override";
+      systemId: string;
+      workflowId: string;
+      stageId: string;
+      rationale: string;
+      oversightEvidence?: string;
+    }) => {
+      if (actionType === "approve") {
+        return api.workflows.approve(systemId, workflowId, stageId, rationale, oversightEvidence);
+      }
+      if (actionType === "reject") {
+        return api.workflows.reject(systemId, workflowId, stageId, rationale);
+      }
+      return api.workflows.override(systemId, workflowId, stageId, rationale);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+      queryClient.invalidateQueries({ queryKey: ["workflow-notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+
+  const isLoading = mine.isLoading || open.isLoading || systems.isLoading;
 
   return (
     <div className="space-y-6">
+      {notifications.data && notifications.data.length > 0 && (
+        <section className="border border-border bg-card px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" />
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Notifications
+            </h2>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {notifications.data.slice(0, 4).map((notification) => (
+              <div key={notification.id} className="border border-border bg-muted/20 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">{notification.message}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  {new Date(notification.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Awaiting your action
         </h2>
-        {myItems.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border rounded-xl">
+        {isLoading ? (
+          <p className="border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
+            Loading approval queue...
+          </p>
+        ) : (mine.data ?? []).length === 0 ? (
+          <p className="border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
             No stages require your review right now.
           </p>
         ) : (
           <div className="space-y-2">
-            {myItems.map(({ system, workflow }) => {
-              const activeStage = workflow.stages.find((s) =>
-                isActionableStage(s, workflow.stages, activeRole)
-              )!;
-              const openedMs = Date.now() - new Date(workflow.openedAt).getTime();
-              const openedDays = Math.floor(openedMs / 86_400_000);
+            {(mine.data ?? []).map((workflow) => {
+              const activeStage = nextPendingStage(workflow);
+              if (!activeStage) return null;
               return (
                 <div
                   key={workflow.id}
-                  className="flex items-center justify-between border border-border rounded-xl px-4 py-3 bg-card"
+                  className="flex items-center justify-between border border-border bg-card px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+                    <ShieldCheck className="h-4 w-4 text-amber-500" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">{system.name}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {STAGE_LABELS[activeStage.stageType]} · opened {openedDays}d ago
+                      <p className="text-sm font-medium text-foreground">
+                        {systemNames.get(workflow.systemId) ?? workflow.systemId}
+                      </p>
+                      <p className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {STAGE_LABELS[activeStage.stageType]} · {openedLabel(workflow.openedAt)}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-1.5">
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() =>
-                        setModal({ stage: activeStage, action: "approve", systemId: system.id, workflowId: workflow.id })
+                        setModal({
+                          stage: activeStage,
+                          action: "approve",
+                          systemId: workflow.systemId,
+                          workflowId: workflow.id,
+                        })
                       }
-                      className="text-[10px] px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     >
                       Approve
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
                       onClick={() =>
-                        setModal({ stage: activeStage, action: "reject", systemId: system.id, workflowId: workflow.id })
+                        setModal({
+                          stage: activeStage,
+                          action: "reject",
+                          systemId: workflow.systemId,
+                          workflowId: workflow.id,
+                        })
                       }
-                      className="text-[10px] px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium"
                     >
                       Reject
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -93,33 +190,36 @@ export default function ApprovalsPage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          In progress — other stages
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          In progress
         </h2>
         {otherItems.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border rounded-xl">
+          <p className="border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
             No other workflows in progress.
           </p>
         ) : (
           <div className="space-y-2">
-            {otherItems.map(({ system, workflow }) => {
-              const activeStage = workflow.stages.find((s) => s.status === "PENDING");
+            {otherItems.map((workflow) => {
+              const activeStage = nextPendingStage(workflow);
               return (
                 <div
                   key={workflow.id}
-                  className="flex items-center justify-between border border-border rounded-xl px-4 py-3 bg-muted/20"
+                  className="flex items-center justify-between border border-border bg-muted/20 px-4 py-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-muted-foreground/40 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{system.name}</p>
-                      {activeStage && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {STAGE_LABELS[activeStage.stageType]} · waiting for {activeStage.requiredRole.replace(/_/g, " ")}
-                        </p>
-                      )}
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {systemNames.get(workflow.systemId) ?? workflow.systemId}
+                    </p>
+                    {activeStage && (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {STAGE_LABELS[activeStage.stageType]} · waiting for{" "}
+                        {activeStage.requiredRole.replace(/_/g, " ")}
+                      </p>
+                    )}
                   </div>
+                  <span className="text-[10px] font-medium text-muted-foreground">
+                    {workflow.trigger.replace(/_/g, " ")}
+                  </span>
                 </div>
               );
             })}
@@ -132,8 +232,15 @@ export default function ApprovalsPage() {
           stage={modal.stage}
           action={modal.action}
           onClose={() => setModal(null)}
-          onConfirm={(rationale) => {
-            console.log("action", modal.action, modal.workflowId, modal.stage.id, rationale);
+          onConfirm={(rationale, oversightEvidence) => {
+            action.mutate({
+              actionType: modal.action,
+              systemId: modal.systemId,
+              workflowId: modal.workflowId,
+              stageId: modal.stage.id,
+              rationale,
+              oversightEvidence,
+            });
             setModal(null);
           }}
         />

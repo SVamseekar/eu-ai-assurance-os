@@ -9,6 +9,7 @@ import type {
   EvidenceDocument,
   EvidenceQueryResponse,
   ReleaseGateResponse,
+  WorkflowNotification,
 } from "./types";
 
 const BASE = "/api/proxy";
@@ -35,14 +36,22 @@ export const api = {
     releaseGate: (id: string) => request<ReleaseGateResponse>(`/systems/${id}/release-gate`),
   },
   workflows: {
+    open: () => request<ApprovalWorkflow[]>("/workflows/open"),
+    mine: () => request<ApprovalWorkflow[]>("/workflows/mine"),
     list: (systemId: string) =>
       request<ApprovalWorkflow[]>(`/systems/${systemId}/workflows`),
     active: (systemId: string) =>
       request<ApprovalWorkflow>(`/systems/${systemId}/workflows/active`),
-    approve: (systemId: string, workflowId: string, stageId: string, rationale?: string) =>
+    approve: (
+      systemId: string,
+      workflowId: string,
+      stageId: string,
+      rationale?: string,
+      oversightEvidence?: string
+    ) =>
       request<ApprovalWorkflow>(
         `/systems/${systemId}/workflows/${workflowId}/stages/${stageId}/approve`,
-        { method: "POST", body: JSON.stringify({ rationale }) }
+        { method: "POST", body: JSON.stringify({ rationale, oversightEvidence }) }
       ),
     reject: (systemId: string, workflowId: string, stageId: string, rationale: string) =>
       request<ApprovalWorkflow>(
@@ -54,6 +63,9 @@ export const api = {
         `/systems/${systemId}/workflows/${workflowId}/stages/${stageId}/override`,
         { method: "POST", body: JSON.stringify({ rationale }) }
       ),
+  },
+  notifications: {
+    mine: () => request<WorkflowNotification[]>("/workflow-notifications/mine"),
   },
   evidence: {
     documents: (systemId: string) =>

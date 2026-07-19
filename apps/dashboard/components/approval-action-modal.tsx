@@ -9,7 +9,7 @@ import type { ApprovalStage } from "@/lib/types";
 interface ApprovalActionModalProps {
   stage: ApprovalStage;
   action: "approve" | "reject" | "override";
-  onConfirm: (rationale: string) => void;
+  onConfirm: (rationale: string, oversightEvidence?: string) => void;
   onClose: () => void;
 }
 
@@ -50,8 +50,12 @@ export function ApprovalActionModal({
   onClose,
 }: ApprovalActionModalProps) {
   const [rationale, setRationale] = useState("");
+  const [oversightEvidence, setOversightEvidence] = useState("");
   const config = ACTION_CONFIG[action];
-  const canSubmit = !config.rationaleRequired || rationale.trim().length > 0;
+  const needsOversightEvidence = action === "approve" && stage.stageType === "LEGAL_SIGNOFF";
+  const canSubmit =
+    (!config.rationaleRequired || rationale.trim().length > 0) &&
+    (!needsOversightEvidence || oversightEvidence.trim().length > 0);
 
   return (
     <Modal
@@ -73,6 +77,20 @@ export function ApprovalActionModal({
           />
         </div>
 
+        {needsOversightEvidence && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Human oversight evidence (required)
+            </label>
+            <Textarea
+              rows={3}
+              placeholder="Reference the oversight SOP, reviewer decision record, or evidence-pack section..."
+              value={oversightEvidence}
+              onChange={(e) => setOversightEvidence(e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={onClose}>
             Cancel
@@ -80,7 +98,7 @@ export function ApprovalActionModal({
           <Button
             variant={config.buttonVariant}
             disabled={!canSubmit}
-            onClick={() => onConfirm(rationale)}
+            onClick={() => onConfirm(rationale, oversightEvidence)}
           >
             {config.buttonLabel}
           </Button>

@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 class ApprovalWorkflowServiceTest {
   private ApprovalWorkflowRepository repository;
+  private WorkflowNotificationRepository notifications;
   private UserJpaRepository users;
   private AuditService auditService;
   private TenantContext tenantContext;
@@ -38,12 +39,13 @@ class ApprovalWorkflowServiceTest {
   @BeforeEach
   void setUp() {
     repository = mock(ApprovalWorkflowRepository.class);
+    notifications = mock(WorkflowNotificationRepository.class);
     users = mock(UserJpaRepository.class);
     auditService = mock(AuditService.class);
     tenantContext = mock(TenantContext.class);
     when(tenantContext.tenantId()).thenReturn(TENANT_ID);
     when(tenantContext.actorId()).thenReturn(ACTOR_ID);
-    service = new ApprovalWorkflowService(repository, users, auditService, tenantContext);
+    service = new ApprovalWorkflowService(repository, notifications, users, auditService, tenantContext);
   }
 
   @Test
@@ -100,7 +102,7 @@ class ApprovalWorkflowServiceTest {
     when(repository.saveWorkflow(any())).thenAnswer(i -> i.getArgument(0));
 
     ApprovalWorkflow result = service.approveStage(
-        openWorkflow.id(), pendingStage.id(), "Looks good");
+        openWorkflow.id(), pendingStage.id(), "Looks good", null);
 
     assertThat(result.status()).isEqualTo(WorkflowStatus.OPEN);
   }
@@ -118,7 +120,7 @@ class ApprovalWorkflowServiceTest {
     when(repository.saveWorkflow(any())).thenAnswer(i -> i.getArgument(0));
 
     ApprovalWorkflow result = service.approveStage(
-        openWorkflow.id(), onlyStage.id(), "Approved");
+        openWorkflow.id(), onlyStage.id(), "Approved", null);
 
     assertThat(result.status()).isEqualTo(WorkflowStatus.APPROVED);
   }
@@ -152,7 +154,7 @@ class ApprovalWorkflowServiceTest {
     when(repository.findById(openWorkflow.id())).thenReturn(Optional.of(openWorkflow));
 
     assertThatThrownBy(() ->
-        service.approveStage(openWorkflow.id(), pendingStage.id(), "ok"))
+        service.approveStage(openWorkflow.id(), pendingStage.id(), "ok", null))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("403");
   }
@@ -168,7 +170,7 @@ class ApprovalWorkflowServiceTest {
     when(repository.findById(openWorkflow.id())).thenReturn(Optional.of(openWorkflow));
 
     assertThatThrownBy(() ->
-        service.approveStage(openWorkflow.id(), doneStage.id(), "again"))
+        service.approveStage(openWorkflow.id(), doneStage.id(), "again", null))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("409");
   }
@@ -189,6 +191,41 @@ class ApprovalWorkflowServiceTest {
         openWorkflow.id(), pendingStage.id(), "Urgent release");
 
     assertThat(result).isNotNull();
+  }
+
+  @Test
+  void rejectsOutOfOrderStageApproval() {
+    ApprovalStage firstStage = stage(UUID.randomUUID(), 1, StageType.ENG_LEAD_REVIEW,
+        "AI_ENGINEERING_LEAD", StageStatus.PENDING);
+    ApprovalStage secondStage = stage(UUID.randomUUID(), 2, StageType.COMPLIANCE_REVIEW,
+        "COMPLIANCE_OFFICER", StageStatus.PENDING);
+    ApprovalWorkflow openWorkflow = workflow(WorkflowStatus.OPEN,
+        List.of(firstStage, secondStage));
+
+    UserEntity actor = actor(UserRole.COMPLIANCE_OFFICER);
+    when(users.findByIdAndTenantId(ACTOR_ID, TENANT_ID)).thenReturn(Optional.of(actor));
+    when(repository.findById(openWorkflow.id())).thenReturn(Optional.of(openWorkflow));
+
+    assertThatThrownBy(() ->
+        service.approveStage(openWorkflow.id(), secondStage.id(), "ok", null))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("409");
+  }
+
+  @Test
+  void legalSignoffRequiresOversightEvidence() {
+    ApprovalStage legalStage = stage(UUID.randomUUID(), 3, StageType.LEGAL_SIGNOFF,
+        "LEGAL_COUNSEL", StageStatus.PENDING);
+    ApprovalWorkflow openWorkflow = workflow(WorkflowStatus.OPEN, List.of(legalStage));
+
+    UserEntity actor = actor(UserRole.LEGAL_COUNSEL);
+    when(users.findByIdAndTenantId(ACTOR_ID, TENANT_ID)).thenReturn(Optional.of(actor));
+    when(repository.findById(openWorkflow.id())).thenReturn(Optional.of(openWorkflow));
+
+    assertThatThrownBy(() ->
+        service.approveStage(openWorkflow.id(), legalStage.id(), "ok", null))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Human oversight evidence");
   }
 
   @Test
@@ -236,7 +273,7 @@ class ApprovalWorkflowServiceTest {
   private ApprovalStage stage(UUID id, int order, StageType type,
       String requiredRole, StageStatus status) {
     return new ApprovalStage(id, UUID.randomUUID(), order, type,
-        requiredRole, status, null, null, null, Instant.now());
+        requiredRole, null, status, null, null, null, null, null, Instant.now());
   }
 
   private UserEntity actor(UserRole role) {

@@ -9,5 +9,7 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
 
   Optional<UserEntity> findByIdAndTenantId(UUID id, UUID tenantId);
 
+  Optional<UserEntity> findFirstByTenantIdAndRoleOrderByCreatedAtAsc(UUID tenantId, UserRole role);
+
   Optional<UserEntity> findByEmail(String email);
 }

@@ -23,16 +23,19 @@ import org.springframework.web.server.ResponseStatusException;
 public class ApprovalWorkflowService {
 
   private final ApprovalWorkflowRepository repository;
+  private final WorkflowNotificationRepository notifications;
   private final UserJpaRepository users;
   private final AuditService auditService;
   private final TenantContext tenantContext;
 
   public ApprovalWorkflowService(
       ApprovalWorkflowRepository repository,
+      WorkflowNotificationRepository notifications,
       UserJpaRepository users,
       AuditService auditService,
       TenantContext tenantContext) {
     this.repository = repository;
+    this.notifications = notifications;
     this.users = users;
     this.auditService = auditService;
     this.tenantContext = tenantContext;
@@ -91,24 +94,29 @@ public class ApprovalWorkflowService {
     // for non-HIGH, only persist active (PENDING) stages.
     boolean isHighRisk = system.riskClass() == RiskClass.HIGH;
     StageDefinition[] defs = stageDefinitions();
+    List<ApprovalStage> createdStages = new ArrayList<>();
     for (int i = 0; i < defs.length; i++) {
       StageStatus stageStatus = stageStatuses.get(i);
       if (!isHighRisk && stageStatus == StageStatus.SKIPPED) {
         continue; // non-HIGH: don't persist SKIPPED stages
       }
       StageDefinition def = defs[i];
+      UUID assignedReviewerId = findReviewer(def.requiredRole()).map(UserEntity::id).orElse(null);
       ApprovalStage stage = new ApprovalStage(
           UUID.randomUUID(), saved.id(), def.order(), def.type(),
-          def.requiredRole(), stageStatus, null, null, null, now);
-      repository.saveStage(stage);
+          def.requiredRole(), assignedReviewerId, stageStatus, null, null, null, null, null, now);
+      ApprovalStage savedStage = repository.saveStage(stage);
+      createdStages.add(savedStage);
     }
+    notifyNextPendingReviewer(saved, createdStages);
   }
 
   /**
    * Approve a specific stage in a workflow.
    */
   @Transactional
-  public ApprovalWorkflow approveStage(UUID workflowId, UUID stageId, String rationale) {
+  public ApprovalWorkflow approveStage(
+      UUID workflowId, UUID stageId, String rationale, String oversightEvidence) {
     UserEntity actor = resolveActor();
     ApprovalWorkflow workflow = resolveWorkflow(workflowId);
     ApprovalStage stage = resolveStage(workflow, stageId);
@@ -121,12 +129,15 @@ public class ApprovalWorkflowService {
 
     // Check role
     checkRole(actor, stage);
+    checkTurn(workflow, stage);
+    checkOversightEvidence(stage, oversightEvidence);
 
     // Mark stage approved
     ApprovalStage updated = new ApprovalStage(
         stage.id(), stage.workflowId(), stage.stageOrder(), stage.stageType(),
-        stage.requiredRole(), StageStatus.APPROVED,
-        actor.id(), rationale, Instant.now(), stage.createdAt());
+        stage.requiredRole(), stage.assignedReviewerId(), StageStatus.APPROVED,
+        actor.id(), rationale, normalize(oversightEvidence), Instant.now(),
+        stage.notificationSentAt(), stage.createdAt());
     repository.saveStage(updated);
 
     // Rebuild stages list with the update
@@ -142,6 +153,7 @@ public class ApprovalWorkflowService {
       return closeWorkflow(workflow, WorkflowStatus.APPROVED, updatedStages);
     }
 
+    notifyNextPendingReviewer(workflow, updatedStages);
     return new ApprovalWorkflow(workflow.id(), workflow.systemId(), workflow.trigger(),
         WorkflowStatus.OPEN, updatedStages, workflow.openedAt(), null, workflow.createdAt());
   }
@@ -166,12 +178,14 @@ public class ApprovalWorkflowService {
 
     // Check role
     checkRole(actor, stage);
+    checkTurn(workflow, stage);
 
     // Mark stage rejected
     ApprovalStage updated = new ApprovalStage(
         stage.id(), stage.workflowId(), stage.stageOrder(), stage.stageType(),
-        stage.requiredRole(), StageStatus.REJECTED,
-        actor.id(), rationale, Instant.now(), stage.createdAt());
+        stage.requiredRole(), stage.assignedReviewerId(), StageStatus.REJECTED,
+        actor.id(), rationale, stage.oversightEvidence(), Instant.now(),
+        stage.notificationSentAt(), stage.createdAt());
     repository.saveStage(updated);
 
     // Audit
@@ -205,8 +219,9 @@ public class ApprovalWorkflowService {
     // Mark stage overridden
     ApprovalStage updated = new ApprovalStage(
         stage.id(), stage.workflowId(), stage.stageOrder(), stage.stageType(),
-        stage.requiredRole(), StageStatus.OVERRIDDEN,
-        actor.id(), rationale, Instant.now(), stage.createdAt());
+        stage.requiredRole(), stage.assignedReviewerId(), StageStatus.OVERRIDDEN,
+        actor.id(), rationale, stage.oversightEvidence(), Instant.now(),
+        stage.notificationSentAt(), stage.createdAt());
     repository.saveStage(updated);
 
     // Audit
@@ -220,6 +235,7 @@ public class ApprovalWorkflowService {
       return closeWorkflow(workflow, WorkflowStatus.APPROVED, updatedStages);
     }
 
+    notifyNextPendingReviewer(workflow, updatedStages);
     return new ApprovalWorkflow(workflow.id(), workflow.systemId(), workflow.trigger(),
         WorkflowStatus.OPEN, updatedStages, workflow.openedAt(), null, workflow.createdAt());
   }
@@ -227,6 +243,26 @@ public class ApprovalWorkflowService {
   @Transactional(readOnly = true)
   public List<ApprovalWorkflow> listBySystemId(UUID systemId) {
     return repository.findAllBySystemId(systemId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ApprovalWorkflow> listOpen() {
+    return repository.findOpen();
+  }
+
+  @Transactional(readOnly = true)
+  public List<ApprovalWorkflow> listMine() {
+    UserEntity actor = resolveActor();
+    return repository.findOpen().stream()
+        .filter(workflow -> nextPendingStage(workflow.stages())
+            .filter(stage -> canAct(actor, stage))
+            .isPresent())
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<WorkflowNotification> listMyNotifications() {
+    return notifications.findMine();
   }
 
   @Transactional(readOnly = true)
@@ -259,13 +295,81 @@ public class ApprovalWorkflowService {
   }
 
   private void checkRole(UserEntity actor, ApprovalStage stage) {
+    if (canAct(actor, stage)) {
+      return;
+    }
+    if (stage.assignedReviewerId() != null && !stage.assignedReviewerId().equals(actor.id())
+        && actor.role() != UserRole.ADMIN) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+          "403: Stage is assigned to another reviewer");
+    }
+    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+        "403: Actor role " + actor.role() + " cannot act on stage requiring " + stage.requiredRole());
+  }
+
+  private boolean canAct(UserEntity actor, ApprovalStage stage) {
     if (actor.role() == UserRole.ADMIN) {
-      return; // ADMIN can act on any stage
+      return true;
     }
     if (!actor.role().name().equals(stage.requiredRole())) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-          "403: Actor role " + actor.role() + " cannot act on stage requiring " + stage.requiredRole());
+      return false;
     }
+    return stage.assignedReviewerId() == null || stage.assignedReviewerId().equals(actor.id());
+  }
+
+  private void checkTurn(ApprovalWorkflow workflow, ApprovalStage stage) {
+    Optional<ApprovalStage> next = nextPendingStage(workflow.stages());
+    if (next.isPresent() && !next.get().id().equals(stage.id())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT,
+          "409: Earlier approval stages must be completed first");
+    }
+  }
+
+  private void checkOversightEvidence(ApprovalStage stage, String oversightEvidence) {
+    if (stage.stageType() == StageType.LEGAL_SIGNOFF
+        && (oversightEvidence == null || oversightEvidence.isBlank())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+          "Human oversight evidence is required for legal signoff");
+    }
+  }
+
+  private Optional<UserEntity> findReviewer(String requiredRole) {
+    Optional<UserEntity> reviewer = users.findFirstByTenantIdAndRoleOrderByCreatedAtAsc(
+        tenantContext.tenantId(), UserRole.valueOf(requiredRole));
+    return reviewer == null ? Optional.empty() : reviewer;
+  }
+
+  private Optional<ApprovalStage> nextPendingStage(List<ApprovalStage> stages) {
+    return stages.stream()
+        .filter(s -> s.status() == StageStatus.PENDING)
+        .min((left, right) -> Integer.compare(left.stageOrder(), right.stageOrder()));
+  }
+
+  private void notifyNextPendingReviewer(ApprovalWorkflow workflow, List<ApprovalStage> stages) {
+    nextPendingStage(stages)
+        .filter(stage -> stage.notificationSentAt() == null)
+        .ifPresent(stage -> notifyStageReviewer(workflow, stage, "WORKFLOW_STAGE_ASSIGNED"));
+  }
+
+  private void notifyStageReviewer(
+      ApprovalWorkflow workflow, ApprovalStage stage, String eventType) {
+    if (stage.assignedReviewerId() == null) {
+      return;
+    }
+    Instant now = Instant.now();
+    notifications.save(new WorkflowNotification(
+        UUID.randomUUID(),
+        workflow.id(),
+        stage.id(),
+        stage.assignedReviewerId(),
+        eventType,
+        "Approval required for " + stage.stageType().name().replace('_', ' '),
+        null,
+        now));
+    repository.saveStage(new ApprovalStage(
+        stage.id(), stage.workflowId(), stage.stageOrder(), stage.stageType(),
+        stage.requiredRole(), stage.assignedReviewerId(), stage.status(), stage.actorId(),
+        stage.rationale(), stage.oversightEvidence(), stage.actedAt(), now, stage.createdAt()));
   }
 
   private boolean isDone(StageStatus status) {
@@ -285,6 +389,10 @@ public class ApprovalWorkflowService {
       result.add(s.id().equals(updated.id()) ? updated : s);
     }
     return result;
+  }
+
+  private String normalize(String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 
   private ApprovalWorkflow closeWorkflow(

@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/systems/{systemId}/workflows")
 public class ApprovalWorkflowController {
   private final ApprovalWorkflowService service;
 
@@ -20,29 +19,45 @@ public class ApprovalWorkflowController {
     this.service = service;
   }
 
-  @GetMapping
+  @GetMapping("/api/v1/workflows/open")
+  public List<ApprovalWorkflow> listOpenWorkflows() {
+    return service.listOpen();
+  }
+
+  @GetMapping("/api/v1/workflows/mine")
+  public List<ApprovalWorkflow> listMyWorkflows() {
+    return service.listMine();
+  }
+
+  @GetMapping("/api/v1/workflow-notifications/mine")
+  public List<WorkflowNotification> listMyNotifications() {
+    return service.listMyNotifications();
+  }
+
+  @GetMapping("/api/v1/systems/{systemId}/workflows")
   public List<ApprovalWorkflow> listWorkflows(@PathVariable UUID systemId) {
     return service.listBySystemId(systemId);
   }
 
-  @GetMapping("/active")
+  @GetMapping("/api/v1/systems/{systemId}/workflows/active")
   public ApprovalWorkflow getActiveWorkflow(@PathVariable UUID systemId) {
     return service.findActive(systemId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
             "No active workflow for system"));
   }
 
-  @PostMapping("/{workflowId}/stages/{stageId}/approve")
+  @PostMapping("/api/v1/systems/{systemId}/workflows/{workflowId}/stages/{stageId}/approve")
   public ApprovalWorkflow approveStage(
       @PathVariable UUID systemId,
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody(required = false) StageActionRequest request) {
     String rationale = request != null ? request.rationale() : null;
-    return service.approveStage(workflowId, stageId, rationale);
+    String oversightEvidence = request != null ? request.oversightEvidence() : null;
+    return service.approveStage(workflowId, stageId, rationale, oversightEvidence);
   }
 
-  @PostMapping("/{workflowId}/stages/{stageId}/reject")
+  @PostMapping("/api/v1/systems/{systemId}/workflows/{workflowId}/stages/{stageId}/reject")
   public ApprovalWorkflow rejectStage(
       @PathVariable UUID systemId,
       @PathVariable UUID workflowId,
@@ -51,7 +66,7 @@ public class ApprovalWorkflowController {
     return service.rejectStage(workflowId, stageId, request.rationale());
   }
 
-  @PostMapping("/{workflowId}/stages/{stageId}/override")
+  @PostMapping("/api/v1/systems/{systemId}/workflows/{workflowId}/stages/{stageId}/override")
   public ApprovalWorkflow overrideStage(
       @PathVariable UUID systemId,
       @PathVariable UUID workflowId,

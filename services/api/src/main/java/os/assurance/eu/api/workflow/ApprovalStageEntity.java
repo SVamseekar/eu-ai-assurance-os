@@ -31,13 +31,17 @@ public class ApprovalStageEntity {
   @Column(nullable = false)
   private String requiredRole;
 
+  private UUID assignedReviewerId;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private StageStatus status;
 
   private UUID actorId;
   private String rationale;
+  private String oversightEvidence;
   private Instant actedAt;
+  private Instant notificationSentAt;
 
   @Column(nullable = false)
   private Instant createdAt;
@@ -51,10 +55,13 @@ public class ApprovalStageEntity {
     this.stageOrder = stage.stageOrder();
     this.stageType = stage.stageType();
     this.requiredRole = stage.requiredRole();
+    this.assignedReviewerId = stage.assignedReviewerId();
     this.status = stage.status();
     this.actorId = stage.actorId();
     this.rationale = stage.rationale();
+    this.oversightEvidence = stage.oversightEvidence();
     this.actedAt = stage.actedAt();
+    this.notificationSentAt = stage.notificationSentAt();
     this.createdAt = stage.createdAt();
   }
 
@@ -64,6 +71,7 @@ public class ApprovalStageEntity {
 
   public ApprovalStage toDomain() {
     return new ApprovalStage(id, workflowId, stageOrder, stageType,
-        requiredRole, status, actorId, rationale, actedAt, createdAt);
+        requiredRole, assignedReviewerId, status, actorId, rationale,
+        oversightEvidence, actedAt, notificationSentAt, createdAt);
   }
 }

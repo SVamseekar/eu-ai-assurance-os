@@ -65,11 +65,14 @@ Status: complete.
 
 ## Phase 5: Workflow
 
-- Approval stages.
-- Reviewer assignment.
-- Override workflow.
-- Human oversight evidence capture.
-- Notifications.
+Status: complete.
+
+- Approval stages: implemented for engineering lead, compliance, and legal signoff.
+- Reviewer assignment: implemented by tenant role with assigned reviewer tracking.
+- Override workflow: implemented for ADMIN actors with required rationale and audit events.
+- Human oversight evidence capture: implemented for legal signoff approval.
+- Notifications: implemented as persisted reviewer workflow notifications.
+- Approvals dashboard: implemented against live workflow APIs for open, assigned, and notification views.
 
 ## Phase 6: Enterprise Readiness
 

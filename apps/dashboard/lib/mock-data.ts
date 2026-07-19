@@ -1,4 +1,11 @@
-import type { AiSystem, DataContract, DriftEvent, AuditEvent, ApprovalWorkflow } from "./types";
+import type {
+  AiSystem,
+  DataContract,
+  DriftEvent,
+  AuditEvent,
+  ApprovalWorkflow,
+  WorkflowNotification,
+} from "./types";
 
 const d = (daysAgo: number, hoursAgo = 0) =>
   new Date(Date.now() - daysAgo * 86_400_000 - hoursAgo * 3_600_000).toISOString();
@@ -337,10 +344,13 @@ export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
           stageOrder: 1,
           stageType: "ENG_LEAD_REVIEW",
           requiredRole: "AI_ENGINEERING_LEAD",
+          assignedReviewerId: "00000000-0000-0000-0000-000000000102",
           status: "PENDING",
           actorId: null,
           rationale: null,
+          oversightEvidence: null,
           actedAt: null,
+          notificationSentAt: d(1, 3),
           createdAt: d(1, 3),
         },
         {
@@ -349,10 +359,13 @@ export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
           stageOrder: 2,
           stageType: "COMPLIANCE_REVIEW",
           requiredRole: "COMPLIANCE_OFFICER",
+          assignedReviewerId: "00000000-0000-0000-0000-000000000101",
           status: "PENDING",
           actorId: null,
           rationale: null,
+          oversightEvidence: null,
           actedAt: null,
+          notificationSentAt: null,
           createdAt: d(1, 3),
         },
         {
@@ -361,10 +374,13 @@ export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
           stageOrder: 3,
           stageType: "LEGAL_SIGNOFF",
           requiredRole: "LEGAL_COUNSEL",
+          assignedReviewerId: "00000000-0000-0000-0000-000000000104",
           status: "PENDING",
           actorId: null,
           rationale: null,
+          oversightEvidence: null,
           actedAt: null,
+          notificationSentAt: null,
           createdAt: d(1, 3),
         },
       ],
@@ -386,10 +402,13 @@ export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
           stageOrder: 1,
           stageType: "ENG_LEAD_REVIEW",
           requiredRole: "AI_ENGINEERING_LEAD",
+          assignedReviewerId: "00000000-0000-0000-0000-000000000102",
           status: "APPROVED",
           actorId: "00000000-0000-0000-0000-000000000102",
           rationale: "Eval metrics all green. Faithfulness 0.91, bias pass rate 0.94.",
+          oversightEvidence: null,
           actedAt: d(29),
+          notificationSentAt: d(30),
           createdAt: d(30),
         },
         {
@@ -398,10 +417,13 @@ export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
           stageOrder: 2,
           stageType: "COMPLIANCE_REVIEW",
           requiredRole: "COMPLIANCE_OFFICER",
+          assignedReviewerId: "00000000-0000-0000-0000-000000000101",
           status: "APPROVED",
           actorId: "00000000-0000-0000-0000-000000000101",
           rationale: "Evidence coverage 88%. Art. 52 transparency obligation noted in open gaps — acceptable for LIMITED risk.",
+          oversightEvidence: null,
           actedAt: d(28),
+          notificationSentAt: d(29),
           createdAt: d(30),
         },
         {
@@ -410,13 +432,37 @@ export const MOCK_WORKFLOWS: Record<string, ApprovalWorkflow[]> = {
           stageOrder: 3,
           stageType: "LEGAL_SIGNOFF",
           requiredRole: "LEGAL_COUNSEL",
+          assignedReviewerId: "00000000-0000-0000-0000-000000000104",
           status: "SKIPPED",
           actorId: null,
           rationale: null,
+          oversightEvidence: null,
           actedAt: null,
+          notificationSentAt: null,
           createdAt: d(30),
         },
       ],
     },
   ],
 };
+
+/** Flattened open workflows for offline approvals queue demos. */
+export const MOCK_OPEN_WORKFLOWS: ApprovalWorkflow[] = Object.values(MOCK_WORKFLOWS)
+  .flat()
+  .filter((workflow) => workflow.status === "OPEN");
+
+/** Demo "mine" queue — open workflows with a pending stage. */
+export const MOCK_MY_WORKFLOWS: ApprovalWorkflow[] = MOCK_OPEN_WORKFLOWS;
+
+export const MOCK_NOTIFICATIONS: WorkflowNotification[] = [
+  {
+    id: "mock-notif-001",
+    workflowId: "mock-wf-001",
+    stageId: "mock-stage-001",
+    recipientId: "00000000-0000-0000-0000-000000000102",
+    eventType: "WORKFLOW_STAGE_ASSIGNED",
+    message: "Approval required for ENG LEAD REVIEW",
+    readAt: null,
+    createdAt: d(1, 3),
+  },
+];
