@@ -25,6 +25,11 @@ class EvidencePackPdfRendererTest {
         List.of(),
         List.of(),
         List.of(),
+        Map.of(
+            "disclaimer",
+            "Assisted determination (not legal advice). Suggested applicability / obligation map only.",
+            "status",
+            "NONE"),
         "1.0",
         "a".repeat(64),
         "eu-ai-assurance-api/0.1.0",

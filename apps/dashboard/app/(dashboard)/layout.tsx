@@ -41,6 +41,16 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "Audit Ledger",
     subtitle: "Append-only record of evidence checks, approvals, overrides, and release decisions.",
   },
+  "/reg-monitor": {
+    title: "Regulatory Change Monitor",
+    subtitle:
+      "Near-real-time polled assistive feed with UNCERTAIN impact hints. Not an official legal bulletin.",
+  },
+  "/readiness": {
+    title: "Certification Readiness",
+    subtitle:
+      "Weighted readiness score and gaps toward conformity documentation — not legal certification.",
+  },
 };
 
 function downloadJson(filename: string, payload: unknown) {

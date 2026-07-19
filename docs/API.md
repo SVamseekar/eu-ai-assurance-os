@@ -6,15 +6,42 @@ Base path:
 /api/v1
 ```
 
-MVP tenant context headers:
+## Authentication
+
+Most routes require one of:
+
+| Mechanism | Header / path |
+|---|---|
+| Bearer JWT | `Authorization: Bearer <access_token>` |
+| API key | `X-Api-Key: <raw-key>` (stored as SHA-256 hash) |
+
+Tenant and actor are taken from **verified credentials only**. Client-supplied
+`X-Tenant-Id` / `X-Actor-Id` are **not** trusted for authorization (see
+`docs/SECURITY.md`). Local H2 bootstrap seeds a dev-only API key
+`00000000-0000-0000-0000-000000000a01` for the default compliance user — never use in production.
+
+### Password and token lifecycle
 
 ```http
-X-Tenant-Id: 00000000-0000-0000-0000-000000000001
-X-Actor-Id: 00000000-0000-0000-0000-000000000101
+POST /auth/login
+POST /auth/refresh
+POST /auth/logout
+GET  /.well-known/jwks.json
 ```
 
-If omitted, the backend uses the bootstrapped MVP tenant and actor. If provided,
-both headers must refer to known records.
+### OAuth (Google + Microsoft) — Part 4
+
+Implemented with unit/integration tests. Production smoke pending
+(`docs/oauth-production-smoke-test.md`). Do not claim “production SSO verified”
+until that runbook is signed off.
+
+```http
+GET  /auth/oauth/{provider}/start      # 302 to IdP (provider: google | microsoft)
+POST /auth/oauth/{provider}/callback   # BFF posts code+state → JWT pair (same shape as login)
+```
+
+Unauthenticated allowlist also includes `/actuator/health` (+ liveness/readiness).
+All other API routes require auth.
 
 ## AI Systems
 
@@ -394,6 +421,166 @@ release-gate blockers as `CONTROL:{code}`.
 Registry fields on AI systems (create/update/risk classification):
 `vendorName`, `modelName`, `modelVersion`, `dataSources`, `sector`,
 `decisionImpact`, `affectedUsers`.
+
+## Assisted obligation determination (Part 12)
+
+**Product framing:** responses are a **suggested applicability / obligation map** only.
+They are **not legal advice**, not a final legal determination, not certification, and
+not an official conformity assessment. Human legal review is always required.
+Risk class is never auto-changed.
+
+```http
+GET /determination/questionnaire
+POST /systems/{systemId}/determination/runs
+GET /systems/{systemId}/determination/runs
+GET /systems/{systemId}/determination/runs/{runId}
+```
+
+`GET /determination/questionnaire` returns versioned questions, `rulesetVersion`,
+`productLabel` (`Assisted obligation determination (ruleset vX)`), and a full disclaimer.
+
+`POST /systems/{systemId}/determination/runs` body:
+
+```json
+{
+  "answers": {
+    "sector": "insurance",
+    "decision_impact": "eligibility",
+    "essential_private_service": true,
+    "biometric": false,
+    "employment": false,
+    "human_in_loop": true,
+    "interacts_with_natural_persons": true,
+    "profiling": true,
+    "users_affected": "many",
+    "high_risk_self_assessment": true
+  }
+}
+```
+
+Response includes `disclaimer`, `rulesetVersion`, evaluated obligations with
+`applicability` (`APPLICABLE` | `NOT_APPLICABLE` | `UNCERTAIN`), mapped `controlCodes`,
+and `result.riskSuggestion` with `autoApplied: false` / `requiresHumanConfirm: true`.
+Applicable control codes open missing `system_controls` in `REVIEW`. Audit event:
+`determination.run.completed`. Latest run is embedded in evidence pack JSON/PDF under
+`determination` (with the same disclaimer).
+
+## Certification readiness (Part 13)
+
+**Product framing:** responses are a **readiness score + structured gap report** only.
+They are **not legal certification**, not notified-body attestation, and not an
+official conformity assessment. Never returns a `certified: true` field.
+
+```http
+GET  /systems/{systemId}/certification-readiness
+POST /systems/{systemId}/certification-readiness/export
+```
+
+`GET` returns:
+
+| Field | Description |
+|---|---|
+| `score` | Weighted readiness 0–100 |
+| `readinessStatus` | `NOT_READY` \| `READY_FOR_REVIEW` \| `GAPS` |
+| `productLabel` | `Certification readiness automation` |
+| `disclaimer` | Full product-safe disclaimer |
+| `dimensions[]` | Nine dimensions: risk, controls, evidence, eval, contracts, approvals, oversight, determination, audit_chain |
+| `gaps[]` | `{ code, severity, message, remediationHint, dimension }` |
+
+Weights and thresholds are configurable via `assurance.certification-readiness.*`
+(defaults sum to 100: risk 10, controls 15, evidence 15, eval 15, contracts 10,
+approvals 10, oversight 10, determination 10, audit chain 5).
+
+`POST .../export` body `{ "format": "json" | "pdf" }` (default `json`) returns a
+downloadable readiness report. PDF is a human-readable export; JSON is primary.
+Audit events: `certification_readiness.assessed`, `certification_readiness.exported`.
+
+## Regulatory change monitoring (Part 14)
+
+**Product framing:** near-real-time **polled** assistive feed with heuristic impact hints.
+It is **not** an official legal bulletin, not continuous real-time law, and not legal advice.
+Impact levels prefer `UNCERTAIN`. The feed **never** auto-changes risk class or control status.
+
+Latency: bounded by `assurance.reg-monitor.poll-interval-ms` (scheduler) and each source’s
+`poll_interval_seconds`. Network sources are disabled by default; curated bootstrap fixtures
+load when the network is blocked or sources are empty.
+
+```http
+GET  /reg-monitor/items?since=&reviewed=
+POST /reg-monitor/items/{itemId}/review
+GET  /systems/{systemId}/reg-monitor/relevant
+```
+
+| Endpoint | Roles | Notes |
+|---|---|---|
+| `GET /reg-monitor/items` | ADMIN, AI_ENGINEERING_LEAD, COMPLIANCE_OFFICER, LEGAL_COUNSEL, AUDITOR | Optional `since` (ISO-8601), `reviewed` (boolean) |
+| `POST .../review` | ADMIN, COMPLIANCE_OFFICER, LEGAL_COUNSEL | Body `{ "notes": "..." }` — tenant-scoped review only |
+| `GET .../relevant` | same as list | Items matching system sector / control codes (heuristic) |
+
+`GET` list response:
+
+```json
+{
+  "productLabel": "Regulatory change monitoring feed",
+  "disclaimer": "…not an official legal bulletin…",
+  "latencyNote": "Latency is bounded by poll interval…",
+  "items": [
+    {
+      "id": "…",
+      "sourceCode": "CURATED_BOOTSTRAP",
+      "title": "…",
+      "summary": "…",
+      "impactHints": [
+        {
+          "controlCode": "HUMAN_OVERSIGHT",
+          "obligationCode": "HUMAN_OVERSIGHT_HIGH_IMPACT",
+          "impactLevel": "UNCERTAIN",
+          "impactNote": "…"
+        }
+      ],
+      "reviewed": false
+    }
+  ]
+}
+```
+
+Audit events: `reg_item.ingested` (payload includes `autoMutatesRiskOrControls: false`),
+`reg_item.reviewed`.
+
+Config: `assurance.reg-monitor.enabled`, `assurance.reg-monitor.poll-interval-ms`,
+`assurance.reg-monitor.bootstrap-fixtures`. SSRF-safe HTTPS fetch (DNS pin, no redirects)
+mirrors the evidence fetch pattern. Respect EUR-Lex / OJ ToS and rate limits when enabling
+remote sources.
+
+## Sector packs + integration SPI (Part 15)
+
+**Product claim:** `3 sector packs + SPI` — not “all industries integrated.”
+Packs are vertical overlays (extra controls, questionnaire defaults, sample templates).
+They are **not** live production connectors to proprietary vendors without real OAuth apps.
+
+Config: `assurance.sector.packs=insurance,hr,finance`
+
+```http
+GET /sector-packs
+GET /sector-packs/{packId}
+GET /sector-packs/resolve?sector=insurance
+GET /sector-packs/{packId}/templates/{templateId}
+POST /integrations/insurance/claims-model-register
+GET /integrations/connectors/model-inventory
+```
+
+| Endpoint | Notes |
+|---|---|
+| `GET /sector-packs` | Enabled packs + `metricsLabel` + disclaimers |
+| `GET .../resolve` | Resolve pack for free-text system `sector` |
+| `GET .../templates/{id}` | Sample markdown (illustrative, not legal advice) |
+| `POST .../claims-model-register` | Stub: maps external model id → system registry (`sector=insurance`) |
+| `GET .../model-inventory` | Stub inventory (`connectorMode: stub`) |
+
+Creating a system with `sector` matching an enabled pack attaches overlay controls
+(e.g. insurance → `INS_CLAIMS_FAIRNESS`, `INS_ADVERSE_DECISION_REVIEW`, …).
+
+See `docs/SECTOR_PACKS.md`.
 
 ## Approval Workflows
 

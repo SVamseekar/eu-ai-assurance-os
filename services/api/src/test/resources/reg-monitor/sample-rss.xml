@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Sample OJ-style feed</title>
+    <link>https://example.invalid/oj</link>
+    <description>Test fixture only</description>
+    <item>
+      <title>Commission implementing act on AI logging requirements</title>
+      <link>https://example.invalid/items/logging-1</link>
+      <guid isPermaLink="false">oj-item-logging-1</guid>
+      <pubDate>Mon, 12 Jan 2026 10:00:00 GMT</pubDate>
+      <description>Indicative item about record-keeping and logging for high-risk AI systems.</description>
+    </item>
+    <item>
+      <title>Biometric identification guidance note (fixture)</title>
+      <link>https://example.invalid/items/bio-1</link>
+      <guid isPermaLink="false">oj-item-bio-1</guid>
+      <pubDate>Tue, 13 Jan 2026 11:00:00 GMT</pubDate>
+      <description>Fixture covering biometric identification themes and remote biometric systems.</description>
+    </item>
+  </channel>
+</rss>

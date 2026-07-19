@@ -1,14 +1,12 @@
 import type { MetadataRoute } from "next";
 
-import { siteConfig } from "@/lib/site-config";
+import { publicRoutes, siteConfig } from "@/lib/site-config";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: siteConfig.url,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-  ];
+  return publicRoutes.map((route) => ({
+    url: route.path === "/" ? siteConfig.url : `${siteConfig.url}${route.path}`,
+    lastModified: new Date(),
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
+  }));
 }

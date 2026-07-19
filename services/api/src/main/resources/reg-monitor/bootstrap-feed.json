@@ -1,0 +1,41 @@
+{
+  "sourceCode": "CURATED_BOOTSTRAP",
+  "disclaimer": "Assistive curated fixture for offline bootstrap. Not an official legal bulletin.",
+  "items": [
+    {
+      "externalId": "fixture-ai-act-oversight-2024",
+      "title": "EU AI Act human oversight expectations for high-risk systems (curated note)",
+      "summary": "Indicative summary of Art. 14-style human oversight themes for high-risk AI. Operators should review oversight measures, stop/override controls, and documentation. This is not legal advice.",
+      "publishedAt": "2024-08-01T00:00:00Z",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    },
+    {
+      "externalId": "fixture-transparency-art50",
+      "title": "Transparency duties when interacting with natural persons",
+      "summary": "Curated note on transparency-style duties (Art. 50 themes): inform users they are interacting with an AI system where applicable, and label synthetic content where required. Assistive mapping only.",
+      "publishedAt": "2024-08-01T00:00:00Z",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    },
+    {
+      "externalId": "fixture-data-governance",
+      "title": "Data governance and training data quality themes under the AI Act",
+      "summary": "Curated note on data governance, bias mitigation, and record-keeping themes relevant to training and validation data. Prefer UNCERTAIN impact until legal counsel reviews.",
+      "publishedAt": "2024-09-15T00:00:00Z",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    },
+    {
+      "externalId": "fixture-annex-iii-employment",
+      "title": "Annex III employment and worker management use cases (indicative)",
+      "summary": "Indicative note on employment / HR screening use cases often associated with elevated obligation themes. Does not classify any system as high-risk automatically.",
+      "publishedAt": "2024-10-01T00:00:00Z",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    },
+    {
+      "externalId": "fixture-cybersecurity",
+      "title": "Cybersecurity and robustness expectations for high-risk AI",
+      "summary": "Curated note on cybersecurity, accuracy, and robustness themes. Impact hints are UNCERTAIN and require human review before control status changes.",
+      "publishedAt": "2025-01-10T00:00:00Z",
+      "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+    }
+  ]
+}

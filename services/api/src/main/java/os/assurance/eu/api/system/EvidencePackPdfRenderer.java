@@ -46,6 +46,9 @@ public final class EvidencePackPdfRenderer {
       document.add(new Paragraph(
           "JSON is the primary sealed export. This PDF is a human-readable Phase 6 export.",
           bodyFont));
+      document.add(new Paragraph(
+          "Assisted obligation determination sections are not legal advice and require human legal review.",
+          bodyFont));
       document.add(new Paragraph(" ", bodyFont));
 
       addHeading(document, headingFont, "1. System identity");
@@ -92,7 +95,28 @@ public final class EvidencePackPdfRenderer {
         }
       }
 
-      addHeading(document, headingFont, "7. Audit excerpt");
+      addHeading(document, headingFont, "7. Assisted obligation determination");
+      Map<String, Object> determination = pack.determination();
+      if (determination == null || determination.isEmpty()) {
+        addLine(document, bodyFont, "Determination", "(none)");
+      } else {
+        addLine(document, bodyFont, "Disclaimer", determination.get("disclaimer"));
+        addLine(document, bodyFont, "Product label", determination.get("productLabel"));
+        addLine(document, bodyFont, "Run ID", determination.get("runId"));
+        addLine(document, bodyFont, "Ruleset", determination.get("rulesetVersion"));
+        addLine(document, bodyFont, "Status", determination.get("status"));
+        Object obligations = determination.get("obligations");
+        if (obligations instanceof List<?> list && !list.isEmpty()) {
+          for (Object item : list) {
+            if (item instanceof Map<?, ?> row) {
+              addLine(document, bodyFont, "Obligation",
+                  row.get("ruleCode") + " — " + row.get("applicability"));
+            }
+          }
+        }
+      }
+
+      addHeading(document, headingFont, "8. Audit excerpt");
       List<AuditEvent> audits = pack.auditEvents();
       int limit = Math.min(audits.size(), 15);
       if (limit == 0) {
@@ -108,7 +132,7 @@ public final class EvidencePackPdfRenderer {
         }
       }
 
-      addHeading(document, headingFont, "8. Seal");
+      addHeading(document, headingFont, "9. Seal");
       addLine(document, bodyFont, "contentSha256", pack.contentSha256());
       if (pack.auditChainHead() != null && !pack.auditChainHead().isBlank()) {
         addLine(document, bodyFont, "auditChainHead", pack.auditChainHead());

@@ -5,8 +5,10 @@ import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { RiskBadge } from "./risk-badge";
+import { SectorPackBadge } from "./sector-pack-badge";
 import { CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import type { AiSystem, RiskClass } from "@/lib/types";
+import { SECTOR_PACK_OPTIONS, resolveSectorPackId } from "@/lib/sector-packs";
 
 interface RegisterSystemModalProps {
   isOpen: boolean;
@@ -41,6 +43,7 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
   const [step, setStep] = useState(1);
   const [name, setName] = useState("Underwriting Risk Assistant");
   const [owner, setOwner] = useState("Finance Risk");
+  const [sector, setSector] = useState("insurance");
   const [purpose, setPurpose] = useState(
     "Automate risk scoring for commercial insurance policy applicants based on public company financial parameters"
   );
@@ -56,6 +59,16 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
     setAnswers((p) => ({ ...p, [id]: val }));
   }
 
+  function handleSectorChange(next: string) {
+    setSector(next);
+    // Align questionnaire defaults with sector pack hints (client-side only)
+    if (next === "insurance" || next === "finance") {
+      setAnswers((p) => ({ ...p, q_essential: true, q_hr: false }));
+    } else if (next === "hr") {
+      setAnswers((p) => ({ ...p, q_hr: true, q_essential: false }));
+    }
+  }
+
   // Risk determination logic
   let riskClass: RiskClass = "minimal";
   let riskBasis = "Minimal-risk under the EU AI Act (Art. 52 exemptions apply). No specific binding obligations.";
@@ -68,18 +81,40 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
     riskBasis = "Art. 52 transparency requirements apply — AI system interacts directly with natural persons.";
   }
 
+  const packId = resolveSectorPackId(sector);
+  const packObligations =
+    packId === "insurance"
+      ? [
+          "Insurance pack: claims fairness testing (INS_CLAIMS_FAIRNESS)",
+          "Insurance pack: human review of adverse claim decisions",
+          "Insurance pack: claims model card documentation",
+        ]
+      : packId === "hr"
+        ? [
+            "HR pack: hiring/ranking transparency",
+            "HR pack: employment human oversight + candidate notice",
+          ]
+        : packId === "finance"
+          ? [
+              "Finance pack: elevated KYC/fraud logging intensity",
+              "Finance pack: human review of fraud/KYC flags",
+            ]
+          : [];
+
   const obligations = riskClass === "high"
     ? [
         "Index Technical Documentation (Art. 11) & Model Cards",
         "Establish Human Oversight SOP (Art. 14) with manual override route",
         "Configure automated logging checks (Art. 12) to append to Audit Ledger",
         "Run continuous evaluation runs (faithfulness, bias) and pass 85% threshold gate",
-        "Monitor data-contract drift on schema inputs"
+        "Monitor data-contract drift on schema inputs",
+        ...packObligations,
       ]
     : riskClass === "limited"
     ? [
         "Display user chatbot disclosures (Art. 52(1) transparency warning banner)",
-        "Identify content generation origins explicitly"
+        "Identify content generation origins explicitly",
+        ...packObligations,
       ]
     : [
         "Optional compliance with voluntary industry code of conduct models",
@@ -105,7 +140,7 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
       modelName: null,
       modelVersion: null,
       dataSources: [],
-      sector: answers.q_essential ? "insurance" : answers.q_hr ? "hr" : null,
+      sector: sector || null,
       decisionImpact: riskClass === "high" ? "access to essential private services" : null,
       affectedUsers: [],
       createdAt: new Date().toISOString(),
@@ -146,6 +181,32 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
                 onChange={(e) => setOwner(e.target.value)}
                 placeholder="e.g. Credit Risk Operations"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Sector / vertical pack
+              </label>
+              <select
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
+                value={sector}
+                onChange={(e) => handleSectorChange(e.target.value)}
+              >
+                {SECTOR_PACK_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                    {opt.packId ? " (pack enabled)" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground leading-normal">
+                Enabled packs (insurance, HR, finance) attach extra controls via SPI.
+                Not all industries are integrated; no live proprietary vendor connectors.
+              </p>
+              {sector && (
+                <div className="pt-1">
+                  <SectorPackBadge sector={sector} />
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">System Purpose</label>
@@ -217,8 +278,9 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
               </div>
               <div>
                 <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none mb-1.5">Calculated Tier</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <RiskBadge risk={riskClass} />
+                  <SectorPackBadge sector={sector} />
                   <span className="text-xs text-muted-foreground">Release starts as: </span>
                   <span className={`text-xs font-semibold uppercase ${
                     riskClass === "high" ? "text-red-500" : riskClass === "limited" ? "text-amber-500" : "text-emerald-500"

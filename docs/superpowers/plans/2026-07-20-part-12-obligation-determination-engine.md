@@ -23,41 +23,41 @@ Landing FAQ, determination UI, and export header must include the disclaimer.
 
 ### Task 12.1: Domain model
 
-- [ ] **Step 1:** Flyway tables:
+- [x] **Step 1:** Flyway tables:
   - `obligation_rules` — code, title, description, legal_refs (Art/Annex text), applies_when JSON (conditions), severity, version
   - `determination_runs` — id, tenant_id, system_id, questionnaire_json, result_json, status, created_by, created_at
   - `determination_obligations` — run_id, rule_code, applicability (APPLICABLE|NOT_APPLICABLE|UNCERTAIN), rationale
-- [ ] **Step 2:** Seed v1 rule pack from existing control categories + high-risk indicators (HIGH risk, essential services, biometric flags as questionnaire inputs—not invented law).
-- [ ] **Step 3:** Version field `ruleset_version` on every run for auditability.
+- [x] **Step 2:** Seed v1 rule pack from existing control categories + high-risk indicators (HIGH risk, essential services, biometric flags as questionnaire inputs—not invented law).
+- [x] **Step 3:** Version field `ruleset_version` on every run for auditability.
 
 ### Task 12.2: Questionnaire API
 
-- [ ] **Step 1:** `GET /api/v1/determination/questionnaire` — versioned questions (sector, users affected, decision impact, biometric, employment, essential private service, human in loop, etc.).
-- [ ] **Step 2:** `POST /api/v1/systems/{id}/determination/runs` — body answers → evaluate rules → store run.
-- [ ] **Step 3:** `GET .../determination/runs/{runId}` — full result + disclaimer.
-- [ ] **Step 4:** Rule engine: pure Java evaluator over JSON conditions (no LLM required for v1; optional LLM narrative later).
-- [ ] **Step 5:** Tests for HIGH insurance triage → expected obligation set; MINIMAL chatbot → reduced set; uncertain paths.
+- [x] **Step 1:** `GET /api/v1/determination/questionnaire` — versioned questions (sector, users affected, decision impact, biometric, employment, essential private service, human in loop, etc.).
+- [x] **Step 2:** `POST /api/v1/systems/{id}/determination/runs` — body answers → evaluate rules → store run.
+- [x] **Step 3:** `GET .../determination/runs/{runId}` — full result + disclaimer.
+- [x] **Step 4:** Rule engine: pure Java evaluator over JSON conditions (no LLM required for v1; optional LLM narrative later).
+- [x] **Step 5:** Tests for HIGH insurance triage → expected obligation set; MINIMAL chatbot → reduced set; uncertain paths.
 
 ### Task 12.3: Link to controls + risk
 
-- [ ] **Step 1:** Applicable obligations map to control codes (Part 5); auto-open system_controls REVIEW for new applicable obligations.
-- [ ] **Step 2:** Optional suggestion to reclassify risk (never auto-change without human confirm).
-- [ ] **Step 3:** Audit events: `determination.run.completed`.
+- [x] **Step 1:** Applicable obligations map to control codes (Part 5); auto-open system_controls REVIEW for new applicable obligations.
+- [x] **Step 2:** Optional suggestion to reclassify risk (never auto-change without human confirm).
+- [x] **Step 3:** Audit events: `determination.run.completed`.
 
 ### Task 12.4: Dashboard UX
 
-- [ ] **Step 1:** Systems → “Obligation map” wizard.
-- [ ] **Step 2:** Results: Applicable / Uncertain / Not applicable lists + legal_refs + “human review required” banner.
-- [ ] **Step 3:** Export include in evidence pack (Part 7) as `determination` section.
+- [x] **Step 1:** Systems → “Obligation map” wizard.
+- [x] **Step 2:** Results: Applicable / Uncertain / Not applicable lists + legal_refs + “human review required” banner.
+- [x] **Step 3:** Export include in evidence pack (Part 7) as `determination` section.
 
 ### Task 12.5: Docs + claims
 
-- [ ] **Step 1:** PRD §4 updated: determination engine **in scope as assisted** (Part 11).
-- [ ] **Step 2:** Metrics canon: “Assisted obligation determination (ruleset vX)” — never “legal determination engine” alone without “assisted”.
+- [x] **Step 1:** PRD §4 updated: determination engine **in scope as assisted** (Part 12).
+- [x] **Step 2:** Metrics canon: “Assisted obligation determination (ruleset vX)” — never “legal determination engine” alone without “assisted”.
 
 ### Done when
 
-- [ ] Deterministic rule evaluation with tests  
-- [ ] Disclaimer on every surface  
-- [ ] Linked to controls + pack  
-- [ ] No claim of legal finality  
+- [x] Deterministic rule evaluation with tests  
+- [x] Disclaimer on every surface  
+- [x] Linked to controls + pack  
+- [x] No claim of legal finality  
