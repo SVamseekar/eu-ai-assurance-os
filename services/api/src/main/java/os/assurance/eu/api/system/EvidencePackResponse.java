@@ -6,6 +6,11 @@ import java.util.Map;
 import java.util.UUID;
 import os.assurance.eu.api.audit.AuditEvent;
 
+/**
+ * Sealed evidence pack. JSON is the primary machine-readable format (PRD MVP).
+ * Seal fields (contentSha256, evidencePackVersion, generator, auditChainHead)
+ * make exports deterministic and traceable under a fixed clock.
+ */
 public record EvidencePackResponse(
     UUID systemId,
     Instant generatedAt,
@@ -15,5 +20,9 @@ public record EvidencePackResponse(
     List<Map<String, Object>> evalRuns,
     List<Map<String, Object>> dataContracts,
     List<Map<String, Object>> approvals,
-    List<AuditEvent> auditEvents) {
+    List<AuditEvent> auditEvents,
+    String evidencePackVersion,
+    String contentSha256,
+    String generator,
+    String auditChainHead) {
 }

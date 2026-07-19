@@ -9,6 +9,7 @@ import type {
   EvalRun,
   EvalRunOperationsView,
   EvidenceDocument,
+  EvidencePack,
   EvidenceQueryResponse,
   ReleaseGateResponse,
   SystemControl,
@@ -19,17 +20,30 @@ const BASE = "/api/proxy";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  headers.set("Content-Type", "application/json");
+  if (init?.body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const res = await fetch(`${BASE}${path}`, {
-    headers,
     ...init,
+    headers,
   });
   if (res.status === 401 && typeof window !== "undefined") {
     window.location.href = "/login";
   }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.status === 204 ? (null as T) : res.json();
+}
+
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export const api = {
@@ -43,6 +57,26 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ status, notes }),
       }),
+    /** Primary sealed JSON evidence pack (authenticated proxy). */
+    evidencePack: (id: string) => request<EvidencePack>(`/systems/${id}/evidence-pack`),
+    /**
+     * Phase 6 PDF export of the sealed pack. Returns contentSha256 from response header.
+     */
+    evidencePackPdf: async (id: string): Promise<{ contentSha256: string; filename: string }> => {
+      const res = await fetch(`${BASE}/systems/${id}/evidence-pack.pdf`);
+      if (res.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const contentSha256 = res.headers.get("X-Content-Sha256") ?? "";
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="?([^";]+)"?/i.exec(disposition);
+      const filename =
+        match?.[1] ?? `evidence-pack-${id}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const blob = await res.blob();
+      triggerBrowserDownload(blob, filename);
+      return { contentSha256, filename };
+    },
   },
   controls: {
     catalog: () => request<Control[]>("/controls"),

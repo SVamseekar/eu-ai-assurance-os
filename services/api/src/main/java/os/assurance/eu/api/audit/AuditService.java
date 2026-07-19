@@ -83,6 +83,16 @@ public class AuditService {
         .toList();
   }
 
+  /**
+   * Tip of the tenant audit hash chain (latest eventHash), if any chained event exists.
+   */
+  @Transactional(readOnly = true)
+  public java.util.Optional<String> chainHeadHash() {
+    return repository.findLatestByTenantId(tenantContext.tenantId())
+        .map(AuditEventEntity::eventHash)
+        .filter(hash -> hash != null && !hash.isBlank());
+  }
+
   @Transactional(readOnly = true)
   public AuditChainVerifyResponse verifyChain() {
     List<AuditEventEntity> events =
