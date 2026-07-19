@@ -68,7 +68,7 @@ jobs:
         run: echo "No API changes in this PR; job is a no-op for path filter."
 
       # Always run on main pushes so the default branch stays green
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
         with:
           distribution: temurin
@@ -106,7 +106,7 @@ jobs:
         if: needs.changes.outputs.api != 'true' && github.event_name == 'pull_request'
         run: echo "No API changes in this PR; acceptance is a no-op for path filter."
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
         with:
           distribution: temurin
