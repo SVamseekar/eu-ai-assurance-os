@@ -1,8 +1,8 @@
 # EU AI Assurance OS
 
-EU AI Assurance OS is a governance control plane for teams shipping AI systems in the European market. It validates AI releases against EU-focused controls by combining system inventory, risk classification, cited compliance evidence, evaluation gates, data-contract drift monitoring, approval workflows, and audit-ready evidence packs.
+EU AI Assurance OS is a governance control plane for teams shipping AI systems in the European market. It validates AI releases against EU-focused controls by combining system inventory, risk classification, cited compliance evidence, evaluation gates, data-contract drift monitoring, approval workflows, reviewer notifications, human oversight evidence, and audit-ready evidence packs.
 
-This repo starts with a verified static product prototype and a production-oriented Spring Boot backend foundation. The current MVP includes persistence, tenant-scoped APIs, audit trails, release gates, eval run records, data-contract drift simulation, and production-hardened evidence RAG foundations.
+This repo starts with a verified static product prototype and a production-oriented Spring Boot backend foundation. The current MVP includes persistence, tenant-scoped APIs, audit trails, release gates, eval run records, data-contract drift simulation, approval workflows, and production-hardened evidence RAG foundations.
 
 ## Why This Project
 

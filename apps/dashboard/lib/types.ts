@@ -155,10 +155,13 @@ export interface ApprovalStage {
   stageOrder: number;
   stageType: StageType;
   requiredRole: string;
+  assignedReviewerId: string | null;
   status: StageStatus;
   actorId: string | null;
   rationale: string | null;
+  oversightEvidence: string | null;
   actedAt: string | null;
+  notificationSentAt: string | null;
   createdAt: string;
 }
 
@@ -170,5 +173,16 @@ export interface ApprovalWorkflow {
   stages: ApprovalStage[];
   openedAt: string;
   closedAt: string | null;
+  createdAt: string;
+}
+
+export interface WorkflowNotification {
+  id: string;
+  workflowId: string;
+  stageId: string | null;
+  recipientId: string | null;
+  eventType: string;
+  message: string;
+  readAt: string | null;
   createdAt: string;
 }

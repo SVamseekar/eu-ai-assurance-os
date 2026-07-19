@@ -357,6 +357,40 @@ the release gate to block. Resolving the event with:
 
 recalculates the contract, system data-contract status, and release decision.
 
+## Approval Workflows
+
+```http
+GET /workflows/open
+GET /workflows/mine
+GET /workflow-notifications/mine
+GET /systems/{systemId}/workflows
+GET /systems/{systemId}/workflows/active
+```
+
+Workflow cycles are opened automatically when system creation, risk
+reclassification, eval regression, or data-contract breach requires review.
+Stages are assigned to tenant users by required role and must be completed in
+stage order. ADMIN actors may override a stage with rationale.
+
+```http
+POST /systems/{systemId}/workflows/{workflowId}/stages/{stageId}/approve
+POST /systems/{systemId}/workflows/{workflowId}/stages/{stageId}/reject
+POST /systems/{systemId}/workflows/{workflowId}/stages/{stageId}/override
+```
+
+Approve request:
+
+```json
+{
+  "rationale": "Evidence reviewed and accepted.",
+  "oversightEvidence": "Human oversight SOP v3, section 4.2"
+}
+```
+
+`oversightEvidence` is required for legal signoff approval. Rejection and
+override requests require `rationale`. Stage actions append audit events and
+create notifications for the next assigned reviewer.
+
 ## Release Gate
 
 ```http

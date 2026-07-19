@@ -14,5 +14,8 @@ public interface ApprovalWorkflowJpaRepository
   Optional<ApprovalWorkflowEntity> findByTenantIdAndSystemIdAndStatus(
       UUID tenantId, UUID systemId, WorkflowStatus status);
 
+  List<ApprovalWorkflowEntity> findAllByTenantIdAndStatusOrderByCreatedAtDesc(
+      UUID tenantId, WorkflowStatus status);
+
   Optional<ApprovalWorkflowEntity> findByTenantIdAndId(UUID tenantId, UUID id);
 }

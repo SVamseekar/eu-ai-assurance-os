@@ -92,6 +92,14 @@ public class BootstrapData implements CommandLineRunner {
             UserRole.COMPLIANCE_OFFICER,
             passwordEncoder.encode("dev-local-password-only"),
             now)));
+    seedUser("00000000-0000-0000-0000-000000000102",
+        "engineering@example.com", UserRole.AI_ENGINEERING_LEAD, now);
+    seedUser("00000000-0000-0000-0000-000000000103",
+        "auditor@example.com", UserRole.AUDITOR, now);
+    seedUser("00000000-0000-0000-0000-000000000104",
+        "legal@example.com", UserRole.LEGAL_COUNSEL, now);
+    seedUser("00000000-0000-0000-0000-000000000105",
+        "admin@example.com", UserRole.ADMIN, now);
     // Only seed the fixed dev/test API key when NOT running against real Postgres
     if (!Arrays.asList(environment.getActiveProfiles()).contains("postgres")) {
       UUID defaultApiKey = UUID.fromString("00000000-0000-0000-0000-000000000a01");
@@ -142,6 +150,18 @@ public class BootstrapData implements CommandLineRunner {
         86,
         DataContractStatus.HEALTHY,
         List.of("Update chatbot disclosure copy"));
+  }
+
+  private void seedUser(String id, String email, UserRole role, Instant now) {
+    UUID userId = UUID.fromString(id);
+    users.findById(userId)
+        .orElseGet(() -> users.save(new UserEntity(
+            userId,
+            TenantContext.DEFAULT_TENANT_ID,
+            email,
+            role,
+            passwordEncoder.encode("dev-local-password-only"),
+            now)));
   }
 
   private void seed(

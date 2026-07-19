@@ -11,7 +11,7 @@ interface ApprovalWorkflowPanelProps {
   workflows: ApprovalWorkflow[];
   activeWorkflow: ApprovalWorkflow | null;
   activeRole: string;
-  onApprove: (workflowId: string, stageId: string, rationale: string) => void;
+  onApprove: (workflowId: string, stageId: string, rationale: string, oversightEvidence?: string) => void;
   onReject: (workflowId: string, stageId: string, rationale: string) => void;
   onOverride: (workflowId: string, stageId: string, rationale: string) => void;
 }
@@ -163,8 +163,8 @@ export function ApprovalWorkflowPanel({
           stage={modal.stage}
           action={modal.action}
           onClose={() => setModal(null)}
-          onConfirm={(rationale) => {
-            if (modal.action === "approve") onApprove(modal.workflowId, modal.stage.id, rationale);
+          onConfirm={(rationale, oversightEvidence) => {
+            if (modal.action === "approve") onApprove(modal.workflowId, modal.stage.id, rationale, oversightEvidence);
             else if (modal.action === "reject") onReject(modal.workflowId, modal.stage.id, rationale);
             else onOverride(modal.workflowId, modal.stage.id, rationale);
             setModal(null);
