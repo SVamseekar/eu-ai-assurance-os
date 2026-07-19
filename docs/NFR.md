@@ -64,10 +64,10 @@ curl -s -H "X-Api-Key: $API_KEY" \
    - Dashboard origin (landing + `/login`)
    - API `GET /actuator/health` (and `/actuator/health/liveness`, `/readiness` when deployed)
 2. **Platform status** — Vercel (dashboard) + host/DB provider (API/Postgres) incident feeds
-3. **Actuator** — liveness/readiness for orchestrators (K8s, ECS, etc.) once Part 9 ships containers
+3. **Actuator** — liveness/readiness for orchestrators (K8s, ECS, Compose — Part 9 containers in `infra/`)
 4. **Alerting** — page on multi-region failure of health + login path, not on single-instance process restarts alone
 
-Until production deploy + monitoring exist, **do not advertise 99.9% as measured**.
+Until production deploy + monitoring exist, **do not advertise 99.9% as measured**. Deploy runbook: `docs/DEPLOYMENT.md`.
 
 ## Encryption and secrets (NFR)
 
@@ -91,10 +91,12 @@ Until production deploy + monitoring exist, **do not advertise 99.9% as measured
 | `EVAL_CALLBACK_SECRET` | Env / secret manager | Required; empty fails closed outside permissive local config |
 | `AUDIT_CHAIN_SECRET` | Env / secret manager | Hash-chain HMAC; set in production |
 | `DATABASE_PASSWORD` | Env / secret manager | Never commit |
-| OAuth client secrets (Part 4) | Env / secret manager | Not in git |
+| `ASSURANCE_STORAGE_*` keys | Env / secret manager | Optional S3/MinIO credentials (Part 9) |
+| OAuth client secrets (Part 4) | Env / secret manager | Placeholders in root `.env.example`; not wired yet |
 
-- **No secrets in the repository** — gitleaks (Part 1) and code review.
+- **No secrets in the repository** — gitleaks (Part 1) and code review. Use root `.env.example` only as a template (never commit a filled `.env`).
 - Rotate eval callback and audit chain secrets via secret manager; redeploy workers/API together for callback secret changes.
+- Env matrix and deploy order: `docs/DEPLOYMENT.md`.
 
 ## Tenant isolation (measured in CI)
 
