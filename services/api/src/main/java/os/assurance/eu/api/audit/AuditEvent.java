@@ -12,5 +12,8 @@ public record AuditEvent(
     String resourceType,
     String resourceId,
     Map<String, Object> payload,
-    Instant createdAt) {
+    Instant createdAt,
+    String prevEventHash,
+    String eventHash,
+    Instant retainUntil) {
 }

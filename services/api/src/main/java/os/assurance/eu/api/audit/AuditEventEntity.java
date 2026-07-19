@@ -39,6 +39,10 @@ public class AuditEventEntity {
   @Column(nullable = false)
   private Instant createdAt;
 
+  private String prevEventHash;
+  private String eventHash;
+  private Instant retainUntil;
+
   protected AuditEventEntity() {
   }
 
@@ -51,7 +55,10 @@ public class AuditEventEntity {
       String resourceType,
       String resourceId,
       Map<String, Object> payload,
-      Instant createdAt) {
+      Instant createdAt,
+      String prevEventHash,
+      String eventHash,
+      Instant retainUntil) {
     this.id = id;
     this.tenantId = tenantId;
     this.systemId = systemId;
@@ -61,9 +68,27 @@ public class AuditEventEntity {
     this.resourceId = resourceId;
     this.payload = payload;
     this.createdAt = createdAt;
+    this.prevEventHash = prevEventHash;
+    this.eventHash = eventHash;
+    this.retainUntil = retainUntil;
   }
 
+  public UUID id() { return id; }
+  public UUID tenantId() { return tenantId; }
+  public UUID systemId() { return systemId; }
+  public UUID actorId() { return actorId; }
+  public String eventType() { return eventType; }
+  public String resourceType() { return resourceType; }
+  public String resourceId() { return resourceId; }
+  public Map<String, Object> payload() { return payload; }
+  public Instant createdAt() { return createdAt; }
+  public String prevEventHash() { return prevEventHash; }
+  public String eventHash() { return eventHash; }
+  public Instant retainUntil() { return retainUntil; }
+
   public AuditEvent toDomain() {
-    return new AuditEvent(id, systemId, actorId, eventType, resourceType, resourceId, payload, createdAt);
+    return new AuditEvent(
+        id, systemId, actorId, eventType, resourceType, resourceId, payload, createdAt,
+        prevEventHash, eventHash, retainUntil);
   }
 }

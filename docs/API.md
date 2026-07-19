@@ -357,6 +357,18 @@ the release gate to block. Resolving the event with:
 
 recalculates the contract, system data-contract status, and release decision.
 
+## Audit chain verification
+
+```http
+GET /audit/verify
+GET /audit-events/verify-chain
+```
+
+Returns `{ "valid": true, "checkedCount": N, "firstBreakId": null }` for the
+tenant’s HMAC-SHA-256 hash-chained audit ledger. Events store `prevEventHash`,
+`eventHash`, and `retainUntil` (≥ 7 years by default). There is no public API to
+update or delete audit rows.
+
 ## Controls catalog
 
 ```http

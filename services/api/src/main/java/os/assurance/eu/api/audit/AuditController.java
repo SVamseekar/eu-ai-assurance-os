@@ -34,6 +34,11 @@ public class AuditController {
     return auditService.findAll();
   }
 
+  @GetMapping("/verify-chain")
+  public AuditChainVerifyResponse verifyChain() {
+    return auditService.verifyChain();
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public AuditEvent appendAuditEvent(@Valid @RequestBody CreateAuditEventRequest request) {

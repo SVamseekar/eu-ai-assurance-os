@@ -149,6 +149,9 @@ export interface AuditEvent {
   resourceId: string | null;
   payload: Record<string, unknown>;
   createdAt: string;
+  prevEventHash?: string | null;
+  eventHash?: string | null;
+  retainUntil?: string | null;
 }
 
 export interface ReleaseGateResponse {
