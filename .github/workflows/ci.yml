@@ -146,7 +146,7 @@ jobs:
         if: needs.changes.outputs.dashboard != 'true' && github.event_name == 'pull_request'
         run: echo "No dashboard changes in this PR; job is a no-op for path filter."
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
         with:
           node-version: "22"
