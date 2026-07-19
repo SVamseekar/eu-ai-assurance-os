@@ -118,7 +118,7 @@ Status: **Complete** (assisted naming forever — never final legal authority).
 | Industry-grade GitHub (CI, license, CONTRIBUTING) | **Complete** | Part 1 · PR #2 |
 | Landing legal pages + demo form + SEO | **Complete** | Part 3 · PR #36 |
 | Metrics canon freeze | **Complete** | Part 2 · PR #38 · `docs/METRICS_CANONICAL.md` |
-| Docs alignment (PRD / ROADMAP / README / arch) | **In progress** | Part 11 · this document set |
+| Docs alignment (PRD / ROADMAP / README / arch) | **Complete** | Part 11 · PR #40 |
 | CV / pitch / portfolio binaries | **Planned** | Part 16 — no binary edits in Part 11 |
 
 ## Still not claimed
