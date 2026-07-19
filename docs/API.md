@@ -438,6 +438,36 @@ Applicable control codes open missing `system_controls` in `REVIEW`. Audit event
 `determination.run.completed`. Latest run is embedded in evidence pack JSON/PDF under
 `determination` (with the same disclaimer).
 
+## Certification readiness (Part 13)
+
+**Product framing:** responses are a **readiness score + structured gap report** only.
+They are **not legal certification**, not notified-body attestation, and not an
+official conformity assessment. Never returns a `certified: true` field.
+
+```http
+GET  /systems/{systemId}/certification-readiness
+POST /systems/{systemId}/certification-readiness/export
+```
+
+`GET` returns:
+
+| Field | Description |
+|---|---|
+| `score` | Weighted readiness 0–100 |
+| `readinessStatus` | `NOT_READY` \| `READY_FOR_REVIEW` \| `GAPS` |
+| `productLabel` | `Certification readiness automation` |
+| `disclaimer` | Full product-safe disclaimer |
+| `dimensions[]` | Nine dimensions: risk, controls, evidence, eval, contracts, approvals, oversight, determination, audit_chain |
+| `gaps[]` | `{ code, severity, message, remediationHint, dimension }` |
+
+Weights and thresholds are configurable via `assurance.certification-readiness.*`
+(defaults sum to 100: risk 10, controls 15, evidence 15, eval 15, contracts 10,
+approvals 10, oversight 10, determination 10, audit chain 5).
+
+`POST .../export` body `{ "format": "json" | "pdf" }` (default `json`) returns a
+downloadable readiness report. PDF is a human-readable export; JSON is primary.
+Audit events: `certification_readiness.assessed`, `certification_readiness.exported`.
+
 ## Approval Workflows
 
 ```http

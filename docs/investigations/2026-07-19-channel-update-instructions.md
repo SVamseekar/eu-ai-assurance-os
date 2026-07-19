@@ -43,9 +43,11 @@ Spring Boot 3.3 · Java 17 · Next.js 16 · pgvector HNSW · DJL/ONNX embeddings
 • Evidence & evals: Cited-evidence RAG (DJL + ONNX Runtime all-MiniLM-L6-v2; pgvector HNSW
   on Postgres); durable eval worker (select-for-update-skip-locked); HMAC-SHA-256 signed
   eval-result callbacks; Evidence Pack JSON for audit-ready technical documentation.
-• Architecture: Spring Boot API with Flyway migrations (V1–V9+), tenant-scoped JPA +
-  JWT/API-key auth, Next.js dashboard (lineage DAG, contracts, approvals, audit log).
-  OAuth/SSO on roadmap.
+• Certification readiness automation: weighted score (0–100) + structured gap report
+  toward conformity documentation — not legal certification or notified-body status.
+• Architecture: Spring Boot API with Flyway migrations (V1–V15+), tenant-scoped JPA +
+  JWT/API-key auth, Next.js dashboard (lineage DAG, contracts, approvals, audit log,
+  certification readiness). OAuth/SSO supported.
 ```
 
 After Part 0 merge, append if true: “workflow notifications and reviewer assignment.”

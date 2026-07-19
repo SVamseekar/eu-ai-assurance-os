@@ -2,6 +2,7 @@ import type {
   AiSystem,
   ApprovalWorkflow,
   AuditEvent,
+  CertificationReadiness,
   Control,
   ControlStatus,
   DataContract,
@@ -78,6 +79,32 @@ export const api = {
       const blob = await res.blob();
       triggerBrowserDownload(blob, filename);
       return { contentSha256, filename };
+    },
+    /** Certification readiness score + gaps (not legal certification). */
+    certificationReadiness: (id: string) =>
+      request<CertificationReadiness>(`/systems/${id}/certification-readiness`),
+    certificationReadinessExport: async (
+      id: string,
+      format: "json" | "pdf" = "json"
+    ): Promise<{ readinessStatus: string; filename: string }> => {
+      const res = await fetch(`${BASE}/systems/${id}/certification-readiness/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format }),
+      });
+      if (res.status === 401 && typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const readinessStatus = res.headers.get("X-Readiness-Status") ?? "";
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="?([^";]+)"?/i.exec(disposition);
+      const filename =
+        match?.[1] ??
+        `certification-readiness-${id}.${format === "pdf" ? "pdf" : "json"}`;
+      const blob = await res.blob();
+      triggerBrowserDownload(blob, filename);
+      return { readinessStatus, filename };
     },
   },
   controls: {

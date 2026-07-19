@@ -1,5 +1,6 @@
 import type {
   AiSystem,
+  CertificationReadiness,
   DataContract,
   DriftEvent,
   AuditEvent,
@@ -466,3 +467,97 @@ export const MOCK_NOTIFICATIONS: WorkflowNotification[] = [
     createdAt: d(1, 3),
   },
 ];
+
+/** Demo certification readiness (score + gaps only — never legal certification). */
+export const MOCK_CERTIFICATION_READINESS: Record<string, CertificationReadiness> = {
+  "mock-sys-001": {
+    systemId: "mock-sys-001",
+    systemName: "Claims Triage AI",
+    score: 34,
+    readinessStatus: "NOT_READY",
+    productLabel: "Certification readiness automation",
+    disclaimer:
+      "Certification readiness automation produces a weighted readiness score (0–100) and a structured gap list toward conformity documentation themes. It does not issue certificates, does not declare Regulation conformity, and is not legal advice.",
+    generatedAt: d(0, 1),
+    releaseDecision: "blocked",
+    dimensions: [
+      { code: "risk", label: "Risk classified", weight: 10, score: 100, weightedPoints: 10, status: "PASS", summary: "HIGH with basis." },
+      { code: "controls", label: "Controls coverage", weight: 15, score: 20, weightedPoints: 3, status: "FAIL", summary: "Blocked controls remain." },
+      { code: "evidence", label: "Evidence indexed", weight: 15, score: 45, weightedPoints: 7, status: "PARTIAL", summary: "Coverage 72%." },
+      { code: "eval", label: "Eval gate", weight: 15, score: 35, weightedPoints: 5, status: "FAIL", summary: "Eval 78 below hard block." },
+      { code: "contracts", label: "Contracts healthy", weight: 10, score: 0, weightedPoints: 0, status: "FAIL", summary: "BREACH open." },
+      { code: "approvals", label: "Approvals complete", weight: 10, score: 35, weightedPoints: 4, status: "PARTIAL", summary: "Open cycle." },
+      { code: "oversight", label: "Oversight evidence", weight: 10, score: 0, weightedPoints: 0, status: "FAIL", summary: "High-risk oversight gap." },
+      { code: "determination", label: "Determination run present", weight: 10, score: 0, weightedPoints: 0, status: "FAIL", summary: "No determination run." },
+      { code: "audit_chain", label: "Audit chain valid", weight: 5, score: 100, weightedPoints: 5, status: "PASS", summary: "Chain valid." },
+    ],
+    gaps: [
+      {
+        code: "CONTRACT_BREACH",
+        severity: "CRITICAL",
+        message: "Data contract status is BREACH",
+        remediationHint: "Resolve open drift events and restore contract health.",
+        dimension: "contracts",
+      },
+      {
+        code: "OVERSIGHT_REQUIRED",
+        severity: "CRITICAL",
+        message: "High-risk system is missing human oversight evidence",
+        remediationHint: "Attach human-oversight SOP evidence and mark the oversight control PASS.",
+        dimension: "oversight",
+      },
+      {
+        code: "EVAL_HARD_BLOCK",
+        severity: "CRITICAL",
+        message: "Eval score 78 is below hard block threshold 78",
+        remediationHint: "Re-run eval gates until score meets release thresholds.",
+        dimension: "eval",
+      },
+    ],
+  },
+  "mock-sys-002": {
+    systemId: "mock-sys-002",
+    systemName: "HR Candidate Screener",
+    score: 71,
+    readinessStatus: "GAPS",
+    productLabel: "Certification readiness automation",
+    disclaimer:
+      "Certification readiness automation produces a weighted readiness score (0–100) and a structured gap list. It does not issue certificates and is not legal advice.",
+    generatedAt: d(0, 2),
+    releaseDecision: "review",
+    dimensions: [
+      { code: "risk", label: "Risk classified", weight: 10, score: 100, weightedPoints: 10, status: "PASS", summary: "HIGH with basis." },
+      { code: "controls", label: "Controls coverage", weight: 15, score: 70, weightedPoints: 11, status: "PARTIAL", summary: "Some controls in REVIEW." },
+      { code: "evidence", label: "Evidence indexed", weight: 15, score: 100, weightedPoints: 15, status: "PASS", summary: "Coverage 84%." },
+      { code: "eval", label: "Eval gate", weight: 15, score: 90, weightedPoints: 14, status: "PARTIAL", summary: "Eval 82 below pass 85." },
+      { code: "contracts", label: "Contracts healthy", weight: 10, score: 55, weightedPoints: 6, status: "PARTIAL", summary: "WARNING." },
+      { code: "approvals", label: "Approvals complete", weight: 10, score: 70, weightedPoints: 7, status: "PARTIAL", summary: "Open review." },
+      { code: "oversight", label: "Oversight evidence", weight: 10, score: 80, weightedPoints: 8, status: "PARTIAL", summary: "Calibration pending." },
+      { code: "determination", label: "Determination run present", weight: 10, score: 100, weightedPoints: 10, status: "PASS", summary: "Run present." },
+      { code: "audit_chain", label: "Audit chain valid", weight: 5, score: 100, weightedPoints: 5, status: "PASS", summary: "Chain valid." },
+    ],
+    gaps: [
+      {
+        code: "EVAL_BELOW_PASS",
+        severity: "HIGH",
+        message: "Eval score 82 is below pass threshold 85",
+        remediationHint: "Improve model/prompt quality or expand eval datasets, then re-run gates.",
+        dimension: "eval",
+      },
+      {
+        code: "CONTRACT_WARNING",
+        severity: "MEDIUM",
+        message: "Data contract status is WARNING",
+        remediationHint: "Review warnings and remediate schema/semantic drift before release review.",
+        dimension: "contracts",
+      },
+      {
+        code: "CONTROLS_REVIEW",
+        severity: "HIGH",
+        message: "2 control(s) still in REVIEW",
+        remediationHint: "Complete control review and mark PASS with notes/evidence references.",
+        dimension: "controls",
+      },
+    ],
+  },
+};
