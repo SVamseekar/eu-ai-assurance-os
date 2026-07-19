@@ -7,6 +7,11 @@ export const siteConfig = {
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ??
     "https://euassuranceai.souravamseekar.com",
   locale: "en_GB",
+  supportEmail: "euassuranceai@souravamseekar.com",
+  ownerName: "Marti Soura Vamseekar",
+  githubUrl: "https://github.com/souravamseekarmarti/eu-ai-assurance-os",
+  portfolioUrl: "https://souravamseekar.com",
+  legalLastUpdated: "20 July 2026",
 };
 
 /** Authenticated dashboard routes — excluded from sitemap, disallowed in robots.txt */
@@ -18,7 +23,19 @@ export const dashboardRoutes = [
   "/evals",
   "/contracts",
   "/audit",
+  "/readiness",
+  "/reg-monitor",
   "/login",
+] as const;
+
+/** Public marketing routes included in sitemap */
+export const publicRoutes = [
+  { path: "/", changeFrequency: "weekly" as const, priority: 1 },
+  { path: "/request-demo", changeFrequency: "monthly" as const, priority: 0.9 },
+  { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/terms", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/refunds", changeFrequency: "yearly" as const, priority: 0.4 },
+  { path: "/disclaimer", changeFrequency: "yearly" as const, priority: 0.4 },
 ] as const;
 
 export const landingNavLinks = [
@@ -37,3 +54,7 @@ export const appRoutes = [
   { href: "/contracts", label: "Contracts" },
   { href: "/audit", label: "Audit Log" },
 ] as const;
+
+export function isAnalyticsConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim());
+}

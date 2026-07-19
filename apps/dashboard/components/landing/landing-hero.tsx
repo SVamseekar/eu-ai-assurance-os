@@ -7,7 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function LandingHero() {
   return (
-    <section aria-label="Introduction" className="mx-auto max-w-6xl px-4 pt-16 pb-20 sm:px-6 sm:pt-24 sm:pb-28">
+    <section
+      aria-label="Introduction"
+      className="mx-auto max-w-6xl px-4 pt-16 pb-20 sm:px-6 sm:pt-24 sm:pb-28"
+    >
       <div className="grid items-center gap-12 lg:grid-cols-2">
         <div>
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -19,10 +22,13 @@ export function LandingHero() {
             BLOCKED — backed by an audit-ready evidence pack.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" render={<Link href="/command" />}>
-              Open Dashboard
+            <Button size="lg" render={<Link href="/request-demo" />}>
+              Request demo
             </Button>
-            <Button size="lg" variant="outline" render={<a href="#how-it-works" />}>
+            <Button size="lg" variant="outline" render={<Link href="/login" />}>
+              Sign in
+            </Button>
+            <Button size="lg" variant="ghost" render={<a href="#how-it-works" />}>
               See how it works
             </Button>
           </div>
