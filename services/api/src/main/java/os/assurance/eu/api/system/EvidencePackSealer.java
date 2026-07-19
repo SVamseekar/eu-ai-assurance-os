@@ -55,12 +55,43 @@ public final class EvidencePackSealer {
       Object dataContracts,
       Object approvals,
       Object auditEvents) {
+    return sealPayload(
+        evidencePackVersion,
+        generator,
+        auditChainHead,
+        systemId,
+        generatedAt,
+        decision,
+        riskClassification,
+        evidence,
+        evalRuns,
+        dataContracts,
+        approvals,
+        auditEvents,
+        Map.of());
+  }
+
+  public static Map<String, Object> sealPayload(
+      String evidencePackVersion,
+      String generator,
+      String auditChainHead,
+      Object systemId,
+      Object generatedAt,
+      Object decision,
+      Object riskClassification,
+      Object evidence,
+      Object evalRuns,
+      Object dataContracts,
+      Object approvals,
+      Object auditEvents,
+      Object determination) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("approvals", approvals);
     payload.put("auditChainHead", auditChainHead);
     payload.put("auditEvents", auditEvents);
     payload.put("dataContracts", dataContracts);
     payload.put("decision", decision);
+    payload.put("determination", determination == null ? Map.of() : determination);
     payload.put("evalRuns", evalRuns);
     payload.put("evidence", evidence);
     payload.put("evidencePackVersion", evidencePackVersion);
