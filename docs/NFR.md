@@ -12,7 +12,7 @@ This document records **PRD §7** targets honestly: they are **product goals**, 
 | Tenant data isolation | No cross-tenant leakage | **Enforced** — regression suite in CI |
 | Encryption in transit / at rest | TLS + provider disk encryption | **Documented** — see below and `SECURITY.md` |
 | Audit retention | Configurable ≥ 7 years | Implemented (Part 6); see audit config |
-| Evidence pack deterministic / traceable | Export + audit event | Partial (JSON export); PDF seal is Part 7 |
+| Evidence pack deterministic / traceable | Export + audit event | **Implemented** (Part 7): sealed JSON + PDF; `contentSha256` in export audit |
 
 ## Latency measurement hooks
 

@@ -160,6 +160,23 @@ export interface ReleaseGateResponse {
   blockers: string[];
 }
 
+/** Sealed evidence pack (JSON primary; PDF is Phase 6 export). */
+export interface EvidencePack {
+  systemId: string;
+  generatedAt: string;
+  decision: ReleaseDecision;
+  riskClassification: Record<string, unknown>;
+  evidence: Record<string, unknown>[];
+  evalRuns: Record<string, unknown>[];
+  dataContracts: Record<string, unknown>[];
+  approvals: Record<string, unknown>[];
+  auditEvents: AuditEvent[];
+  evidencePackVersion: string;
+  contentSha256: string;
+  generator: string;
+  auditChainHead: string | null;
+}
+
 export interface SystemViewModel {
   id: string;
   name: string;

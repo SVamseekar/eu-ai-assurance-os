@@ -1,5 +1,6 @@
 package os.assurance.eu.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.everyItem;
@@ -8,6 +9,7 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -837,7 +839,48 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.systemId").value(systemId))
         .andExpect(jsonPath("$.generatedAt", not(blankOrNullString())))
         .andExpect(jsonPath("$.riskClassification.riskClass").value("LIMITED"))
-        .andExpect(jsonPath("$.auditEvents", not(hasSize(0))));
+        .andExpect(jsonPath("$.auditEvents", not(hasSize(0))))
+        .andExpect(jsonPath("$.evidencePackVersion").value("1.0"))
+        .andExpect(jsonPath("$.contentSha256", not(blankOrNullString())))
+        .andExpect(jsonPath("$.generator", not(blankOrNullString())));
+  }
+
+  @Test
+  void evidencePackExportAuditsContentSha256() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult packResult = mockMvc.perform(get("/api/v1/systems/{systemId}/evidence-pack", systemId)
+            .with(authenticated()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.contentSha256", not(blankOrNullString())))
+        .andReturn();
+    String contentSha256 = read(packResult).get("contentSha256").asText();
+
+    mockMvc.perform(get("/api/v1/audit-events")
+            .param("systemId", systemId)
+            .with(authenticated()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].eventType").value("evidence_pack.exported"))
+        .andExpect(jsonPath("$[0].payload.contentSha256").value(contentSha256))
+        .andExpect(jsonPath("$[0].payload.format").value("json"));
+  }
+
+  @Test
+  void exportsEvidencePackPdfWithMagicBytes() throws Exception {
+    String systemId = createSystem();
+
+    MvcResult result = mockMvc.perform(get("/api/v1/systems/{systemId}/evidence-pack.pdf", systemId)
+            .with(authenticated()))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", containsString("application/pdf")))
+        .andExpect(header().string("Content-Disposition", containsString("evidence-pack-")))
+        .andExpect(header().string("X-Content-Sha256", not(blankOrNullString())))
+        .andReturn();
+
+    byte[] body = result.getResponse().getContentAsByteArray();
+    assertThat(body).isNotEmpty();
+    String header = new String(body, 0, Math.min(5, body.length), StandardCharsets.ISO_8859_1);
+    assertThat(header).startsWith("%PDF");
   }
 
   @Test

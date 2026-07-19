@@ -1,5 +1,8 @@
 package os.assurance.eu.api;
 
+import java.time.Clock;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -20,5 +23,11 @@ public class ApiWebConfig implements WebMvcConfigurer {
             "http://127.0.0.1:8000")
         .allowedMethods("GET", "POST", "PUT", "PATCH", "OPTIONS")
         .allowedHeaders("*");
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(Clock.class)
+  Clock clock() {
+    return Clock.systemUTC();
   }
 }

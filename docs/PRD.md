@@ -86,7 +86,8 @@ Append-only log of risk decisions, evidence answers, eval runs, approvals, overr
 - An evidence query returns answer text with citations.
 - An eval run updates the release gate.
 - A data-contract breach blocks or reopens a release review.
-- An evidence pack can be exported as JSON.
+- An evidence pack can be exported as sealed JSON (`contentSha256`).
+- PDF evidence pack export is available as Phase 6 polish (same seal; JSON remains primary).
 - Audit entries are created for all critical actions.
 
 ## 7. Non-Functional Requirements

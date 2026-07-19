@@ -451,9 +451,16 @@ Response:
 
 ## Evidence Pack
 
+JSON is the **primary** sealed, machine-readable export (PRD MVP). PDF is a Phase 6
+human-readable export of the same sealed content.
+
+### JSON (primary)
+
 ```http
 GET /systems/{systemId}/evidence-pack
 ```
+
+Roles: `ADMIN`, `AI_ENGINEERING_LEAD`, `COMPLIANCE_OFFICER`, `LEGAL_COUNSEL`, `AUDITOR`.
 
 Response:
 
@@ -467,9 +474,38 @@ Response:
   "evalRuns": [],
   "dataContracts": [],
   "approvals": [],
-  "auditEvents": []
+  "auditEvents": [],
+  "evidencePackVersion": "1.0",
+  "contentSha256": "hex-sha256-of-canonical-json",
+  "generator": "eu-ai-assurance-api/0.1.0",
+  "auditChainHead": "hex-hmac-sha256-of-latest-audit-event-or-null"
 }
 ```
+
+Seal notes:
+
+- `evidencePackVersion` is currently `"1.0"`.
+- `contentSha256` is SHA-256 over canonical JSON (sorted map keys, ISO-8601 instants)
+  of the pack fields **excluding** `contentSha256` itself.
+- `generator` identifies the service build (`assurance.evidence-pack.generator`).
+- `auditChainHead` is the tenant audit hash-chain tip **before** this export event (Part 6).
+- Export writes audit event `evidence_pack.exported` with payload
+  `{ decision, contentSha256, format, evidencePackVersion }` (`format` is `json` or `pdf`).
+- Same system state + same clock → same `contentSha256` (clock is injectable for tests).
+
+### PDF (Phase 6 polish)
+
+```http
+GET /systems/{systemId}/evidence-pack.pdf
+```
+
+Same roles as JSON. Returns `Content-Type: application/pdf` with:
+
+- `Content-Disposition: attachment; filename="evidence-pack-{systemId}-{yyyy-MM-dd}.pdf"`
+- `X-Content-Sha256: <same seal as JSON pack for this export>`
+
+PDF sections: system identity, risk summary, evidence/evals/contracts/approvals, audit
+excerpt, seal footer. Prefer the JSON pack for cryptographic verification of the seal.
 
 ## Audit
 

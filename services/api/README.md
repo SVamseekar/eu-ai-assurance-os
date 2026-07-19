@@ -43,7 +43,8 @@ Implemented MVP endpoints:
 - `PATCH /api/v1/systems/{id}`
 - `POST /api/v1/systems/{id}/risk-classification`
 - `GET /api/v1/systems/{id}/release-gate`
-- `GET /api/v1/systems/{id}/evidence-pack`
+- `GET /api/v1/systems/{id}/evidence-pack` (sealed JSON)
+- `GET /api/v1/systems/{id}/evidence-pack.pdf` (Phase 6 PDF export)
 - `POST /api/v1/evidence/documents`
 - `GET /api/v1/evidence/systems/{id}/documents`
 - `POST /api/v1/evidence/query`
