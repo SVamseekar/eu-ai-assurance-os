@@ -15,12 +15,14 @@ import {
   ShieldCheck,
   ClipboardCheck,
   BadgeCheck,
+  Newspaper,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/command", label: "Dashboard", icon: LayoutDashboard },
   { href: "/systems", label: "AI Systems", icon: Server },
   { href: "/readiness", label: "Readiness", icon: BadgeCheck },
+  { href: "/reg-monitor", label: "Reg Monitor", icon: Newspaper },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
   { href: "/evidence", label: "Evidence", icon: FileSearch },
   { href: "/evals", label: "Eval Gates", icon: FlaskConical },

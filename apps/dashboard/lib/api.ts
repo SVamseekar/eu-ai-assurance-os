@@ -14,6 +14,8 @@ import type {
   EvidenceDocument,
   EvidencePack,
   EvidenceQueryResponse,
+  RegItem,
+  RegMonitorFeed,
   ReleaseGateResponse,
   SystemControl,
   WorkflowNotification,
@@ -206,5 +208,21 @@ export const api = {
       request<DeterminationRun>(`/systems/${systemId}/determination/runs/${runId}`),
     listRuns: (systemId: string) =>
       request<DeterminationRun[]>(`/systems/${systemId}/determination/runs`),
+  },
+  regMonitor: {
+    items: (params?: { since?: string; reviewed?: boolean }) => {
+      const q = new URLSearchParams();
+      if (params?.since) q.set("since", params.since);
+      if (params?.reviewed !== undefined) q.set("reviewed", String(params.reviewed));
+      const suffix = q.toString() ? `?${q.toString()}` : "";
+      return request<RegMonitorFeed>(`/reg-monitor/items${suffix}`);
+    },
+    relevant: (systemId: string) =>
+      request<RegMonitorFeed>(`/systems/${systemId}/reg-monitor/relevant`),
+    markReviewed: (itemId: string, notes?: string) =>
+      request<RegItem>(`/reg-monitor/items/${itemId}/review`, {
+        method: "POST",
+        body: JSON.stringify({ notes }),
+      }),
   },
 };
