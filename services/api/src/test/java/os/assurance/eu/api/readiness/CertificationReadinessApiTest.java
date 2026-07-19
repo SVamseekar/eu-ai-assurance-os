@@ -146,15 +146,23 @@ class CertificationReadinessApiTest {
     // Determination may open additional controls in REVIEW — pass them all
     passAllControls(systemId);
 
-    mockMvc.perform(get("/api/v1/systems/{id}/certification-readiness", systemId)
+    MvcResult readinessResult = mockMvc.perform(get("/api/v1/systems/{id}/certification-readiness", systemId)
             .with(authenticated()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.readinessStatus").value("READY_FOR_REVIEW"))
         .andExpect(jsonPath("$.score", greaterThanOrEqualTo(90)))
         .andExpect(jsonPath("$.productLabel", containsString("Certification readiness")))
         .andExpect(jsonPath("$.disclaimer", containsString("does not issue certificates")))
         .andExpect(jsonPath("$.releaseDecision").value("PASS"))
-        .andExpect(jsonPath("$.certified").doesNotExist());
+        .andExpect(jsonPath("$.certified").doesNotExist())
+        .andReturn();
+
+    JsonNode readiness = objectMapper.readTree(readinessResult.getResponse().getContentAsString());
+    String readinessStatus = readiness.get("readinessStatus").asText();
+    // Happy path must reach READY_FOR_REVIEW when the audit chain verifies.
+    // Audit Instant millis truncation makes chain verification portable across H2/CI.
+    assertThat(readinessStatus)
+        .as("readinessStatus body=%s", readinessResult.getResponse().getContentAsString())
+        .isEqualTo("READY_FOR_REVIEW");
 
     // Export JSON report
     mockMvc.perform(post("/api/v1/systems/{id}/certification-readiness/export", systemId)
