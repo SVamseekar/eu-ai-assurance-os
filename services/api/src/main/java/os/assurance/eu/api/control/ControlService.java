@@ -10,6 +10,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.sector.SectorControlDef;
+import os.assurance.eu.api.sector.SectorPack;
+import os.assurance.eu.api.sector.SectorPackRegistry;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import os.assurance.eu.api.system.ReleaseDecision;
@@ -29,6 +32,7 @@ public class ControlService {
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
   private final TenantContext tenantContext;
+  private final SectorPackRegistry sectorPackRegistry;
 
   public ControlService(
       ControlJpaRepository controls,
@@ -36,13 +40,15 @@ public class ControlService {
       AiSystemRepository systems,
       ReleaseGateService releaseGateService,
       AuditService auditService,
-      TenantContext tenantContext) {
+      TenantContext tenantContext,
+      SectorPackRegistry sectorPackRegistry) {
     this.controls = controls;
     this.systemControls = systemControls;
     this.systems = systems;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
     this.tenantContext = tenantContext;
+    this.sectorPackRegistry = sectorPackRegistry;
   }
 
   @Transactional(readOnly = true)
@@ -81,25 +87,70 @@ public class ControlService {
       if (!appliesTo(control, system.riskClass())) {
         continue;
       }
-      boolean exists = systemControls
-          .findByTenantIdAndSystemIdAndControlId(
-              tenantContext.tenantId(), system.id(), control.id())
-          .isPresent();
-      if (exists) {
+      // Baseline catalog controls only here; sector overlays attached below.
+      if (isSectorOverlayCode(control.code())) {
         continue;
       }
-      ControlStatus initial = initialStatus(control, system);
-      systemControls.save(new SystemControlEntity(
-          tenantContext.tenantId(),
-          UUID.randomUUID(),
-          system.id(),
-          control.id(),
-          initial,
-          true,
-          null,
-          null,
-          now));
+      attachIfMissing(system, control, now, null);
     }
+    attachSectorPackControls(system, now);
+  }
+
+  /**
+   * Attach enabled sector-pack control overlays when {@code system.sector} matches a pack.
+   */
+  private void attachSectorPackControls(AiSystem system, Instant now) {
+    if (sectorPackRegistry == null) {
+      return;
+    }
+    sectorPackRegistry.resolveForSector(system.sector()).ifPresent(pack -> {
+      for (SectorControlDef def : pack.extraControls()) {
+        Control control = ensureControlFromDef(def);
+        if (!appliesTo(control, system.riskClass())) {
+          continue;
+        }
+        attachIfMissing(
+            system,
+            control,
+            now,
+            "Attached by sector pack '" + pack.id() + "' (" + pack.displayName() + ")");
+      }
+    });
+  }
+
+  private void attachIfMissing(AiSystem system, Control control, Instant now, String notes) {
+    boolean exists = systemControls
+        .findByTenantIdAndSystemIdAndControlId(
+            tenantContext.tenantId(), system.id(), control.id())
+        .isPresent();
+    if (exists) {
+      return;
+    }
+    ControlStatus initial = initialStatus(control, system);
+    systemControls.save(new SystemControlEntity(
+        tenantContext.tenantId(),
+        UUID.randomUUID(),
+        system.id(),
+        control.id(),
+        initial,
+        true,
+        null,
+        notes,
+        now));
+  }
+
+  private boolean isSectorOverlayCode(String code) {
+    if (code == null || sectorPackRegistry == null) {
+      return false;
+    }
+    for (SectorPack pack : sectorPackRegistry.enabledPacks()) {
+      for (SectorControlDef def : pack.extraControls()) {
+        if (code.equalsIgnoreCase(def.code())) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -243,13 +294,44 @@ public class ControlService {
 
   @Transactional
   public void ensureCatalogSeeded() {
-    if (controls.count() > 0) {
+    if (controls.count() == 0) {
+      List<Control> seed = baselineControls();
+      for (Control control : seed) {
+        controls.save(new ControlEntity(control));
+      }
+    }
+    ensureSectorPackControlsSeeded();
+  }
+
+  /**
+   * Seed sector-pack overlay controls into the global catalog (idempotent by code).
+   */
+  @Transactional
+  public void ensureSectorPackControlsSeeded() {
+    if (sectorPackRegistry == null) {
       return;
     }
-    List<Control> seed = baselineControls();
-    for (Control control : seed) {
-      controls.save(new ControlEntity(control));
+    for (SectorPack pack : sectorPackRegistry.enabledPacks()) {
+      for (SectorControlDef def : pack.extraControls()) {
+        ensureControlFromDef(def);
+      }
     }
+  }
+
+  private Control ensureControlFromDef(SectorControlDef def) {
+    return controls.findByCode(def.code())
+        .map(ControlEntity::toDomain)
+        .orElseGet(() -> {
+          Control created = new Control(
+              UUID.randomUUID(),
+              def.code(),
+              def.name(),
+              def.description(),
+              def.appliesToRiskClass(),
+              def.category());
+          controls.save(new ControlEntity(created));
+          return created;
+        });
   }
 
   static List<Control> baselineControls() {

@@ -525,6 +525,36 @@ Config: `assurance.reg-monitor.enabled`, `assurance.reg-monitor.poll-interval-ms
 mirrors the evidence fetch pattern. Respect EUR-Lex / OJ ToS and rate limits when enabling
 remote sources.
 
+## Sector packs + integration SPI (Part 15)
+
+**Product claim:** `3 sector packs + SPI` — not “all industries integrated.”
+Packs are vertical overlays (extra controls, questionnaire defaults, sample templates).
+They are **not** live production connectors to proprietary vendors without real OAuth apps.
+
+Config: `assurance.sector.packs=insurance,hr,finance`
+
+```http
+GET /sector-packs
+GET /sector-packs/{packId}
+GET /sector-packs/resolve?sector=insurance
+GET /sector-packs/{packId}/templates/{templateId}
+POST /integrations/insurance/claims-model-register
+GET /integrations/connectors/model-inventory
+```
+
+| Endpoint | Notes |
+|---|---|
+| `GET /sector-packs` | Enabled packs + `metricsLabel` + disclaimers |
+| `GET .../resolve` | Resolve pack for free-text system `sector` |
+| `GET .../templates/{id}` | Sample markdown (illustrative, not legal advice) |
+| `POST .../claims-model-register` | Stub: maps external model id → system registry (`sector=insurance`) |
+| `GET .../model-inventory` | Stub inventory (`connectorMode: stub`) |
+
+Creating a system with `sector` matching an enabled pack attaches overlay controls
+(e.g. insurance → `INS_CLAIMS_FAIRNESS`, `INS_ADVERSE_DECISION_REVIEW`, …).
+
+See `docs/SECTOR_PACKS.md`.
+
 ## Approval Workflows
 
 ```http
