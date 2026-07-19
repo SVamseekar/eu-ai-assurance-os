@@ -102,6 +102,57 @@ public class ControlService {
     }
   }
 
+  /**
+   * Ensure system_controls rows exist in REVIEW for the given catalog codes.
+   * Does not downgrade PASS/BLOCKED statuses; only creates missing rows or
+   * leaves existing rows unchanged.
+   *
+   * @return control codes newly opened in REVIEW
+   */
+  @Transactional
+  public List<String> openControlsForReview(UUID systemId, List<String> controlCodes) {
+    if (controlCodes == null || controlCodes.isEmpty()) {
+      return List.of();
+    }
+    requireSystem(systemId);
+    ensureCatalogSeeded();
+    Instant now = Instant.now();
+    List<String> opened = new ArrayList<>();
+    for (String code : controlCodes) {
+      if (code == null || code.isBlank()) {
+        continue;
+      }
+      ControlEntity control = controls.findByCode(code.trim().toUpperCase(Locale.ROOT))
+          .or(() -> controls.findByCode(code.trim()))
+          .orElse(null);
+      if (control == null) {
+        continue;
+      }
+      boolean exists = systemControls
+          .findByTenantIdAndSystemIdAndControlId(
+              tenantContext.tenantId(), systemId, control.toDomain().id())
+          .isPresent();
+      if (exists) {
+        continue;
+      }
+      systemControls.save(new SystemControlEntity(
+          tenantContext.tenantId(),
+          UUID.randomUUID(),
+          systemId,
+          control.toDomain().id(),
+          ControlStatus.REVIEW,
+          true,
+          null,
+          "Opened by assisted obligation determination — human review required",
+          now));
+      opened.add(control.toDomain().code());
+    }
+    if (!opened.isEmpty()) {
+      recalculateSystemRelease(systemId);
+    }
+    return opened;
+  }
+
   @Transactional
   public SystemControl updateSystemControl(
       UUID systemId, UUID controlId, UpdateSystemControlRequest request) {

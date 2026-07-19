@@ -171,10 +171,77 @@ export interface EvidencePack {
   dataContracts: Record<string, unknown>[];
   approvals: Record<string, unknown>[];
   auditEvents: AuditEvent[];
+  /** Assisted obligation determination snapshot (not legal advice). */
+  determination?: Record<string, unknown>;
   evidencePackVersion: string;
   contentSha256: string;
   generator: string;
   auditChainHead: string | null;
+}
+
+export type ObligationApplicability = "APPLICABLE" | "NOT_APPLICABLE" | "UNCERTAIN";
+
+export interface DeterminationQuestionOption {
+  value: string;
+  label: string;
+}
+
+export interface DeterminationQuestion {
+  id: string;
+  label: string;
+  help: string;
+  type: string;
+  required: boolean;
+  options: DeterminationQuestionOption[];
+}
+
+export interface DeterminationQuestionnaire {
+  rulesetVersion: string;
+  disclaimer: string;
+  productLabel: string;
+  questions: DeterminationQuestion[];
+}
+
+export interface DeterminationObligationItem {
+  id: string | null;
+  ruleCode: string;
+  title: string;
+  applicability: ObligationApplicability;
+  rationale: string;
+  controlCodes: string[];
+  legalRefs: string;
+  severity: string;
+}
+
+export interface DeterminationRun {
+  id: string;
+  systemId: string;
+  questionnaire: Record<string, unknown>;
+  result: {
+    disclaimer?: string;
+    productLabel?: string;
+    rulesetVersion?: string;
+    applicableCount?: number;
+    uncertainCount?: number;
+    notApplicableCount?: number;
+    applicableRuleCodes?: string[];
+    uncertainRuleCodes?: string[];
+    riskSuggestion?: {
+      suggestedRiskClass?: string;
+      currentRiskClass?: string | null;
+      autoApplied?: boolean;
+      requiresHumanConfirm?: boolean;
+      rationale?: string;
+      note?: string;
+    };
+    [key: string]: unknown;
+  };
+  status: string;
+  rulesetVersion: string;
+  createdBy: string | null;
+  createdAt: string;
+  obligations: DeterminationObligationItem[];
+  disclaimer: string;
 }
 
 export interface SystemViewModel {

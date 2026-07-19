@@ -5,6 +5,8 @@ import type {
   Control,
   ControlStatus,
   DataContract,
+  DeterminationQuestionnaire,
+  DeterminationRun,
   DriftEvent,
   EvalRun,
   EvalRunOperationsView,
@@ -165,5 +167,17 @@ export const api = {
       request<AuditEvent[]>(
         systemId ? `/audit-events?systemId=${systemId}` : "/audit-events"
       ),
+  },
+  determination: {
+    questionnaire: () => request<DeterminationQuestionnaire>("/determination/questionnaire"),
+    createRun: (systemId: string, answers: Record<string, unknown>) =>
+      request<DeterminationRun>(`/systems/${systemId}/determination/runs`, {
+        method: "POST",
+        body: JSON.stringify({ answers }),
+      }),
+    getRun: (systemId: string, runId: string) =>
+      request<DeterminationRun>(`/systems/${systemId}/determination/runs/${runId}`),
+    listRuns: (systemId: string) =>
+      request<DeterminationRun[]>(`/systems/${systemId}/determination/runs`),
   },
 };

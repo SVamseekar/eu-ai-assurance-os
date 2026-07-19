@@ -395,6 +395,49 @@ Registry fields on AI systems (create/update/risk classification):
 `vendorName`, `modelName`, `modelVersion`, `dataSources`, `sector`,
 `decisionImpact`, `affectedUsers`.
 
+## Assisted obligation determination (Part 12)
+
+**Product framing:** responses are a **suggested applicability / obligation map** only.
+They are **not legal advice**, not a final legal determination, not certification, and
+not an official conformity assessment. Human legal review is always required.
+Risk class is never auto-changed.
+
+```http
+GET /determination/questionnaire
+POST /systems/{systemId}/determination/runs
+GET /systems/{systemId}/determination/runs
+GET /systems/{systemId}/determination/runs/{runId}
+```
+
+`GET /determination/questionnaire` returns versioned questions, `rulesetVersion`,
+`productLabel` (`Assisted obligation determination (ruleset vX)`), and a full disclaimer.
+
+`POST /systems/{systemId}/determination/runs` body:
+
+```json
+{
+  "answers": {
+    "sector": "insurance",
+    "decision_impact": "eligibility",
+    "essential_private_service": true,
+    "biometric": false,
+    "employment": false,
+    "human_in_loop": true,
+    "interacts_with_natural_persons": true,
+    "profiling": true,
+    "users_affected": "many",
+    "high_risk_self_assessment": true
+  }
+}
+```
+
+Response includes `disclaimer`, `rulesetVersion`, evaluated obligations with
+`applicability` (`APPLICABLE` | `NOT_APPLICABLE` | `UNCERTAIN`), mapped `controlCodes`,
+and `result.riskSuggestion` with `autoApplied: false` / `requiresHumanConfirm: true`.
+Applicable control codes open missing `system_controls` in `REVIEW`. Audit event:
+`determination.run.completed`. Latest run is embedded in evidence pack JSON/PDF under
+`determination` (with the same disclaimer).
+
 ## Approval Workflows
 
 ```http

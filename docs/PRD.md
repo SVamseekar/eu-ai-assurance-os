@@ -40,13 +40,18 @@ In scope:
 - Audit event timeline.
 - Evidence pack export.
 
-Out of scope for MVP:
+Out of scope for MVP (as final authority / overclaim):
 
-- Full legal determination engine.
-- Automated certification.
-- Real-time regulatory change monitoring.
-- Complex sector-specific integrations.
-- Production SSO beyond basic role model.
+- Full legal determination engine as legal advice or official conformity assessment.
+- Automated certification claims.
+- Real-time regulatory change monitoring as a live legal database.
+- Complex live vendor sector connectors without SPI stubs.
+- Production SSO beyond the implemented OAuth/basic role model (see Phase 6).
+
+Phase 7 product expansions (assisted — never final legal authority):
+
+- **Assisted obligation determination** (Part 12): questionnaire + deterministic ruleset → suggested applicability / obligation map mapped to control codes. Always labeled not legal advice; requires human legal review; never auto-changes risk class without human confirm.
+- Certification readiness score (Part 13), regulatory change feed (Part 14), sector SPI packs (Part 15).
 
 ## 5. Core Features
 
