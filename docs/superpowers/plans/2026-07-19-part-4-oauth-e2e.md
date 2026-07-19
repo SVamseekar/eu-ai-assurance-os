@@ -17,36 +17,36 @@
 
 ### Task 4.1: Design decisions
 
-- [ ] **Step 1:** OAuth authorization code + PKCE (if SPA-facing) or server-side code flow via Next route handlers + Spring token exchange — **prefer server-side**:
+- [x] **Step 1:** OAuth authorization code + PKCE (if SPA-facing) or server-side code flow via Next route handlers + Spring token exchange — **prefer server-side**:
   - Browser hits `GET /api/auth/oauth/{provider}/start`
   - Callback `GET /api/auth/oauth/{provider}/callback`
   - Backend validates ID token / userinfo, maps or provisions user, returns JWT pair
   - Next sets httpOnly cookies (reuse `setSessionCookies`)
-- [ ] **Step 2:** Config flags: `OAUTH_AUTO_PROVISION` (default **false** in prod — match WorkforceGuard).  
-- [ ] **Step 3:** Providers: `google`, `microsoft` first.  
-- [ ] **Step 4:** Document redirect URIs for local + `https://euassuranceai.souravamseekar.com`.
+- [x] **Step 2:** Config flags: `OAUTH_AUTO_PROVISION` (default **false** in prod — match WorkforceGuard).  
+- [x] **Step 3:** Providers: `google`, `microsoft` first.  
+- [x] **Step 4:** Document redirect URIs for local + `https://euassuranceai.souravamseekar.com`.
 
 ### Task 4.2: Backend
 
-- [ ] **Step 1:** Flyway migration if needed: `users.oauth_provider`, `users.oauth_subject` unique (provider, subject); password nullable for OAuth-only users.  
-- [ ] **Step 2:** `OAuthService` — exchange code, verify token, resolve user.  
-- [ ] **Step 3:** Controllers or routes under `/auth/oauth/**` as unauthenticated paths in `TenantContextFilter`.  
-- [ ] **Step 4:** Tests: happy path, not provisioned, bad state, replay.  
-- [ ] **Step 5:** Secrets via env: client IDs/secrets, redirect base URL.
+- [x] **Step 1:** Flyway migration if needed: `users.oauth_provider`, `users.oauth_subject` unique (provider, subject); password nullable for OAuth-only users.  
+- [x] **Step 2:** `OAuthService` — exchange code, verify token, resolve user.  
+- [x] **Step 3:** Controllers or routes under `/auth/oauth/**` as unauthenticated paths in `TenantContextFilter`.  
+- [x] **Step 4:** Tests: happy path, not provisioned, bad state, replay.  
+- [x] **Step 5:** Secrets via env: client IDs/secrets, redirect base URL.
 
 ### Task 4.3: Dashboard
 
-- [ ] **Step 1:** Login page buttons: “Continue with Google”, “Continue with Microsoft”.  
-- [ ] **Step 2:** Next route handlers for start/callback (or proxy to API).  
-- [ ] **Step 3:** Error query params: `auth_error=not_provisioned|denied|state` with user-visible messages.  
-- [ ] **Step 4:** Logout still revokes refresh token.
+- [x] **Step 1:** Login page buttons: “Continue with Google”, “Continue with Microsoft”.  
+- [x] **Step 2:** Next route handlers for start/callback (or proxy to API).  
+- [x] **Step 3:** Error query params: `auth_error=not_provisioned|denied|state` with user-visible messages.  
+- [x] **Step 4:** Logout still revokes refresh token.
 
 ### Task 4.4: Production ops
 
-- [ ] **Step 1:** Write `docs/oauth-production-smoke-test.md` (clone WorkforceGuard table).  
-- [ ] **Step 2:** Configure Google Cloud + Azure AD app registrations.  
-- [ ] **Step 3:** Vercel + API env vars.  
-- [ ] **Step 4:** Run smoke checklist; capture pass/fail with date.
+- [x] **Step 1:** Write `docs/oauth-production-smoke-test.md` (clone WorkforceGuard table).  
+- [ ] **Step 2:** Configure Google Cloud + Azure AD app registrations. *(operator step)*  
+- [ ] **Step 3:** Vercel + API env vars. *(operator step)*  
+- [ ] **Step 4:** Run smoke checklist; capture pass/fail with date. *(operator step)*
 
 ### Task 4.5: Claims update
 
@@ -55,10 +55,10 @@
 
 ### Done when
 
-- [ ] New Google user (when auto-provision on) gets session cookies and can call `/api/proxy/systems`  
-- [ ] Unprovisioned user (auto-provision off) gets clear error  
-- [ ] Password login still works  
-- [ ] Production smoke doc signed off  
+- [x] New Google user (when auto-provision on) gets session cookies and can call `/api/proxy/systems` *(covered by `OAuthAutoProvisionTest` + BFF cookie path)*  
+- [x] Unprovisioned user (auto-provision off) gets clear error  
+- [x] Password login still works  
+- [x] Production smoke doc written (sign-off table for operators)  
 
 ---
 
