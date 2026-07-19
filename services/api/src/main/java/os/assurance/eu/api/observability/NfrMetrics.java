@@ -10,10 +10,14 @@ import org.springframework.stereotype.Component;
  * Latency measurement hooks for PRD §7 NFR targets.
  *
  * <p>Timers record observed durations only. They do not assert SLO compliance — see {@code docs/NFR.md}.
+ *
+ * <p>Evidence query latency is published as {@value #EVIDENCE_QUERY_TIMER} (also referred to as
+ * evidence query latency in Part 8 ops docs). Counter metrics live on {@link AssuranceMetrics}.
  */
 @Component
 public class NfrMetrics {
   public static final String REGISTRY_READ_TIMER = "assurance.api.registry.read";
+  /** Evidence RAG answer latency (plan alias: assurance.evidence.query.latency). */
   public static final String EVIDENCE_QUERY_TIMER = "assurance.api.evidence.query";
 
   private final MeterRegistry meterRegistry;

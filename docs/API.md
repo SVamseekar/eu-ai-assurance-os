@@ -449,6 +449,35 @@ Response:
 }
 ```
 
+### CI/CD machine contract (Part 8)
+
+Preferred for deploy bots (same decision engine; richer payload):
+
+```http
+GET /ci/release-gate?systemId={uuid}
+```
+
+Auth: `X-Api-Key` (recommended for CI service accounts) or Bearer JWT.
+
+Response:
+
+```json
+{
+  "systemId": "…",
+  "systemName": "Claims Triage AI",
+  "decision": "BLOCKED",
+  "blockers": ["Data contract breach is open"],
+  "evalScore": 78,
+  "evidenceCoverage": 72,
+  "dataContractStatus": "BREACH",
+  "riskClass": "HIGH",
+  "exitCode": 1,
+  "content": "Release gate BLOCKED — do not deploy. Blockers: …"
+}
+```
+
+CLI helper: `scripts/ci-release-gate.sh` — exit **PASS=0**, **BLOCKED=1**, **REVIEW=2**. See `docs/OPS.md` and `.github/workflows/release-gate-example.yml`.
+
 ## Evidence Pack
 
 JSON is the **primary** sealed, machine-readable export (PRD MVP). PDF is a Phase 6

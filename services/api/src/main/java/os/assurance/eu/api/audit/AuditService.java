@@ -5,6 +5,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,16 +16,19 @@ public class AuditService {
   private final AuditEventJpaRepository repository;
   private final TenantContext tenantContext;
   private final AuditChainHasher chainHasher;
+  private final AssuranceMetrics assuranceMetrics;
   private final int retentionYears;
 
   public AuditService(
       AuditEventJpaRepository repository,
       TenantContext tenantContext,
       AuditChainHasher chainHasher,
+      AssuranceMetrics assuranceMetrics,
       @Value("${assurance.audit.retention-years:7}") int retentionYears) {
     this.repository = repository;
     this.tenantContext = tenantContext;
     this.chainHasher = chainHasher;
+    this.assuranceMetrics = assuranceMetrics;
     this.retentionYears = Math.max(1, retentionYears);
   }
 
@@ -65,7 +69,9 @@ public class AuditService {
         prevHash,
         eventHash,
         retainUntil);
-    return repository.save(event).toDomain();
+    AuditEvent saved = repository.save(event).toDomain();
+    assuranceMetrics.auditAppend();
+    return saved;
   }
 
   @Transactional(readOnly = true)

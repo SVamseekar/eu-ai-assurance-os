@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
+import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.tenant.TenantContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class AuditChainServiceTest {
     when(tenantContext.tenantId()).thenReturn(TENANT);
     when(tenantContext.actorId()).thenReturn(ACTOR);
     hasher = new AuditChainHasher("test-audit-chain-secret");
-    service = new AuditService(repository, tenantContext, hasher, 7);
+    service = new AuditService(repository, tenantContext, hasher, mock(AssuranceMetrics.class), 7);
   }
 
   @Test

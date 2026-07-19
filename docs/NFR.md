@@ -16,27 +16,37 @@ This document records **PRD §7** targets honestly: they are **product goals**, 
 
 ## Latency measurement hooks
 
-Micrometer timers (Spring Actuator / Prometheus scrape when enabled):
+Micrometer timers (Spring Actuator / Prometheus scrape when enabled — see `docs/OPS.md`):
 
 | Metric name | Tag | Covers |
 |---|---|---|
 | `assurance.api.registry.read` | `operation` = `list` \| `get` | `GET /api/v1/systems`, `GET /api/v1/systems/{id}` |
-| `assurance.api.evidence.query` | `operation` = `answer` | `POST /api/v1/evidence/query` |
+| `assurance.api.evidence.query` | `operation` = `answer` | `POST /api/v1/evidence/query` (Part 8 “evidence query latency”) |
+
+### Product counters (Part 8)
+
+| Metric name | Tags | Covers |
+|---|---|---|
+| `assurance.release_gate.decision` | `decision` = PASS \| REVIEW \| BLOCKED | UI + CI release-gate reads |
+| `assurance.audit.append` | — | Hash-chained audit appends |
+| `assurance.auth.login.failures` | `reason` = invalid_credentials | Failed logins (no user/email enumeration) |
 
 ### How to query p95 (example)
 
-With Actuator metrics exposed (`management.endpoints.web.exposure.include` includes `metrics` / Prometheus):
+With Actuator metrics exposed (`management.endpoints.web.exposure.include` includes `metrics` / `prometheus`):
 
 ```bash
-# Micrometer timer snapshot (exact property names depend on registry backend)
-curl -s http://localhost:8080/actuator/metrics/assurance.api.registry.read \
+# Requires API key or JWT (metrics are not public)
+curl -s -H "X-Api-Key: $API_KEY" \
+  http://localhost:8080/actuator/metrics/assurance.api.registry.read \
   | jq '.measurements'
 
 # Prefer Prometheus histogram quantiles in production:
 # histogram_quantile(0.95, sum(rate(assurance_api_registry_read_seconds_bucket[5m])) by (le))
+# histogram_quantile(0.95, sum(rate(assurance_api_evidence_query_seconds_bucket[5m])) by (le))
 ```
 
-**Do not** treat green unit tests or a single local `curl` as p95 compliance. p95 requires production (or load-test) volume under realistic concurrency and payload sizes.
+**Do not** treat green unit tests or a single local `curl` as p95 compliance. p95 requires production (or load-test) volume under realistic concurrency and payload sizes. CI only checks that timers **register** after traffic — never that p95 is under target.
 
 ### Honest limits of local measurement
 

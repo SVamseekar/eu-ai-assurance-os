@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import os.assurance.eu.api.audit.AuditService;
 import os.assurance.eu.api.control.ControlService;
+import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.observability.NfrMetrics;
 import os.assurance.eu.api.tenant.TenantAuthorizationService;
 import os.assurance.eu.api.tenant.UserRole;
@@ -37,6 +38,7 @@ public class AiSystemController {
   private final ControlService controlService;
   private final TenantAuthorizationService authorizationService;
   private final NfrMetrics nfrMetrics;
+  private final AssuranceMetrics assuranceMetrics;
   private final EvidencePackService evidencePackService;
 
   public AiSystemController(
@@ -47,6 +49,7 @@ public class AiSystemController {
       ControlService controlService,
       TenantAuthorizationService authorizationService,
       NfrMetrics nfrMetrics,
+      AssuranceMetrics assuranceMetrics,
       EvidencePackService evidencePackService) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
@@ -55,6 +58,7 @@ public class AiSystemController {
     this.controlService = controlService;
     this.authorizationService = authorizationService;
     this.nfrMetrics = nfrMetrics;
+    this.assuranceMetrics = assuranceMetrics;
     this.evidencePackService = evidencePackService;
   }
 
@@ -220,6 +224,7 @@ public class AiSystemController {
   public ReleaseGateResponse getReleaseGate(@PathVariable UUID systemId) {
     AiSystem system = getSystem(systemId);
     ReleaseGateResponse response = releaseGateService.calculate(system);
+    assuranceMetrics.releaseGateDecision(response.decision());
     auditService.append(
         system.id(),
         "release_gate.calculated",
