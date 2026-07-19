@@ -37,6 +37,16 @@ class ReleaseGateServiceTest {
   }
 
   @Test
+  void blocksNamedControlWhenStatusBlocked() {
+    ReleaseGateResponse response = service.calculate(
+        system(RiskClass.HIGH, 95, 90, DataContractStatus.HEALTHY, List.of()),
+        List.of("CONTROL:HUMAN_OVERSIGHT"));
+
+    assertThat(response.decision()).isEqualTo(ReleaseDecision.BLOCKED);
+    assertThat(response.blockers()).contains("CONTROL:HUMAN_OVERSIGHT");
+  }
+
+  @Test
   void sendsNearMissesToReview() {
     ReleaseGateResponse response = service.calculate(system(
         RiskClass.LIMITED,
@@ -82,6 +92,7 @@ class ReleaseGateServiceTest {
         dataContractStatus,
         ReleaseDecision.REVIEW,
         openGaps,
+        null, null, null, List.of(), null, null, List.of(),
         now,
         now);
   }

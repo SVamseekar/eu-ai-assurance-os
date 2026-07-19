@@ -261,7 +261,7 @@ class ApprovalWorkflowServiceTest {
     Instant now = Instant.now();
     return new AiSystem(SYSTEM_ID, "Test", "Owner", "Purpose", riskClass,
         "Basis", "EU", 80, 80, DataContractStatus.HEALTHY, decision,
-        List.of(), now, now);
+        List.of(), null, null, null, List.of(), null, null, List.of(), now, now);
   }
 
   private ApprovalWorkflow workflow(WorkflowStatus status, List<ApprovalStage> stages) {

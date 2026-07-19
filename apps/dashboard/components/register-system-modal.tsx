@@ -101,6 +101,13 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
       dataContractStatus: "HEALTHY",
       releaseDecision: riskClass === "high" ? "blocked" : "pass",
       openGaps: riskClass === "high" ? ["Technical documentation missing (Art. 11)", "Human oversight SOP override missing (Art. 14)"] : [],
+      vendorName: null,
+      modelName: null,
+      modelVersion: null,
+      dataSources: [],
+      sector: answers.q_essential ? "insurance" : answers.q_hr ? "hr" : null,
+      decisionImpact: riskClass === "high" ? "access to essential private services" : null,
+      affectedUsers: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

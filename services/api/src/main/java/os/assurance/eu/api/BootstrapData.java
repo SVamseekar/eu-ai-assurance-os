@@ -188,6 +188,13 @@ public class BootstrapData implements CommandLineRunner {
         dataContractStatus,
         ReleaseDecision.REVIEW,
         new ArrayList<>(openGaps),
+        null,
+        null,
+        null,
+        List.of(),
+        null,
+        null,
+        List.of(),
         now,
         now);
     ReleaseDecision decision = releaseGateService.calculate(draft).decision();
@@ -204,6 +211,13 @@ public class BootstrapData implements CommandLineRunner {
         draft.dataContractStatus(),
         decision,
         draft.openGaps(),
+        draft.vendorName(),
+        draft.modelName(),
+        draft.modelVersion(),
+        draft.dataSources(),
+        draft.sector(),
+        draft.decisionImpact(),
+        draft.affectedUsers(),
         draft.createdAt(),
         draft.updatedAt()));
   }

@@ -200,7 +200,7 @@ public class DataContractService {
   private void recalculateSystemContractStatus(UUID systemId) {
     AiSystem system = requireSystem(systemId);
     DataContractStatus status = deriveSystemStatus(contracts.findAllBySystemId(systemId));
-    ReleaseDecision decision = releaseGateService.calculate(new AiSystem(
+    AiSystem draft = new AiSystem(
         system.id(),
         system.name(),
         system.owner(),
@@ -213,23 +213,38 @@ public class DataContractService {
         status,
         system.releaseDecision(),
         system.openGaps(),
+        system.vendorName(),
+        system.modelName(),
+        system.modelVersion(),
+        system.dataSources(),
+        system.sector(),
+        system.decisionImpact(),
+        system.affectedUsers(),
         system.createdAt(),
-        Instant.now())).decision();
+        Instant.now());
+    ReleaseDecision decision = releaseGateService.calculate(draft).decision();
     systems.save(new AiSystem(
-        system.id(),
-        system.name(),
-        system.owner(),
-        system.purpose(),
-        system.riskClass(),
-        system.riskBasis(),
-        system.deploymentRegion(),
-        system.evidenceCoverage(),
-        system.evalScore(),
-        status,
+        draft.id(),
+        draft.name(),
+        draft.owner(),
+        draft.purpose(),
+        draft.riskClass(),
+        draft.riskBasis(),
+        draft.deploymentRegion(),
+        draft.evidenceCoverage(),
+        draft.evalScore(),
+        draft.dataContractStatus(),
         decision,
-        system.openGaps(),
-        system.createdAt(),
-        Instant.now()));
+        draft.openGaps(),
+        draft.vendorName(),
+        draft.modelName(),
+        draft.modelVersion(),
+        draft.dataSources(),
+        draft.sector(),
+        draft.decisionImpact(),
+        draft.affectedUsers(),
+        draft.createdAt(),
+        draft.updatedAt()));
   }
 
   private DataContractStatus deriveSystemStatus(List<DataContract> systemContracts) {

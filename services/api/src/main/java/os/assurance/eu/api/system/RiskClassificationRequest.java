@@ -8,5 +8,7 @@ public record RiskClassificationRequest(
     @NotNull RiskClass riskClass,
     @NotBlank String basis,
     List<String> affectedUsers,
-    boolean humanOversightRequired) {
+    boolean humanOversightRequired,
+    String sector,
+    String decisionImpact) {
 }

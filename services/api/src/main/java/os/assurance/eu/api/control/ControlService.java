@@ -1,0 +1,229 @@
+package os.assurance.eu.api.control;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.system.AiSystem;
+import os.assurance.eu.api.system.AiSystemRepository;
+import os.assurance.eu.api.system.ReleaseDecision;
+import os.assurance.eu.api.system.ReleaseGateService;
+import os.assurance.eu.api.system.RiskClass;
+import os.assurance.eu.api.tenant.TenantContext;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+public class ControlService {
+  private final ControlJpaRepository controls;
+  private final SystemControlJpaRepository systemControls;
+  private final AiSystemRepository systems;
+  private final ReleaseGateService releaseGateService;
+  private final AuditService auditService;
+  private final TenantContext tenantContext;
+
+  public ControlService(
+      ControlJpaRepository controls,
+      SystemControlJpaRepository systemControls,
+      AiSystemRepository systems,
+      ReleaseGateService releaseGateService,
+      AuditService auditService,
+      TenantContext tenantContext) {
+    this.controls = controls;
+    this.systemControls = systemControls;
+    this.systems = systems;
+    this.releaseGateService = releaseGateService;
+    this.auditService = auditService;
+    this.tenantContext = tenantContext;
+  }
+
+  @Transactional(readOnly = true)
+  public List<Control> listCatalog() {
+    ensureCatalogSeeded();
+    return controls.findAll().stream().map(ControlEntity::toDomain).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<SystemControl> listForSystem(UUID systemId) {
+    requireSystem(systemId);
+    ensureCatalogSeeded();
+    Map<UUID, Control> catalog = controls.findAll().stream()
+        .map(ControlEntity::toDomain)
+        .collect(Collectors.toMap(Control::id, c -> c));
+    return systemControls
+        .findAllByTenantIdAndSystemIdOrderByUpdatedAtDesc(tenantContext.tenantId(), systemId)
+        .stream()
+        .map(entity -> toView(entity, catalog.get(entity.controlId())))
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<String> blockerLabels(UUID systemId) {
+    return listForSystem(systemId).stream()
+        .filter(sc -> sc.status() == ControlStatus.BLOCKED)
+        .map(sc -> "CONTROL:" + sc.controlCode())
+        .toList();
+  }
+
+  @Transactional
+  public void attachApplicableControls(AiSystem system) {
+    ensureCatalogSeeded();
+    Instant now = Instant.now();
+    for (Control control : listCatalog()) {
+      if (!appliesTo(control, system.riskClass())) {
+        continue;
+      }
+      boolean exists = systemControls
+          .findByTenantIdAndSystemIdAndControlId(
+              tenantContext.tenantId(), system.id(), control.id())
+          .isPresent();
+      if (exists) {
+        continue;
+      }
+      ControlStatus initial = initialStatus(control, system);
+      systemControls.save(new SystemControlEntity(
+          tenantContext.tenantId(),
+          UUID.randomUUID(),
+          system.id(),
+          control.id(),
+          initial,
+          true,
+          null,
+          null,
+          now));
+    }
+  }
+
+  @Transactional
+  public SystemControl updateSystemControl(
+      UUID systemId, UUID controlId, UpdateSystemControlRequest request) {
+    requireSystem(systemId);
+    SystemControlEntity existing = systemControls
+        .findByTenantIdAndSystemIdAndControlId(tenantContext.tenantId(), systemId, controlId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "System control not found"));
+    SystemControlEntity updated = new SystemControlEntity(
+        tenantContext.tenantId(),
+        existing.id(),
+        existing.systemId(),
+        existing.controlId(),
+        request.status(),
+        existing.evidenceRequired(),
+        tenantContext.actorId(),
+        request.notes(),
+        Instant.now());
+    systemControls.save(updated);
+    Control control = controls.findById(controlId)
+        .map(ControlEntity::toDomain)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Control not found"));
+    auditService.append(
+        systemId,
+        "system_control.updated",
+        "system_control",
+        updated.id().toString(),
+        Map.of(
+            "controlCode", control.code(),
+            "status", request.status().name(),
+            "notes", request.notes() == null ? "" : request.notes()));
+    recalculateSystemRelease(systemId);
+    return toView(updated, control);
+  }
+
+  private void recalculateSystemRelease(UUID systemId) {
+    AiSystem system = requireSystem(systemId);
+    List<String> controlBlockers = blockerLabels(systemId);
+    ReleaseDecision decision = releaseGateService.calculate(system, controlBlockers).decision();
+    systems.save(system.withReleaseDecision(decision));
+  }
+
+  private AiSystem requireSystem(UUID systemId) {
+    return systems.findById(systemId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+  }
+
+  private SystemControl toView(SystemControlEntity entity, Control control) {
+    String code = control == null ? "UNKNOWN" : control.code();
+    String name = control == null ? "Unknown control" : control.name();
+    String category = control == null ? "UNKNOWN" : control.category();
+    return new SystemControl(
+        entity.id(),
+        entity.systemId(),
+        entity.controlId(),
+        code,
+        name,
+        category,
+        entity.status(),
+        entity.evidenceRequired(),
+        entity.reviewerId(),
+        entity.notes(),
+        entity.updatedAt());
+  }
+
+  private boolean appliesTo(Control control, RiskClass riskClass) {
+    String applies = control.appliesToRiskClass();
+    if (applies == null || applies.isBlank() || "ALL".equalsIgnoreCase(applies)) {
+      return true;
+    }
+    Set<String> tokens = Arrays.stream(applies.split("[,|]"))
+        .map(String::trim)
+        .map(s -> s.toUpperCase(Locale.ROOT))
+        .collect(Collectors.toSet());
+    return tokens.contains(riskClass.name());
+  }
+
+  private ControlStatus initialStatus(Control control, AiSystem system) {
+    if ("HUMAN_OVERSIGHT".equals(control.code())
+        && system.riskClass() == RiskClass.HIGH
+        && system.openGaps().stream().anyMatch(g -> g.toLowerCase(Locale.ROOT).contains("oversight"))) {
+      return ControlStatus.BLOCKED;
+    }
+    if (system.riskClass() == RiskClass.HIGH || system.riskClass() == RiskClass.PROHIBITED) {
+      return ControlStatus.REVIEW;
+    }
+    return ControlStatus.REVIEW;
+  }
+
+  @Transactional
+  public void ensureCatalogSeeded() {
+    if (controls.count() > 0) {
+      return;
+    }
+    List<Control> seed = baselineControls();
+    for (Control control : seed) {
+      controls.save(new ControlEntity(control));
+    }
+  }
+
+  static List<Control> baselineControls() {
+    List<Control> list = new ArrayList<>();
+    list.add(control("RISK_MANAGEMENT", "Risk management system",
+        "Documented risk management process across the AI lifecycle", "ALL", "GOVERNANCE"));
+    list.add(control("DATA_GOVERNANCE", "Data and data governance",
+        "Training/validation data quality, relevance, and bias mitigation", "ALL", "DATA"));
+    list.add(control("RECORD_KEEPING", "Logging and record-keeping",
+        "Automatic logs of system operation for post-market monitoring", "HIGH", "OPS"));
+    list.add(control("TRANSPARENCY", "Transparency and provision of information",
+        "Users informed they are interacting with an AI system where required", "ALL", "TRANSPARENCY"));
+    list.add(control("HUMAN_OVERSIGHT", "Human oversight",
+        "Human oversight measures proportionate to risk, including stop/override", "HIGH", "OVERSIGHT"));
+    list.add(control("ACCURACY_ROBUSTNESS", "Accuracy, robustness, cybersecurity",
+        "Appropriate levels of accuracy, robustness, and cyber resilience", "HIGH", "SECURITY"));
+    list.add(control("CYBERSECURITY", "Cybersecurity controls",
+        "Measures against data poisoning, model attacks, and unauthorized access", "HIGH", "SECURITY"));
+    list.add(control("TECHNICAL_DOCUMENTATION", "Technical documentation",
+        "Technical documentation sufficient for conformity assessment readiness", "HIGH", "DOCUMENTATION"));
+    return list;
+  }
+
+  private static Control control(
+      String code, String name, String description, String applies, String category) {
+    return new Control(UUID.randomUUID(), code, name, description, applies, category);
+  }
+}

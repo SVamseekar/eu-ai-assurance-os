@@ -132,6 +132,13 @@ public class EvalRunCompletionService {
         system.dataContractStatus(),
         system.releaseDecision(),
         system.openGaps(),
+        system.vendorName(),
+        system.modelName(),
+        system.modelVersion(),
+        system.dataSources(),
+        system.sector(),
+        system.decisionImpact(),
+        system.affectedUsers(),
         system.createdAt(),
         Instant.now());
     ReleaseDecision decision = releaseGateService.calculate(draft).decision();
@@ -148,6 +155,13 @@ public class EvalRunCompletionService {
         draft.dataContractStatus(),
         decision,
         draft.openGaps(),
+        draft.vendorName(),
+        draft.modelName(),
+        draft.modelVersion(),
+        draft.dataSources(),
+        draft.sector(),
+        draft.decisionImpact(),
+        draft.affectedUsers(),
         draft.createdAt(),
         draft.updatedAt()));
   }

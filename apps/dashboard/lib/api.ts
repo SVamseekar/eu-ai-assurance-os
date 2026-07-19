@@ -2,6 +2,8 @@ import type {
   AiSystem,
   ApprovalWorkflow,
   AuditEvent,
+  Control,
+  ControlStatus,
   DataContract,
   DriftEvent,
   EvalRun,
@@ -9,6 +11,7 @@ import type {
   EvidenceDocument,
   EvidenceQueryResponse,
   ReleaseGateResponse,
+  SystemControl,
   WorkflowNotification,
 } from "./types";
 
@@ -34,6 +37,15 @@ export const api = {
     list: () => request<AiSystem[]>("/systems"),
     get: (id: string) => request<AiSystem>(`/systems/${id}`),
     releaseGate: (id: string) => request<ReleaseGateResponse>(`/systems/${id}/release-gate`),
+    controls: (id: string) => request<SystemControl[]>(`/systems/${id}/controls`),
+    updateControl: (systemId: string, controlId: string, status: ControlStatus, notes?: string) =>
+      request<SystemControl>(`/systems/${systemId}/controls/${controlId}`, {
+        method: "PUT",
+        body: JSON.stringify({ status, notes }),
+      }),
+  },
+  controls: {
+    catalog: () => request<Control[]>("/controls"),
   },
   workflows: {
     open: () => request<ApprovalWorkflow[]>("/workflows/open"),
