@@ -10,3 +10,7 @@ coverage/
 .idea/
 .vscode/
 tmp/
+.vercel/
+.vercel
+*.tsbuildinfo
+.pre-commit-config.yaml.bak

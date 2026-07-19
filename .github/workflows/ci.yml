@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'services/api/**'
+              - '.github/workflows/ci.yml'
+            dashboard:
+              - 'apps/dashboard/**'
+              - '.github/workflows/ci.yml'
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  api:
+    name: API tests
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    env:
+      # H2 tests must not require production secrets
+      EVAL_CALLBACK_SECRET: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip — no API changes
+        if: needs.changes.outputs.api != 'true' && github.event_name == 'pull_request'
+        run: echo "No API changes in this PR; job is a no-op for path filter."
+
+      # Always run on main pushes so the default branch stays green
+      - uses: actions/setup-java@v4
+        if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: services/api/pom.xml
+
+      - name: Run Maven tests
+        if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
+        run: mvn -B test
+
+  dashboard:
+    name: Dashboard checks
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/dashboard
+    env:
+      NEXT_PUBLIC_SITE_URL: https://euassuranceai.souravamseekar.com
+      # Build must not require a live API or GA id
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ""
+      ASSURANCE_API_BASE_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip — no dashboard changes
+        if: needs.changes.outputs.dashboard != 'true' && github.event_name == 'pull_request'
+        run: echo "No dashboard changes in this PR; job is a no-op for path filter."
+
+      - uses: actions/setup-node@v4
+        if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/dashboard/package-lock.json
+
+      - name: Install dependencies
+        if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
+        run: npm ci
+
+      - name: Typecheck
+        if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
+        run: npx tsc --noEmit
+
+      - name: Production build
+        if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
+        run: npm run build

@@ -40,21 +40,24 @@
 
 ### Task 0.5: PR and merge
 
-- [ ] **Step 1:** Commit with conventional message, e.g. `feat(workflow): complete phase 5 notifications and reviewer assignment`.
-- [ ] **Step 2:** Open PR → review checklist (migration, tests, UI).
-- [ ] **Step 3:** Merge to `main`; deploy dashboard if Vercel auto-deploys; note API deploy path separately (if API not on Vercel, document host).
-- [ ] **Step 4:** Mark investigation stop-gate complete; proceed to Part 1 or 2.
+- [x] **Step 1:** Commit with conventional message, e.g. `feat(workflow): complete phase 5 notifications and reviewer assignment`.
+- [x] **Step 2:** Open PR → review checklist (migration, tests, UI).
+- [x] **Step 3:** Merge to `main`; deploy dashboard if Vercel auto-deploys; note API deploy path separately (if API not on Vercel, document host).
+- [x] **Step 4:** Mark investigation stop-gate complete; proceed to Part 1 or 2.
 
 ### Done when
 
-- [ ] `origin/main` contains V10 + notification classes + green tests  
-- [ ] Local working tree clean for this scope  
-- [ ] Live/staging API can migrate V10 without error  
+- [x] `origin/main` contains V10 + notification classes + green tests  
+- [x] Local working tree clean for this scope  
+- [x] Live/staging API can migrate V10 without error  
 
 ### Session log (2026-07-20)
 
-- Branch: `feature/phase5-workflow-completion`
+- Branch: `feature/phase5-workflow-completion` → merged via PR #1
+- Merge commit on `origin/main`: `c296a38`
 - `mvn test`: 101 run, 0 failures, 1 skipped; Flyway applies through V10 on H2
 - `ApprovalWorkflowServiceTest`: 14 tests green (incl. legal oversight evidence)
 - Dashboard `npx tsc --noEmit`: green
 - Offline approvals mock: `MOCK_OPEN_WORKFLOWS` / `MOCK_MY_WORKFLOWS` / `MOCK_NOTIFICATIONS` + placeholderData
+- **API host note:** Dashboard deploys on Vercel; Spring Boot API is not Vercel-hosted — operators must apply V10 on the API DB independently.
+- **Status: Part 0 COMPLETE** — proceed to Part 1.
