@@ -1,0 +1,14 @@
+# Default owner
+* @SVamseekar
+
+# API
+/services/api/ @SVamseekar
+
+# Dashboard
+/apps/dashboard/ @SVamseekar
+
+# Docs and plans
+/docs/ @SVamseekar
+
+# CI and repo ops
+/.github/ @SVamseekar

@@ -1,92 +1,109 @@
 # EU AI Assurance OS
 
-EU AI Assurance OS is a governance control plane for teams shipping AI systems in the European market. It validates AI releases against EU-focused controls by combining system inventory, risk classification, cited compliance evidence, evaluation gates, data-contract drift monitoring, approval workflows, reviewer notifications, human oversight evidence, and audit-ready evidence packs.
+**Live dashboard / landing:** [https://euassuranceai.souravamseekar.com](https://euassuranceai.souravamseekar.com)
 
-This repo starts with a verified static product prototype and a production-oriented Spring Boot backend foundation. The current MVP includes persistence, tenant-scoped APIs, audit trails, release gates, eval run records, data-contract drift simulation, approval workflows, and production-hardened evidence RAG foundations.
+EU AI Assurance OS is a governance control plane for teams shipping AI systems in the European market. It validates AI releases against EU AI Act–oriented controls by combining:
 
-## Why This Project
+- AI system registry and risk classification (`MINIMAL` / `LIMITED` / `HIGH` / `PROHIBITED`)
+- Cited compliance evidence RAG (local-hash embeddings in dev; DJL/ONNX all-MiniLM-L6-v2 on postgres)
+- Eval gates with durable worker queue and HMAC-signed result callbacks
+- Data-contract drift monitoring
+- Multi-stage approval workflows (reviewer assignment, human oversight evidence, in-app notifications)
+- Audit-ready evidence packs and append-only audit events
 
-The source reference files contained multiple strong PRD ideas:
+> This product assists governance and release readiness. It is **not** a notified body, does **not** issue legal certifications, and does **not** replace qualified legal counsel.
 
-- ComplianceGuard RAG: cited compliance answers, audit logs, EU AI Act readiness.
-- EvalForge: continuous model/prompt evaluation, CI/CD regression gates.
-- Data Contracts AI: schema drift, lineage, and data quality checks.
-- Java/Spring Boot regulated-system ideas: auditability, SAGA workflows, multi-tenancy, security, and compliance-grade APIs.
+## Stack
 
-EU AI Assurance OS merges those concepts into one coherent EU-context product.
+| Layer | Technology |
+|---|---|
+| Dashboard + landing | **Next.js 16**, React 19, TypeScript, Tailwind CSS v4, TanStack Query, shadcn/ui |
+| API | **Spring Boot 3.3**, Java 17, Flyway, Spring Data JPA |
+| Auth (today) | Password JWT + refresh tokens, API keys; **OAuth/OIDC not yet** |
+| Data | H2 (local default) or PostgreSQL (+ optional pgvector) |
+| Deploy | Dashboard on Vercel; API hosted separately (apply Flyway on the API DB) |
 
-## Current Prototype
+## Repository layout
 
-Run the static app:
+```text
+apps/dashboard/   Production Next.js app (landing + authenticated dashboard)
+apps/web/         Legacy static HTML/CSS/JS prototype (reference only)
+services/api/     Spring Boot API MVP
+docs/             PRD, architecture, API contract, schema, roadmap, security
+infra/            Docker / compose placeholders
+scripts/          Local and CI helper scripts
+```
+
+## Quick start
+
+### 1. API
+
+```bash
+cd services/api
+mvn test
+mvn spring-boot:run
+# → http://localhost:8080  (H2, Flyway through V10)
+```
+
+### 2. Dashboard
+
+```bash
+cd apps/dashboard
+npm ci
+npm run dev
+# → http://localhost:3000
+```
+
+Bootstrap local login uses seeded users such as `compliance@example.com` with the documented dev password in `BootstrapData` (local only).
+
+### Legacy prototype (optional)
 
 ```bash
 python3 -m http.server 4173 --directory apps/web
+# → http://localhost:4173
 ```
 
-Then open:
+## Environment variables
 
-```text
-http://localhost:4173
-```
+| Variable | Where | Purpose |
+|---|---|---|
+| `EVAL_CALLBACK_SECRET` | API | HMAC secret for eval result callbacks (required in non-local envs) |
+| `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` | API | Postgres profile |
+| `ASSURANCE_API_BASE_URL` | Dashboard | Upstream API base (default `http://localhost:8080`) |
+| `NEXT_PUBLIC_SITE_URL` | Dashboard | Canonical site URL for SEO/metadata |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Dashboard | Optional GA4 measurement id |
 
-Implemented:
+## Roadmap status (honest)
 
-- Command dashboard
-- AI system registry
-- EU risk topology visualization
-- Compliance evidence RAG with API-backed document indexing and cited retrieval
-- Eval gate simulation
-- Data-contract drift simulation
-- Append-only audit timeline
-- Evidence pack JSON export
-- Local state persistence
-- Light/dark mode
+| Phase | Status on `main` |
+|---|---|
+| 0–4 Core product (systems, evidence, evals, contracts) | Complete |
+| 5 Approval workflows + notifications + oversight | Complete (V10) |
+| 6 Enterprise (OAuth, immutable audit, PDF packs, Docker/TF, deeper tenant NFRs) | Partial / in progress |
+| Landing legal pages, industry CI, metrics freeze | In progress via `docs/superpowers/plans/` |
 
-## Repository Structure
+See [docs/ROADMAP.md](./docs/ROADMAP.md) and [docs/superpowers/plans/2026-07-20-INDEX.md](./docs/superpowers/plans/2026-07-20-INDEX.md).
 
-```text
-apps/web/       Static interactive prototype with optional API-backed evidence flow
-docs/           PRD, architecture, API, schema, security, roadmap
-services/api/   Spring Boot backend MVP
-infra/          Placeholder for Docker, Terraform, and deployment manifests
-scripts/        Local development and data scripts
-```
+## Documentation
 
-## Production Target
+- [docs/PRD.md](./docs/PRD.md) — product requirements
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — system design
+- [docs/API.md](./docs/API.md) — HTTP contract
+- [docs/SCHEMA.md](./docs/SCHEMA.md) — SQL tables
+- [docs/SECURITY.md](./docs/SECURITY.md) — threat model
+- [SECURITY.md](./SECURITY.md) — vulnerability reporting
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — PR and branch conventions
 
-Frontend:
+## Contributing & CI
 
-- React or Next.js dashboard
-- Role-based workflows for compliance, legal, AI engineering, and data platform teams
+PRs to `main` run GitHub Actions CI:
 
-Backend:
+1. **Secret scan** (Gitleaks)
+2. **API tests** — Java 17, `mvn -B test` (H2; empty `EVAL_CALLBACK_SECRET`)
+3. **Dashboard checks** — Node 22, `tsc --noEmit`, `npm run build`
 
-- Spring Boot 3 or FastAPI
-- PostgreSQL for core entities
-- pgvector for cited evidence search
-- Redis for rate limits and cache
-- Kafka for eval jobs, data drift events, and audit append streams
+Never commit secrets. Prefer feature branches and conventional commits.
 
-AI layer:
+## License
 
-- RAG over policies, DPIAs, model cards, vendor docs, data contracts, and control mappings
-- Eval workers for faithfulness, relevance, safety refusal, bias slices, latency, and cost
-- Human review workflows for high-risk overrides
-
-Compliance:
-
-- Multi-tenant isolation
-- RBAC and SSO
-- GDPR delete/export workflows
-- Immutable audit ledger
-- EU AI Act technical documentation evidence pack
-
-## Next Milestone
-
-Continue production hardening beyond Phase 2:
-
-1. Implement a non-local embedding provider adapter behind the existing provider seam.
-2. Wire object-store document extraction for PDFs and office documents.
-3. Add authentication, RBAC, and request-scoped actor resolution.
-4. Move eval and drift workflows onto async workers.
-5. Add production monitoring for RAG faithfulness, latency, cost, refusal behavior, and citation quality.
+MIT — see [LICENSE](./LICENSE).
