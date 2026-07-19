@@ -14,5 +14,12 @@ public record UpdateAiSystemRequest(
     @Min(0) @Max(100) Integer evidenceCoverage,
     @Min(0) @Max(100) Integer evalScore,
     DataContractStatus dataContractStatus,
-    List<String> openGaps) {
+    List<String> openGaps,
+    String vendorName,
+    String modelName,
+    String modelVersion,
+    List<String> dataSources,
+    String sector,
+    String decisionImpact,
+    List<String> affectedUsers) {
 }

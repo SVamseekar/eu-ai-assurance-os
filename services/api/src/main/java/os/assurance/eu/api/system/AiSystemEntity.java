@@ -58,6 +58,21 @@ public class AiSystemEntity {
   @Column(nullable = false)
   private List<String> openGaps;
 
+  private String vendorName;
+  private String modelName;
+  private String modelVersion;
+
+  @Convert(converter = StringListConverter.class)
+  @Column(name = "data_sources_json", nullable = false)
+  private List<String> dataSources;
+
+  private String sector;
+  private String decisionImpact;
+
+  @Convert(converter = StringListConverter.class)
+  @Column(name = "affected_users_json", nullable = false)
+  private List<String> affectedUsers;
+
   @Column(nullable = false)
   private Instant createdAt;
 
@@ -81,6 +96,13 @@ public class AiSystemEntity {
     this.dataContractStatus = system.dataContractStatus();
     this.releaseDecision = system.releaseDecision();
     this.openGaps = system.openGaps();
+    this.vendorName = system.vendorName();
+    this.modelName = system.modelName();
+    this.modelVersion = system.modelVersion();
+    this.dataSources = system.dataSources();
+    this.sector = system.sector();
+    this.decisionImpact = system.decisionImpact();
+    this.affectedUsers = system.affectedUsers();
     this.createdAt = system.createdAt();
     this.updatedAt = system.updatedAt();
   }
@@ -111,6 +133,13 @@ public class AiSystemEntity {
         dataContractStatus,
         releaseDecision,
         openGaps,
+        vendorName,
+        modelName,
+        modelVersion,
+        dataSources,
+        sector,
+        decisionImpact,
+        affectedUsers,
         createdAt,
         updatedAt);
   }

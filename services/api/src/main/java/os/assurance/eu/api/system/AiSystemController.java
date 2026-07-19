@@ -16,6 +16,7 @@ import os.assurance.eu.api.contract.DriftStatus;
 import os.assurance.eu.api.workflow.ApprovalStage;
 import os.assurance.eu.api.workflow.ApprovalWorkflow;
 import os.assurance.eu.api.workflow.ApprovalWorkflowService;
+import os.assurance.eu.api.control.ControlService;
 import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,18 +37,21 @@ public class AiSystemController {
   private final AuditService auditService;
   private final DataContractService dataContractService;
   private final ApprovalWorkflowService approvalWorkflowService;
+  private final ControlService controlService;
 
   public AiSystemController(
       AiSystemRepository repository,
       ReleaseGateService releaseGateService,
       AuditService auditService,
       DataContractService dataContractService,
-      ApprovalWorkflowService approvalWorkflowService) {
+      ApprovalWorkflowService approvalWorkflowService,
+      ControlService controlService) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
     this.dataContractService = dataContractService;
     this.approvalWorkflowService = approvalWorkflowService;
+    this.controlService = controlService;
   }
 
   @GetMapping
@@ -78,15 +82,29 @@ public class AiSystemController {
         request.dataContractStatus() == null ? DataContractStatus.WARNING : request.dataContractStatus(),
         ReleaseDecision.REVIEW,
         request.openGaps() == null ? List.of() : new ArrayList<>(request.openGaps()),
+        request.vendorName(),
+        request.modelName(),
+        request.modelVersion(),
+        request.dataSources() == null ? List.of() : new ArrayList<>(request.dataSources()),
+        request.sector(),
+        request.decisionImpact(),
+        request.affectedUsers() == null ? List.of() : new ArrayList<>(request.affectedUsers()),
         now,
         now);
     AiSystem saved = saveWithCalculatedDecision(draft);
+    controlService.attachApplicableControls(saved);
+    // recompute after control attach so CONTROL:* blockers apply
+    saved = saveWithCalculatedDecision(saved);
     auditService.append(
         saved.id(),
         "ai_system.created",
         "ai_system",
         saved.id().toString(),
-        Map.of("name", saved.name(), "releaseDecision", saved.releaseDecision()));
+        Map.of(
+            "name", saved.name(),
+            "releaseDecision", saved.releaseDecision(),
+            "vendorName", saved.vendorName() == null ? "" : saved.vendorName(),
+            "modelName", saved.modelName() == null ? "" : saved.modelName()));
     approvalWorkflowService.openCycle(saved, WorkflowTrigger.SYSTEM_CREATED);
     return new CreateAiSystemResponse(saved.id(), saved.releaseDecision(), saved.createdAt());
   }
@@ -109,8 +127,18 @@ public class AiSystemController {
         request.dataContractStatus() == null ? existing.dataContractStatus() : request.dataContractStatus(),
         existing.releaseDecision(),
         request.openGaps() == null ? existing.openGaps() : new ArrayList<>(request.openGaps()),
+        request.vendorName() == null ? existing.vendorName() : request.vendorName(),
+        request.modelName() == null ? existing.modelName() : request.modelName(),
+        request.modelVersion() == null ? existing.modelVersion() : request.modelVersion(),
+        request.dataSources() == null ? existing.dataSources() : new ArrayList<>(request.dataSources()),
+        request.sector() == null ? existing.sector() : request.sector(),
+        request.decisionImpact() == null ? existing.decisionImpact() : request.decisionImpact(),
+        request.affectedUsers() == null ? existing.affectedUsers() : new ArrayList<>(request.affectedUsers()),
         existing.createdAt(),
         Instant.now());
+    if (request.riskClass() != null && request.riskClass() != existing.riskClass()) {
+      controlService.attachApplicableControls(draft);
+    }
     AiSystem saved = saveWithCalculatedDecision(draft);
     auditService.append(
         saved.id(),
@@ -130,7 +158,7 @@ public class AiSystemController {
     if (request.humanOversightRequired() && openGaps.stream().noneMatch(this::isOversightGap)) {
       openGaps.add("Human oversight evidence required");
     }
-    AiSystem saved = saveWithCalculatedDecision(new AiSystem(
+    AiSystem draft = new AiSystem(
         existing.id(),
         existing.name(),
         existing.owner(),
@@ -143,8 +171,17 @@ public class AiSystemController {
         existing.dataContractStatus(),
         existing.releaseDecision(),
         openGaps,
+        existing.vendorName(),
+        existing.modelName(),
+        existing.modelVersion(),
+        existing.dataSources(),
+        request.sector() == null ? existing.sector() : request.sector(),
+        request.decisionImpact() == null ? existing.decisionImpact() : request.decisionImpact(),
+        request.affectedUsers() == null ? existing.affectedUsers() : new ArrayList<>(request.affectedUsers()),
         existing.createdAt(),
-        Instant.now()));
+        Instant.now());
+    controlService.attachApplicableControls(draft);
+    AiSystem saved = saveWithCalculatedDecision(draft);
     auditService.append(
         saved.id(),
         "risk_classification.updated",
@@ -153,7 +190,9 @@ public class AiSystemController {
         Map.of(
             "riskClass", saved.riskClass(),
             "humanOversightRequired", request.humanOversightRequired(),
-            "affectedUsers", request.affectedUsers() == null ? List.of() : request.affectedUsers()));
+            "affectedUsers", saved.affectedUsers(),
+            "sector", saved.sector() == null ? "" : saved.sector(),
+            "decisionImpact", saved.decisionImpact() == null ? "" : saved.decisionImpact()));
     approvalWorkflowService.openCycle(saved, WorkflowTrigger.RISK_RECLASSIFIED);
     return new RiskClassificationResponse(
         saved.id(),
@@ -201,7 +240,14 @@ public class AiSystemController {
         Map.of(
             "riskClass", system.riskClass(),
             "basis", system.riskBasis(),
-            "deploymentRegion", system.deploymentRegion()),
+            "deploymentRegion", system.deploymentRegion(),
+            "vendorName", system.vendorName() == null ? "" : system.vendorName(),
+            "modelName", system.modelName() == null ? "" : system.modelName(),
+            "modelVersion", system.modelVersion() == null ? "" : system.modelVersion(),
+            "dataSources", system.dataSources(),
+            "sector", system.sector() == null ? "" : system.sector(),
+            "decisionImpact", system.decisionImpact() == null ? "" : system.decisionImpact(),
+            "affectedUsers", system.affectedUsers()),
         List.of(Map.of(
             "coverage", system.evidenceCoverage(),
             "openGaps", system.openGaps())),
@@ -291,6 +337,13 @@ public class AiSystemController {
         draft.dataContractStatus(),
         decision,
         draft.openGaps(),
+        draft.vendorName(),
+        draft.modelName(),
+        draft.modelVersion(),
+        draft.dataSources(),
+        draft.sector(),
+        draft.decisionImpact(),
+        draft.affectedUsers(),
         draft.createdAt(),
         draft.updatedAt()));
   }

@@ -19,7 +19,39 @@ export interface AiSystem {
   dataContractStatus: DataContractStatus;
   releaseDecision: ReleaseDecision;
   openGaps: string[];
+  vendorName?: string | null;
+  modelName?: string | null;
+  modelVersion?: string | null;
+  dataSources?: string[];
+  sector?: string | null;
+  decisionImpact?: string | null;
+  affectedUsers?: string[];
   createdAt: string;
+  updatedAt: string;
+}
+
+export type ControlStatus = "PASS" | "REVIEW" | "BLOCKED";
+
+export interface Control {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  appliesToRiskClass: string;
+  category: string;
+}
+
+export interface SystemControl {
+  id: string;
+  systemId: string;
+  controlId: string;
+  controlCode: string;
+  controlName: string;
+  category: string;
+  status: ControlStatus;
+  evidenceRequired: boolean;
+  reviewerId: string | null;
+  notes: string | null;
   updatedAt: string;
 }
 

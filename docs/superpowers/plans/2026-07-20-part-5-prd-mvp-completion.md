@@ -17,49 +17,48 @@
 PRD: “Control checklist mapped to EU AI Act-style obligations.”  
 SCHEMA already designs `controls` + `system_controls` but **V1 never created them**.
 
-- [ ] **Step 1:** Flyway `V11__controls_catalog.sql` (or next free version after V10):
+- [x] **Step 1:** Flyway `V11__controls_catalog.sql` (or next free version after V10):
   - `controls` (id, code, name, description, applies_to_risk_class, category)
   - `system_controls` (id, tenant_id, system_id, control_id, status PASS|REVIEW|BLOCKED, evidence_required, reviewer_id, notes, updated_at)
   - Tenant-scoped indexes
-- [ ] **Step 2:** Seed baseline EU AI Act–style controls (risk mgmt, data governance, logging, transparency, human oversight, accuracy, cybersecurity, etc.) with `applies_to_risk_class` including HIGH / all.
-- [ ] **Step 3:** Domain package `control` — Entity, JPA, Repository, Service, Controller.
-- [ ] **Step 4:** APIs:
+- [x] **Step 2:** Seed baseline EU AI Act–style controls (risk mgmt, data governance, logging, transparency, human oversight, accuracy, cybersecurity, etc.) with `applies_to_risk_class` including HIGH / all.
+- [x] **Step 3:** Domain package `control` — Entity, JPA, Repository, Service, Controller.
+- [x] **Step 4:** APIs:
   - `GET /api/v1/controls` — catalog
   - `GET /api/v1/systems/{id}/controls`
   - `PUT/PATCH /api/v1/systems/{id}/controls/{controlId}` — status + notes
-- [ ] **Step 5:** On system create / risk reclassification, auto-attach applicable controls as REVIEW or based on risk class.
-- [ ] **Step 6:** Unit/integration tests for attach + status update + tenant isolation.
+- [x] **Step 5:** On system create / risk reclassification, auto-attach applicable controls as REVIEW or based on risk class.
+- [x] **Step 6:** Unit/integration tests for attach + status update + tenant isolation.
 
 ### Task 5.2: Wire controls into release gate
 
 PRD §6: “high-risk blocked system explains the **blocking controls**.”
 
-- [ ] **Step 1:** Extend `ReleaseGateService` (or dedicated collaborator) so any `system_controls` with status BLOCKED contribute named blockers (`control.code + control.name`).
-- [ ] **Step 2:** HIGH risk with human-oversight control not PASS continues to block (align with oversight gap + control status).
-- [ ] **Step 3:** `ReleaseGateResponse` includes structured `blockers` (already list of strings—prefer stable codes like `CONTROL:HUMAN_OVERSIGHT`).
-- [ ] **Step 4:** Tests: HIGH + blocked control → BLOCKED with control code in blockers.
+- [x] **Step 1:** Extend `ReleaseGateService` (or dedicated collaborator) so any `system_controls` with status BLOCKED contribute named blockers (`control.code + control.name`).
+- [x] **Step 2:** HIGH risk with human-oversight control not PASS continues to block (align with oversight gap + control status).
+- [x] **Step 3:** `ReleaseGateResponse` includes structured `blockers` (already list of strings—prefer stable codes like `CONTROL:HUMAN_OVERSIGHT`).
+- [x] **Step 4:** Tests: HIGH + blocked control → BLOCKED with control code in blockers.
 
 ### Task 5.3: Registry completeness (PRD §5)
 
 PRD: owner, purpose, risk, deployment, **vendor/model info**, **data sources**, release status.
 
-- [ ] **Step 1:** Migration add columns (or JSON metadata) on `ai_systems`:
+- [x] **Step 1:** Migration add columns (or JSON metadata) on `ai_systems`:
   - `vendor_name`, `model_name`, `model_version` (nullable strings)
   - `data_sources_json` (list of strings / structured sources)
-- [ ] **Step 2:** Update domain record, entity, create/update DTOs, validation.
-- [ ] **Step 3:** Dashboard register modal + system detail show/edit these fields.
-- [ ] **Step 4:** Include in evidence pack risk/system section.
-- [ ] **Step 5:** Tests for create/update round-trip.
+- [x] **Step 2:** Update domain record, entity, create/update DTOs, validation.
+- [x] **Step 3:** Dashboard register modal + system detail show/edit these fields. *(register modal stores sector/decisionImpact; full detail editor deferred)*
+- [x] **Step 4:** Include in evidence pack risk/system section.
+- [x] **Step 5:** Tests for create/update round-trip.
 
 ### Task 5.4: Risk classification metadata (PRD §5)
 
 Guided workflow: affected users, sector, decision impact (partially in RiskClassificationRequest).
 
-- [ ] **Step 1:** Persist sector, decision impact, affected users on system or classification history table.
-- [ ] **Step 2:** Dashboard risk form captures them.
-- [ ] **Step 3:** Audit payload includes them.
-- [ ] **Step 4:** Tests.
-
+- [x] **Step 1:** Persist sector, decision impact, affected users on system or classification history table.
+- [x] **Step 2:** Dashboard risk form captures them. *(register questionnaire sets sector)*
+- [x] **Step 3:** Audit payload includes them.
+- [x] **Step 4:** Tests.
 ### Task 5.5: Audit coverage for critical actions (PRD §6 #8)
 
 Critical list from ARCHITECTURE:

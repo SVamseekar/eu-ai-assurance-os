@@ -357,6 +357,32 @@ the release gate to block. Resolving the event with:
 
 recalculates the contract, system data-contract status, and release decision.
 
+## Controls catalog
+
+```http
+GET /controls
+GET /systems/{systemId}/controls
+PUT /systems/{systemId}/controls/{controlId}
+```
+
+Catalog controls are seeded with EU AI Act–style obligations (risk management,
+data governance, human oversight, transparency, etc.). Creating or
+reclassifying a system attaches applicable controls. `PUT` body:
+
+```json
+{
+  "status": "PASS",
+  "notes": "Oversight SOP v3 reviewed"
+}
+```
+
+Statuses: `PASS` | `REVIEW` | `BLOCKED`. Any `BLOCKED` system control appears in
+release-gate blockers as `CONTROL:{code}`.
+
+Registry fields on AI systems (create/update/risk classification):
+`vendorName`, `modelName`, `modelVersion`, `dataSources`, `sector`,
+`decisionImpact`, `affectedUsers`.
+
 ## Approval Workflows
 
 ```http
