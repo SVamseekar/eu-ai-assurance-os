@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload Surefire reports
         if: always() && (needs.changes.outputs.api == 'true' || github.event_name != 'pull_request')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-surefire-reports
           path: services/api/target/surefire-reports/
@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload acceptance Surefire reports
         if: always() && (needs.changes.outputs.api == 'true' || github.event_name != 'pull_request')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: acceptance-surefire-reports
           path: services/api/target/surefire-reports/
