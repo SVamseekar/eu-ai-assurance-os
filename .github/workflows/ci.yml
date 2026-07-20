@@ -177,7 +177,7 @@ jobs:
         if: needs.changes.outputs.terraform != 'true' && github.event_name == 'pull_request'
         run: echo "No Terraform skeleton changes; job is a no-op for path filter."
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         if: needs.changes.outputs.terraform == 'true' || github.event_name != 'pull_request'
         with:
           terraform_version: "1.9.8"
