@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
 
@@ -23,7 +23,7 @@ export function Header({
   exportBusy,
 }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme();
-  // Avoid SSR/client theme icon mismatch (next-themes resolves after mount).
+  // Theme is applied from localStorage after mount — keep icon stable on SSR.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === "dark";

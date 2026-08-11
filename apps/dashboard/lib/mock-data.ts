@@ -9,8 +9,10 @@ import type {
   WorkflowNotification,
 } from "./types";
 
+// Fixed anchor so SSR and client produce identical mock timestamps (no hydration mismatch).
+const MOCK_NOW_MS = Date.parse("2026-08-11T12:00:00.000Z");
 const d = (daysAgo: number, hoursAgo = 0) =>
-  new Date(Date.now() - daysAgo * 86_400_000 - hoursAgo * 3_600_000).toISOString();
+  new Date(MOCK_NOW_MS - daysAgo * 86_400_000 - hoursAgo * 3_600_000).toISOString();
 
 export const MOCK_SYSTEMS: AiSystem[] = [
   {
