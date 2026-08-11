@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/context/dashboard-context";
-import { MOCK_WORKFLOWS } from "@/lib/mock-data";
+import { useOpenWorkflows } from "@/hooks/use-open-workflows";
 import {
   LayoutDashboard,
   Server,
@@ -37,9 +37,9 @@ interface SidebarProps {
 export function Sidebar({ blockedCount }: SidebarProps) {
   const pathname = usePathname();
   const { activeRole, setActiveRole } = useDashboard();
-  const openCount = Object.values(MOCK_WORKFLOWS).filter((wfs) =>
-    wfs.some((w) => w.status === "OPEN")
-  ).length;
+  // Live open workflow count from API (same source as Approvals page).
+  const { data: openWorkflows = [] } = useOpenWorkflows();
+  const openCount = openWorkflows.filter((w) => w.status === "OPEN").length;
 
   return (
     <aside className="fixed inset-y-0 left-0 w-56 border-r border-border bg-card flex flex-col z-10">
