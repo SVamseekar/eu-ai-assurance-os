@@ -110,10 +110,12 @@ export interface EvalRun {
   failureReason: string | null;
 }
 
+/** Matches Spring `EvalRunOperationsView` JSON shape. */
 export interface EvalRunOperationsView {
-  queued: EvalRun[];
-  running: EvalRun[];
-  retryable: EvalRun[];
+  queued: number;
+  running: number;
+  failed: number;
+  retryQueue: EvalRun[];
   deadLetter: EvalRun[];
 }
 

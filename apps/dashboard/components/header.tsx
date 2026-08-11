@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
@@ -21,7 +22,11 @@ export function Header({
   onRunControls,
   exportBusy,
 }: HeaderProps) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  // Avoid SSR/client theme icon mismatch (next-themes resolves after mount).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <header className="flex justify-between items-start gap-6 mb-6">
@@ -31,11 +36,11 @@ export function Header({
       </div>
       <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
         <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label="Toggle theme"
           className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
         <Button
           variant="outline"
