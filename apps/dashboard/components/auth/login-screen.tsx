@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { safeNextPath } from "@/lib/auth-redirect";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
@@ -114,14 +115,15 @@ export function LoginScreen() {
       setError("Invalid email or password");
       return;
     }
-    const next = searchParams.get("next") || "/command";
-    router.push(next.startsWith("/") && !next.startsWith("//") ? next : "/command");
+    router.push(safeNextPath(searchParams.get("next")));
   }
 
   function startOAuth(provider: "google" | "microsoft") {
     setError(null);
     setOauthRedirecting(provider);
-    window.location.assign(`/api/auth/oauth/${provider}/start`);
+    const next = safeNextPath(searchParams.get("next"));
+    const qs = next !== "/command" ? `?next=${encodeURIComponent(next)}` : "";
+    window.location.assign(`/api/auth/oauth/${provider}/start${qs}`);
   }
 
   return (

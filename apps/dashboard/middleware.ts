@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { safeNextPath } from "@/lib/auth-redirect";
 
 const ACCESS_COOKIE = "session_access";
 const REFRESH_COOKIE = "session_refresh";
@@ -12,6 +13,8 @@ const PROTECTED_PREFIXES = [
   "/evals",
   "/contracts",
   "/audit",
+  "/readiness",
+  "/reg-monitor",
 ];
 
 function isProtectedPath(pathname: string): boolean {
@@ -20,17 +23,29 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
+function hasSession(request: NextRequest): boolean {
+  return (
+    Boolean(request.cookies.get(ACCESS_COOKIE)?.value) ||
+    Boolean(request.cookies.get(REFRESH_COOKIE)?.value)
+  );
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === "/login" || pathname.startsWith("/login/")) {
+    if (hasSession(request)) {
+      const next = safeNextPath(request.nextUrl.searchParams.get("next"));
+      return NextResponse.redirect(new URL(next, request.url));
+    }
+    return NextResponse.next();
+  }
+
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
 
-  const hasSession =
-    Boolean(request.cookies.get(ACCESS_COOKIE)?.value) ||
-    Boolean(request.cookies.get(REFRESH_COOKIE)?.value);
-
-  if (hasSession) {
+  if (hasSession(request)) {
     return NextResponse.next();
   }
 
@@ -42,12 +57,24 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/login",
+    "/command",
     "/command/:path*",
+    "/systems",
     "/systems/:path*",
+    "/approvals",
     "/approvals/:path*",
+    "/evidence",
     "/evidence/:path*",
+    "/evals",
     "/evals/:path*",
+    "/contracts",
     "/contracts/:path*",
+    "/audit",
     "/audit/:path*",
+    "/readiness",
+    "/readiness/:path*",
+    "/reg-monitor",
+    "/reg-monitor/:path*",
   ],
 };

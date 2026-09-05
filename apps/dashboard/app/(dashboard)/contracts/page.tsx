@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ContractCard } from "@/components/contract-card";
 import { LineageGraph } from "@/components/lineage-graph";
 import { useContracts } from "@/hooks/use-contracts";
-import { useSystems } from "@/hooks/use-systems";
-import { MOCK_CONTRACTS, MOCK_DRIFT_EVENTS, MOCK_SYSTEMS } from "@/lib/mock-data";
+import { MOCK_CONTRACTS, MOCK_DRIFT_EVENTS } from "@/lib/mock-data";
 import { useQueries } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { DriftEvent } from "@/lib/types";
+import { isLiveEntityId } from "@/lib/ids";
 
 import { useDashboard } from "@/context/dashboard-context";
 
@@ -20,6 +20,8 @@ export default function ContractsPage() {
     queries: contracts.map((contract) => ({
       queryKey: ["drift-events", contract.id],
       queryFn: () => api.contracts.driftEvents(contract.id),
+      // Skip API for demo mock contract ids (they 400 on the real backend).
+      enabled: isLiveEntityId(contract.id),
       placeholderData: MOCK_DRIFT_EVENTS.filter((e) => e.contractId === contract.id),
     })),
   });

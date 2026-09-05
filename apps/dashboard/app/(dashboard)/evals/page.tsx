@@ -168,10 +168,10 @@ export default function EvalsPage() {
           <CardContent>
             <div className="grid grid-cols-4 gap-3">
               {[
-                { label: "Queued",      count: operations.queued.length,      color: "text-foreground" },
-                { label: "Running",     count: operations.running.length,      color: "text-primary" },
-                { label: "Retryable",   count: operations.retryable.length,    color: "text-amber-600 dark:text-amber-400" },
-                { label: "Dead Letter", count: operations.deadLetter.length,   color: "text-red-600 dark:text-red-400" },
+                { label: "Queued",      count: operations.queued ?? 0,                    color: "text-foreground" },
+                { label: "Running",     count: operations.running ?? 0,                   color: "text-primary" },
+                { label: "Retryable",   count: (operations.retryQueue ?? []).length,      color: "text-amber-600 dark:text-amber-400" },
+                { label: "Dead Letter", count: (operations.deadLetter ?? []).length,      color: "text-red-600 dark:text-red-400" },
               ].map((op) => (
                 <div key={op.label} className="bg-muted/40 rounded-xl px-4 py-3.5">
                   <p className={cn("text-2xl font-bold", op.color)}>{op.count}</p>

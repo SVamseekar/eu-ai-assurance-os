@@ -46,13 +46,24 @@ function passthroughHeaders(upstream: Response): Headers {
 }
 
 async function handle(request: NextRequest, path: string[]): Promise<NextResponse> {
-  const accessToken = readAccessToken(request);
+  let accessToken = readAccessToken(request);
+  let sessionCookies: { accessToken: string; refreshToken: string } | null = null;
+
+  // Access cookie is short-lived (15m). Refresh when missing so middleware-allowed
+  // sessions with only session_refresh do not 401 every API call.
   if (!accessToken) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const refreshToken = readRefreshToken(request);
+    const rotated = refreshToken ? await refreshAccessToken(refreshToken) : null;
+    if (!rotated) {
+      const failed = NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      clearSessionCookies(failed);
+      return failed;
+    }
+    accessToken = rotated.accessToken;
+    sessionCookies = rotated;
   }
 
   let upstream = await forward(request, path, accessToken);
-  let sessionCookies: { accessToken: string; refreshToken: string } | null = null;
 
   if (upstream.status === 401) {
     const refreshToken = readRefreshToken(request);
