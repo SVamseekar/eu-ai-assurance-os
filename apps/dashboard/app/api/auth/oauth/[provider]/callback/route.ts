@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { safeNextPath } from "@/lib/auth-redirect";
 import { setSessionCookies } from "@/lib/session";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
 const SUPPORTED = new Set(["google", "microsoft"]);
+const OAUTH_NEXT_COOKIE = "oauth_next";
 
 function loginRedirect(request: NextRequest, authError: string): NextResponse {
   const url = new URL("/login", request.url);
@@ -66,8 +68,15 @@ export async function GET(
     return loginRedirect(request, "sign_in_failed");
   }
 
-  const destination = new URL("/command", request.url);
-  const response = NextResponse.redirect(destination);
+  const destination = safeNextPath(request.cookies.get(OAUTH_NEXT_COOKIE)?.value);
+  const response = NextResponse.redirect(new URL(destination, request.url));
   setSessionCookies(response, tokens.accessToken, tokens.refreshToken);
+  response.cookies.set(OAUTH_NEXT_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
   return response;
 }

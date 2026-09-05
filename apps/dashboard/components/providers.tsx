@@ -2,7 +2,6 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { DashboardProvider } from "@/context/dashboard-context";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -20,11 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
-      <ThemeProvider defaultTheme="light">
-        <DashboardProvider>
-          {children}
-        </DashboardProvider>
-      </ThemeProvider>
+      <ThemeProvider defaultTheme="light">{children}</ThemeProvider>
     </QueryClientProvider>
   );
 }

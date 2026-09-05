@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
+import { LogOut, Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
 
 interface HeaderProps {
   title: string;
@@ -22,11 +23,23 @@ export function Header({
   onRunControls,
   exportBusy,
 }: HeaderProps) {
+  const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
-  // Theme is applied from localStorage after mount — keep icon stable on SSR.
+  // Theme class is set pre-hydration via layout script; icon still waits for mount.
   const [mounted, setMounted] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === "dark";
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <header className="flex justify-between items-start gap-6 mb-6">
@@ -65,6 +78,17 @@ export function Header({
         <Button size="sm" className="h-8 text-xs font-medium" onClick={onRunControls}>
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
           Refresh
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-medium"
+          onClick={handleSignOut}
+          disabled={signingOut}
+          aria-label="Sign out"
+        >
+          <LogOut className="h-3.5 w-3.5 mr-1.5" />
+          {signingOut ? "Signing out…" : "Sign out"}
         </Button>
       </div>
     </header>

@@ -28,9 +28,9 @@ function applyThemeClass(theme: Theme) {
 }
 
 /**
- * Lightweight theme provider (no injected <script>).
- * Avoids the React 19 "script tag while rendering" warning from next-themes.
- * Theme is applied after mount from localStorage; default is light for SSR.
+ * Lightweight theme provider.
+ * Theme class is applied before paint by a boot script in root layout;
+ * this provider keeps React state in sync with localStorage.
  */
 export function ThemeProvider({
   children,

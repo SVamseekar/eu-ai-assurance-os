@@ -25,6 +25,36 @@ import type {
 
 const BASE = "/api/proxy";
 
+/** Marketing and auth routes — never hard-redirect these on 401. */
+const PUBLIC_PATH_PREFIXES = [
+  "/",
+  "/login",
+  "/request-demo",
+  "/privacy",
+  "/terms",
+  "/refunds",
+  "/disclaimer",
+];
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || (prefix !== "/" && pathname.startsWith(`${prefix}/`)),
+  );
+}
+
+function redirectToLoginOnUnauthorized() {
+  if (typeof window === "undefined") return;
+  const { pathname, search } = window.location;
+  if (isPublicPath(pathname) || pathname.startsWith("/api/")) return;
+  const next = `${pathname}${search}`;
+  const params = new URLSearchParams();
+  if (next.startsWith("/") && !next.startsWith("//")) {
+    params.set("next", next);
+  }
+  const qs = params.toString();
+  window.location.href = qs ? `/login?${qs}` : "/login";
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (init?.body !== undefined && !headers.has("Content-Type")) {
@@ -35,8 +65,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers,
   });
-  if (res.status === 401 && typeof window !== "undefined") {
-    window.location.href = "/login";
+  if (res.status === 401) {
+    redirectToLoginOnUnauthorized();
   }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.status === 204 ? (null as T) : res.json();
@@ -71,8 +101,8 @@ export const api = {
      */
     evidencePackPdf: async (id: string): Promise<{ contentSha256: string; filename: string }> => {
       const res = await fetch(`${BASE}/systems/${id}/evidence-pack.pdf`);
-      if (res.status === 401 && typeof window !== "undefined") {
-        window.location.href = "/login";
+      if (res.status === 401) {
+        redirectToLoginOnUnauthorized();
       }
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const contentSha256 = res.headers.get("X-Content-Sha256") ?? "";
@@ -96,8 +126,8 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format }),
       });
-      if (res.status === 401 && typeof window !== "undefined") {
-        window.location.href = "/login";
+      if (res.status === 401) {
+        redirectToLoginOnUnauthorized();
       }
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const readinessStatus = res.headers.get("X-Readiness-Status") ?? "";

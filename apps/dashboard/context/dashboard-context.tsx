@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import type { AiSystem, DataContract, DriftEvent, AuditEvent, DataContractStatus, ReleaseDecision } from "@/lib/types";
 import { MOCK_SYSTEMS, MOCK_CONTRACTS, MOCK_DRIFT_EVENTS, MOCK_AUDIT_EVENTS } from "@/lib/mock-data";
 import { useSystems } from "@/hooks/use-systems";
@@ -52,6 +53,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // Shared roles & headers
   const [activeTenant, setActiveTenant] = useState("tenant-premium");
   const [activeRole, setActiveRole] = useState("actor-priya");
+  const pathname = usePathname();
+  const pollAudits = pathname === "/audit" || pathname.startsWith("/audit/");
 
   // Selected drawers
   const [selectedSystem, setSelectedSystem] = useState<AiSystem | null>(null);
@@ -60,7 +63,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // Live API (BFF → Dell/local Spring). Fall back to mocks only when API is offline.
   const { data: apiSystems, isSuccess: systemsOk, isError: systemsError } = useSystems();
   const { data: apiContracts, isSuccess: contractsOk, isError: contractsError } = useContracts();
-  const { data: apiAudits, isSuccess: auditsOk, isError: auditsError } = useAuditEvents();
+  const { data: apiAudits, isSuccess: auditsOk, isError: auditsError } = useAuditEvents(
+    undefined,
+    { refetchInterval: pollAudits ? 15_000 : false },
+  );
 
   const liveSystems =
     systemsOk &&

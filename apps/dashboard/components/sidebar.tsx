@@ -82,21 +82,29 @@ export function Sidebar({ blockedCount }: SidebarProps) {
         })}
       </nav>
 
-      {/* Role / Actor Switcher */}
+      {/* Demo actor label — local UI only; does not change API auth identity */}
       <div className="px-3 pb-4 border-t border-border pt-4 flex-shrink-0">
-        <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5 px-1">
-          Active Role Profile
+        <label
+          htmlFor="demo-actor"
+          className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5 px-1"
+        >
+          Demo actor (UI only)
         </label>
         <select
+          id="demo-actor"
           value={activeRole}
           onChange={(e) => setActiveRole(e.target.value)}
           className="w-full text-xs font-semibold bg-muted border border-border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring/50 transition-shadow text-foreground cursor-pointer"
+          title="Changes local demo labels only. Session auth is unchanged."
         >
           <option value="actor-priya">Priya Nair (Compliance)</option>
           <option value="actor-marco">Marco Bianchi (Engineering)</option>
           <option value="actor-leo">Leo Hartmann (Legal)</option>
           <option value="actor-sofia">Sofia Andersen (Data Lead)</option>
         </select>
+        <p className="mt-1.5 px-1 text-[10px] leading-snug text-muted-foreground">
+          Does not switch your signed-in account.
+        </p>
       </div>
 
       {/* Bottom status */}
