@@ -20,3 +20,7 @@ tmp/
 .vercel
 *.tsbuildinfo
 .pre-commit-config.yaml.bak
+.worktrees/
+__pycache__/
+*.py[cod]
+.pytest_cache/
