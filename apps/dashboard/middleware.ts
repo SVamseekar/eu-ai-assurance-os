@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { safeNextPath } from "@/lib/auth-redirect";
 
 const ACCESS_COOKIE = "session_access";
 const REFRESH_COOKIE = "session_refresh";
@@ -33,14 +32,8 @@ function hasSession(request: NextRequest): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/login" || pathname.startsWith("/login/")) {
-    if (hasSession(request)) {
-      const next = safeNextPath(request.nextUrl.searchParams.get("next"));
-      return NextResponse.redirect(new URL(next, request.url));
-    }
-    return NextResponse.next();
-  }
-
+  // Never bounce /login based on cookie presence — stale cookies plus a 401
+  // redirect created a /login ↔ /command reload loop in production.
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
@@ -57,7 +50,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/login",
     "/command",
     "/command/:path*",
     "/systems",

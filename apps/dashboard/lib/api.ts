@@ -23,36 +23,19 @@ import type {
   WorkflowNotification,
 } from "./types";
 
+import { loginRedirectHref } from "./auth-redirect";
+
 const BASE = "/api/proxy";
 
-/** Marketing and auth routes — never hard-redirect these on 401. */
-const PUBLIC_PATH_PREFIXES = [
-  "/",
-  "/login",
-  "/request-demo",
-  "/privacy",
-  "/terms",
-  "/refunds",
-  "/disclaimer",
-];
-
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || (prefix !== "/" && pathname.startsWith(`${prefix}/`)),
-  );
-}
+/** Parallel 401s must not keep assigning window.location (reload flicker). */
+let loginRedirectStarted = false;
 
 function redirectToLoginOnUnauthorized() {
-  if (typeof window === "undefined") return;
-  const { pathname, search } = window.location;
-  if (isPublicPath(pathname) || pathname.startsWith("/api/")) return;
-  const next = `${pathname}${search}`;
-  const params = new URLSearchParams();
-  if (next.startsWith("/") && !next.startsWith("//")) {
-    params.set("next", next);
-  }
-  const qs = params.toString();
-  window.location.href = qs ? `/login?${qs}` : "/login";
+  if (typeof window === "undefined" || loginRedirectStarted) return;
+  const href = loginRedirectHref(window.location.pathname, window.location.search);
+  if (!href) return;
+  loginRedirectStarted = true;
+  window.location.assign(href);
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

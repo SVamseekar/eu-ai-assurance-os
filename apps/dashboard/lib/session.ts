@@ -3,31 +3,36 @@ import type { NextRequest, NextResponse } from "next/server";
 const ACCESS_COOKIE = "session_access";
 const REFRESH_COOKIE = "session_refresh";
 
+function cookieBase() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+  };
+}
+
 export function setSessionCookies(
   response: NextResponse,
   accessToken: string,
   refreshToken: string,
 ) {
-  const isProduction = process.env.NODE_ENV === "production";
+  const base = cookieBase();
   response.cookies.set(ACCESS_COOKIE, accessToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/",
+    ...base,
     maxAge: 15 * 60,
   });
   response.cookies.set(REFRESH_COOKIE, refreshToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    path: "/",
+    ...base,
     maxAge: 30 * 24 * 60 * 60,
   });
 }
 
 export function clearSessionCookies(response: NextResponse) {
-  response.cookies.delete(ACCESS_COOKIE);
-  response.cookies.delete(REFRESH_COOKIE);
+  const base = cookieBase();
+  // Match set() attributes so production Secure cookies actually expire.
+  response.cookies.set(ACCESS_COOKIE, "", { ...base, maxAge: 0 });
+  response.cookies.set(REFRESH_COOKIE, "", { ...base, maxAge: 0 });
 }
 
 export function readAccessToken(request: NextRequest): string | undefined {
