@@ -1,9 +1,8 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import { useState } from "react";
-import { DashboardProvider } from "@/context/dashboard-context";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -12,7 +11,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 30_000,
-            retry: 1,
+            retry: (failureCount, error) => {
+              if (error instanceof Error && error.message.startsWith("401")) return false;
+              return failureCount < 1;
+            },
           },
         },
       })
@@ -20,11 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <DashboardProvider>
-          {children}
-        </DashboardProvider>
-      </ThemeProvider>
+      <ThemeProvider defaultTheme="light">{children}</ThemeProvider>
     </QueryClientProvider>
   );
 }

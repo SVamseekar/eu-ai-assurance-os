@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Menu, ShieldCheck, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,44 @@ import { landingNavLinks, siteConfig } from "@/lib/site-config";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const menu = menuRef.current;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const focusables = menu?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    focusables?.[0]?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        toggleRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab" || !focusables || focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [open]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
@@ -37,10 +75,11 @@ export function LandingHeader() {
         </div>
 
         <button
+          ref={toggleRef}
           type="button"
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border md:hidden"
           aria-expanded={open}
-          aria-controls="mobile-nav"
+          aria-controls={menuId}
           aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((v) => !v)}
         >
@@ -50,7 +89,8 @@ export function LandingHeader() {
 
       {open ? (
         <div
-          id="mobile-nav"
+          ref={menuRef}
+          id={menuId}
           className="border-t border-border bg-background px-4 py-4 md:hidden"
         >
           <nav aria-label="Mobile" className="flex flex-col gap-3 text-sm">

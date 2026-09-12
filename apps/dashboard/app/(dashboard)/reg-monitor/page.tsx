@@ -10,7 +10,7 @@ import {
   useRegMonitorItems,
   useRegMonitorRelevant,
 } from "@/hooks/use-reg-monitor";
-import { cn } from "@/lib/utils";
+import { cn, formatIsoStamp } from "@/lib/utils";
 import type { RegItem } from "@/lib/types";
 import {
   AlertTriangle,
@@ -156,7 +156,9 @@ export default function RegMonitorPage() {
                     {item.publishedAt && (
                       <span>Published {item.publishedAt.slice(0, 10)}</span>
                     )}
-                    <span>Fetched {item.fetchedAt.slice(0, 16).replace("T", " ")}</span>
+                    <span suppressHydrationWarning>
+                      Fetched {formatIsoStamp(item.fetchedAt)}
+                    </span>
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">

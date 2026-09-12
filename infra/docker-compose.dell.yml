@@ -1,0 +1,31 @@
+# Dell lab host profile (Windows + Docker).
+#
+# MaSoVa already owns host :8080 (API gateway) and :5432 (Postgres) on the Dell.
+# Host ports are set via env (see .env.dell.example):
+#   API_HOST_PORT=9080
+#   POSTGRES_HOST_PORT=5433
+#
+# From repo root on Dell (or via scripts/deploy-dell.sh from Mac):
+#   docker compose \
+#     -f infra/docker-compose.yml \
+#     -f infra/docker-compose.dell.yml \
+#     --env-file .env.dell \
+#     up -d --build
+#
+# From Mac on the LAN:
+#   curl -fsS http://192.168.50.88:9080/actuator/health
+
+name: eu-ai-assurance-dell
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+
+  api:
+    ports:
+      - "${API_HOST_PORT:-9080}:8080"
+    environment:
+      SERVER_ADDRESS: "0.0.0.0"
+      # Local dashboard on Mac still uses localhost:3000 for OAuth redirects
+      OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-http://localhost:3000}

@@ -45,9 +45,12 @@ export const landingNavLinks = [
   { href: "#faq", label: "FAQ" },
 ];
 
+/** Primary app nav — keep in sync with sidebar + middleware protected prefixes */
 export const appRoutes = [
   { href: "/command", label: "Dashboard" },
   { href: "/systems", label: "AI Systems" },
+  { href: "/readiness", label: "Readiness" },
+  { href: "/reg-monitor", label: "Reg Monitor" },
   { href: "/approvals", label: "Approvals" },
   { href: "/evidence", label: "Evidence" },
   { href: "/evals", label: "Eval Gates" },

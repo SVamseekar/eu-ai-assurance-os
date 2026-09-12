@@ -41,27 +41,34 @@ export default function ApprovalsPage() {
   const systems = useQuery({
     queryKey: ["systems"],
     queryFn: api.systems.list,
-    placeholderData: MOCK_SYSTEMS,
+    // Keep offline seed only as error fallback — never show mock while live API returns [].
+    placeholderData: [],
   });
   const mine = useQuery({
     queryKey: ["workflows", "mine"],
     queryFn: api.workflows.mine,
-    placeholderData: MOCK_MY_WORKFLOWS,
+    placeholderData: [],
   });
   const open = useQuery({
     queryKey: ["workflows", "open"],
     queryFn: api.workflows.open,
-    placeholderData: MOCK_OPEN_WORKFLOWS,
+    placeholderData: [],
   });
   const notifications = useQuery({
     queryKey: ["workflow-notifications", "mine"],
     queryFn: api.notifications.mine,
-    placeholderData: MOCK_NOTIFICATIONS,
+    placeholderData: [],
   });
 
-  const systemNames = new Map((systems.data ?? []).map((system) => [system.id, system.name]));
-  const myWorkflowIds = new Set((mine.data ?? []).map((workflow) => workflow.id));
-  const otherItems = (open.data ?? []).filter((workflow) => !myWorkflowIds.has(workflow.id));
+  // Live API wins when online (including empty []). Mocks only if the API is unreachable.
+  const systemsList = systems.isError ? MOCK_SYSTEMS : (systems.data ?? []);
+  const mineList = mine.isError ? MOCK_MY_WORKFLOWS : (mine.data ?? []);
+  const openList = open.isError ? MOCK_OPEN_WORKFLOWS : (open.data ?? []);
+  const notificationList = notifications.isError ? MOCK_NOTIFICATIONS : (notifications.data ?? []);
+
+  const systemNames = new Map(systemsList.map((system) => [system.id, system.name]));
+  const myWorkflowIds = new Set(mineList.map((workflow) => workflow.id));
+  const otherItems = openList.filter((workflow) => !myWorkflowIds.has(workflow.id));
 
   const action = useMutation({
     mutationFn: async ({
@@ -98,7 +105,7 @@ export default function ApprovalsPage() {
 
   return (
     <div className="space-y-6">
-      {notifications.data && notifications.data.length > 0 && (
+      {notificationList.length > 0 && (
         <section className="border border-border bg-card px-4 py-3">
           <div className="flex items-center gap-2">
             <Bell className="h-4 w-4 text-primary" />
@@ -107,10 +114,10 @@ export default function ApprovalsPage() {
             </h2>
           </div>
           <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {notifications.data.slice(0, 4).map((notification) => (
+            {notificationList.slice(0, 4).map((notification) => (
               <div key={notification.id} className="border border-border bg-muted/20 px-3 py-2">
                 <p className="text-xs font-medium text-foreground">{notification.message}</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                <p className="mt-0.5 text-[10px] text-muted-foreground" suppressHydrationWarning>
                   {new Date(notification.createdAt).toLocaleString()}
                 </p>
               </div>
@@ -127,13 +134,18 @@ export default function ApprovalsPage() {
           <p className="border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
             Loading approval queue...
           </p>
-        ) : (mine.data ?? []).length === 0 ? (
+        ) : mineList.length === 0 ? (
           <p className="border border-dashed border-border py-6 text-center text-xs text-muted-foreground">
             No stages require your review right now.
+            {openList.length > 0
+              ? ` ${openList.length} open workflow(s) are waiting on another role — see In progress below.`
+              : !mine.isError
+                ? " Open workflows appear when systems are registered or reclassified with a non-pass gate."
+                : ""}
           </p>
         ) : (
           <div className="space-y-2">
-            {(mine.data ?? []).map((workflow) => {
+            {mineList.map((workflow) => {
               const activeStage = nextPendingStage(workflow);
               if (!activeStage) return null;
               return (

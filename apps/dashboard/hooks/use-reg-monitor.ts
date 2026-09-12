@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { RegMonitorFeed } from "@/lib/types";
 import { MOCK_REG_MONITOR_FEED } from "@/lib/mock-data";
+import { isLiveEntityId } from "@/lib/ids";
 
 export function useRegMonitorItems() {
   return useQuery<RegMonitorFeed>({
@@ -15,7 +16,7 @@ export function useRegMonitorRelevant(systemId: string | null | undefined) {
   return useQuery<RegMonitorFeed>({
     queryKey: ["reg-monitor", "relevant", systemId],
     queryFn: () => api.regMonitor.relevant(systemId!),
-    enabled: Boolean(systemId),
+    enabled: isLiveEntityId(systemId),
     placeholderData: systemId
       ? {
           ...MOCK_REG_MONITOR_FEED,

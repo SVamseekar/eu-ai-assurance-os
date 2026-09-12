@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { safeNextPath } from "@/lib/auth-redirect";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
@@ -78,9 +79,14 @@ const inputClassName = cn(
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 
-export function LoginScreen() {
+export function LoginScreen({
+  nextPath,
+  authErrorCode,
+}: {
+  nextPath?: string;
+  authErrorCode?: string;
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -89,11 +95,9 @@ export function LoginScreen() {
     "google" | "microsoft" | null
   >(null);
 
-  const oauthError = useMemo(() => {
-    const code = searchParams.get("auth_error");
-    if (!code) return null;
-    return AUTH_ERROR_MESSAGES[code] ?? "Sign-in failed. Please try again.";
-  }, [searchParams]);
+  const oauthError = authErrorCode
+    ? (AUTH_ERROR_MESSAGES[authErrorCode] ?? "Sign-in failed. Please try again.")
+    : null;
 
   const displayError = error ?? oauthError;
   const busy = submitting || oauthRedirecting !== null;
@@ -114,14 +118,15 @@ export function LoginScreen() {
       setError("Invalid email or password");
       return;
     }
-    const next = searchParams.get("next") || "/command";
-    router.push(next.startsWith("/") && !next.startsWith("//") ? next : "/command");
+    router.push(safeNextPath(nextPath));
   }
 
   function startOAuth(provider: "google" | "microsoft") {
     setError(null);
     setOauthRedirecting(provider);
-    window.location.assign(`/api/auth/oauth/${provider}/start`);
+    const next = safeNextPath(nextPath);
+    const qs = next !== "/command" ? `?next=${encodeURIComponent(next)}` : "";
+    window.location.assign(`/api/auth/oauth/${provider}/start${qs}`);
   }
 
   return (

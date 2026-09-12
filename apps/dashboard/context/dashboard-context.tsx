@@ -1,9 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import type { AiSystem, DataContract, DriftEvent, AuditEvent, DataContractStatus, ReleaseDecision } from "@/lib/types";
 import { MOCK_SYSTEMS, MOCK_CONTRACTS, MOCK_DRIFT_EVENTS, MOCK_AUDIT_EVENTS } from "@/lib/mock-data";
-import { normaliseDecision } from "@/lib/utils";
+import { useSystems } from "@/hooks/use-systems";
+import { useContracts } from "@/hooks/use-contracts";
+import { useAuditEvents } from "@/hooks/use-audit-events";
+import { isLiveEntityId, isMockEntityId } from "@/lib/ids";
 
 interface DashboardContextType {
   // Tenant & Actor selector
@@ -49,15 +53,49 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   // Shared roles & headers
   const [activeTenant, setActiveTenant] = useState("tenant-premium");
   const [activeRole, setActiveRole] = useState("actor-priya");
+  const pathname = usePathname();
+  const pollAudits = pathname === "/audit" || pathname.startsWith("/audit/");
 
   // Selected drawers
   const [selectedSystem, setSelectedSystem] = useState<AiSystem | null>(null);
   const [selectedContract, setSelectedContract] = useState<DataContract | null>(null);
 
+  // Live API (BFF → Dell/local Spring). Fall back to mocks only when API is offline.
+  const { data: apiSystems, isSuccess: systemsOk, isError: systemsError } = useSystems();
+  const { data: apiContracts, isSuccess: contractsOk, isError: contractsError } = useContracts();
+  const { data: apiAudits, isSuccess: auditsOk, isError: auditsError } = useAuditEvents(
+    undefined,
+    { refetchInterval: pollAudits ? 15_000 : false },
+  );
+
+  const liveSystems =
+    systemsOk &&
+    !systemsError &&
+    Array.isArray(apiSystems) &&
+    apiSystems.length > 0 &&
+    isLiveEntityId(apiSystems[0]?.id)
+      ? apiSystems
+      : null;
+
+  const liveContracts =
+    contractsOk &&
+    !contractsError &&
+    Array.isArray(apiContracts) &&
+    (apiContracts.length === 0 || isLiveEntityId(apiContracts[0]?.id))
+      ? apiContracts
+      : null;
+
+  const liveAudits =
+    auditsOk &&
+    !auditsError &&
+    Array.isArray(apiAudits) &&
+    (apiAudits.length === 0 || !isMockEntityId(apiAudits[0]?.id))
+      ? apiAudits
+      : null;
+
   // Dynamic entities lists
   const [customSystems, setCustomSystems] = useState<AiSystem[]>([]);
-  const [driftEvents, setDriftEvents] = useState<DriftEvent[]>(MOCK_DRIFT_EVENTS);
-  const [contractsList, setContractsList] = useState<DataContract[]>(MOCK_CONTRACTS);
+  const [localDriftEvents, setLocalDriftEvents] = useState<DriftEvent[]>(MOCK_DRIFT_EVENTS);
   const [evalDatasets, setEvalDatasets] = useState<string[]>(INITIAL_DATASETS);
   const [overriddenSystems, setOverriddenSystems] = useState<Record<string, string>>({}); // systemId -> justification
   const [customAudits, setCustomAudits] = useState<AuditEvent[]>([]);
@@ -77,13 +115,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }
 
   function acknowledgeDrift(eventId: string) {
-    setDriftEvents((p) =>
+    setLocalDriftEvents((p) =>
       p.map((e) => (e.id === eventId ? { ...e, status: "ACKNOWLEDGED", updatedAt: new Date().toISOString() } : e))
     );
   }
 
   function resolveDrift(eventId: string) {
-    setDriftEvents((p) =>
+    setLocalDriftEvents((p) =>
       p.map((e) => (e.id === eventId ? { ...e, status: "RESOLVED", updatedAt: new Date().toISOString() } : e))
     );
   }
@@ -104,61 +142,82 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setCustomAudits((p) => [newEvent, ...p]); // Prepended so it shows at the top
   }
 
-  const allAudits = [...customAudits, ...MOCK_AUDIT_EVENTS];
+  const baseSystems = liveSystems ?? MOCK_SYSTEMS;
+  const baseContracts = liveContracts ?? MOCK_CONTRACTS;
+  // Local drift mock only when not on live contracts (demo offline mode).
+  const driftEvents = liveContracts ? [] : localDriftEvents;
 
-  // Recalculate contract status dynamically based on resolved drift events
-  const calculatedContracts = contractsList.map((contract) => {
-    const events = driftEvents.filter((e) => e.contractId === contract.id && e.status !== "RESOLVED");
-    const hasBreach = events.some((e) => e.severity === "BREACH");
-    const hasWarning = events.some((e) => e.severity === "WARNING");
-    const status = (hasBreach ? "BREACH" : hasWarning ? "WARNING" : "HEALTHY") as DataContractStatus;
-    return { ...contract, status };
-  });
+  const allAudits = useMemo(
+    () => [...customAudits, ...(liveAudits ?? MOCK_AUDIT_EVENTS)],
+    [customAudits, liveAudits],
+  );
+
+  // Recalculate contract status dynamically based on resolved drift events (demo path)
+  const calculatedContracts = useMemo(() => {
+    return baseContracts.map((contract) => {
+      if (liveContracts) {
+        // Trust API status when live
+        return contract;
+      }
+      const events = driftEvents.filter((e) => e.contractId === contract.id && e.status !== "RESOLVED");
+      const hasBreach = events.some((e) => e.severity === "BREACH");
+      const hasWarning = events.some((e) => e.severity === "WARNING");
+      const status = (hasBreach ? "BREACH" : hasWarning ? "WARNING" : "HEALTHY") as DataContractStatus;
+      return { ...contract, status };
+    });
+  }, [baseContracts, driftEvents, liveContracts]);
 
   // Recalculate system release decision based on contract status and manual overrides
-  const allSystems = [...MOCK_SYSTEMS, ...customSystems].map((sys) => {
-    // If manually overridden
-    if (overriddenSystems[sys.id]) {
+  const allSystems = useMemo(() => {
+    return [...baseSystems, ...customSystems].map((sys) => {
+      // If manually overridden
+      if (overriddenSystems[sys.id]) {
+        return {
+          ...sys,
+          dataContractStatus: "HEALTHY" as const,
+          releaseDecision: "pass" as const,
+          openGaps: [],
+        };
+      }
+
+      // Live API already carries gate fields — only recompute for demo/mock + overrides.
+      if (liveSystems && isLiveEntityId(sys.id)) {
+        return sys;
+      }
+
+      const linkedContracts = calculatedContracts.filter((c) => c.systemId === sys.id);
+      const hasBreaches = linkedContracts.some((c) => c.status === "BREACH");
+      const hasWarnings = linkedContracts.some((c) => c.status === "WARNING");
+      const dataContractStatus = (hasBreaches ? "BREACH" : hasWarnings ? "WARNING" : "HEALTHY") as DataContractStatus;
+
+      // Clean resolved gaps from lists
+      let openGaps = [...(sys.openGaps ?? [])];
+      if (!hasBreaches) {
+        openGaps = openGaps.filter(
+          (g) =>
+            !g.toLowerCase().includes("phi redaction") &&
+            !g.toLowerCase().includes("denial_reason_category") &&
+            !g.toLowerCase().includes("diagnosis_code_icd11")
+        );
+      }
+
+      let releaseDecision = sys.releaseDecision;
+      if (dataContractStatus === "BREACH" || sys.evalScore < 75) {
+        releaseDecision = "blocked" as ReleaseDecision;
+      } else if (dataContractStatus === "WARNING" || sys.evalScore < 85 || openGaps.length > 0) {
+        releaseDecision = "review" as ReleaseDecision;
+      } else {
+        releaseDecision = "pass" as ReleaseDecision;
+      }
+
       return {
         ...sys,
-        dataContractStatus: "HEALTHY" as const,
-        releaseDecision: "pass" as const,
-        openGaps: [],
+        dataContractStatus,
+        releaseDecision,
+        openGaps,
       };
-    }
-
-    const linkedContracts = calculatedContracts.filter((c) => c.systemId === sys.id);
-    const hasBreaches = linkedContracts.some((c) => c.status === "BREACH");
-    const hasWarnings = linkedContracts.some((c) => c.status === "WARNING");
-    const dataContractStatus = (hasBreaches ? "BREACH" : hasWarnings ? "WARNING" : "HEALTHY") as DataContractStatus;
-
-    // Clean resolved gaps from lists
-    let openGaps = [...sys.openGaps];
-    if (!hasBreaches) {
-      openGaps = openGaps.filter(
-        (g) =>
-          !g.toLowerCase().includes("phi redaction") &&
-          !g.toLowerCase().includes("denial_reason_category") &&
-          !g.toLowerCase().includes("diagnosis_code_icd11")
-      );
-    }
-
-    let releaseDecision = sys.releaseDecision;
-    if (dataContractStatus === "BREACH" || sys.evalScore < 75) {
-      releaseDecision = "blocked" as ReleaseDecision;
-    } else if (dataContractStatus === "WARNING" || sys.evalScore < 85 || openGaps.length > 0) {
-      releaseDecision = "review" as ReleaseDecision;
-    } else {
-      releaseDecision = "pass" as ReleaseDecision;
-    }
-
-    return {
-      ...sys,
-      dataContractStatus,
-      releaseDecision,
-      openGaps,
-    };
-  });
+    });
+  }, [baseSystems, customSystems, calculatedContracts, overriddenSystems, liveSystems]);
 
   // Update selected drawers with recalculated values
   const updatedSelectedSystem = selectedSystem

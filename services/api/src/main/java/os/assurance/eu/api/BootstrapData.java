@@ -25,6 +25,9 @@ import os.assurance.eu.api.tenant.TenantJpaRepository;
 import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 import os.assurance.eu.api.tenant.UserRole;
+import os.assurance.eu.api.workflow.ApprovalWorkflowRepository;
+import os.assurance.eu.api.workflow.ApprovalWorkflowService;
+import os.assurance.eu.api.workflow.WorkflowTrigger;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -41,6 +44,8 @@ public class BootstrapData implements CommandLineRunner {
   private final AiSystemRepository systems;
   private final EvalDatasetJpaRepository evalDatasets;
   private final ReleaseGateService releaseGateService;
+  private final ApprovalWorkflowService approvalWorkflowService;
+  private final ApprovalWorkflowRepository approvalWorkflows;
   private final Environment environment;
   private final TenantContext tenantContext;
   private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
@@ -53,6 +58,8 @@ public class BootstrapData implements CommandLineRunner {
       AiSystemRepository systems,
       EvalDatasetJpaRepository evalDatasets,
       ReleaseGateService releaseGateService,
+      ApprovalWorkflowService approvalWorkflowService,
+      ApprovalWorkflowRepository approvalWorkflows,
       Environment environment,
       TenantContext tenantContext) {
     this.tenants = tenants;
@@ -62,6 +69,8 @@ public class BootstrapData implements CommandLineRunner {
     this.systems = systems;
     this.evalDatasets = evalDatasets;
     this.releaseGateService = releaseGateService;
+    this.approvalWorkflowService = approvalWorkflowService;
+    this.approvalWorkflows = approvalWorkflows;
     this.environment = environment;
     this.tenantContext = tenantContext;
   }
@@ -128,30 +137,40 @@ public class BootstrapData implements CommandLineRunner {
               now)));
     }
 
-    if (systemStore.existsByTenantId(TenantContext.DEFAULT_TENANT_ID)) {
-      return;
+    if (!systemStore.existsByTenantId(TenantContext.DEFAULT_TENANT_ID)) {
+      seed(
+          "Claims Triage AI",
+          "Insurance Ops",
+          "Prioritize and route insurance claims",
+          RiskClass.HIGH,
+          "Eligibility and access to essential private services",
+          72,
+          78,
+          DataContractStatus.BREACH,
+          List.of("Human oversight SOP missing", "Bias eval below threshold"));
+      seed(
+          "Support RAG Copilot",
+          "Customer Success",
+          "Answer customer support questions with cited sources",
+          RiskClass.LIMITED,
+          "Customer-facing assistant with transparency duty",
+          88,
+          86,
+          DataContractStatus.HEALTHY,
+          List.of("Update chatbot disclosure copy"));
     }
 
-    seed(
-        "Claims Triage AI",
-        "Insurance Ops",
-        "Prioritize and route insurance claims",
-        RiskClass.HIGH,
-        "Eligibility and access to essential private services",
-        72,
-        78,
-        DataContractStatus.BREACH,
-        List.of("Human oversight SOP missing", "Bias eval below threshold"));
-    seed(
-        "Support RAG Copilot",
-        "Customer Success",
-        "Answer customer support questions with cited sources",
-        RiskClass.LIMITED,
-        "Customer-facing assistant with transparency duty",
-        88,
-        86,
-        DataContractStatus.HEALTHY,
-        List.of("Update chatbot disclosure copy"));
+    // Lab/demo: open an approval cycle for systems that have never had a workflow
+    // (seed path used to skip openCycle; existing DBs may also be missing rows).
+    ensureApprovalWorkflows();
+  }
+
+  private void ensureApprovalWorkflows() {
+    for (AiSystem system : systems.findAll()) {
+      if (approvalWorkflows.findAllBySystemId(system.id()).isEmpty()) {
+        approvalWorkflowService.openCycle(system, WorkflowTrigger.SYSTEM_CREATED);
+      }
+    }
   }
 
   private void seedUser(String id, String email, UserRole role, Instant now) {
@@ -200,7 +219,7 @@ public class BootstrapData implements CommandLineRunner {
         now,
         now);
     ReleaseDecision decision = releaseGateService.calculate(draft).decision();
-    systems.save(new AiSystem(
+    AiSystem saved = systems.save(new AiSystem(
         draft.id(),
         draft.name(),
         draft.owner(),
@@ -222,5 +241,6 @@ public class BootstrapData implements CommandLineRunner {
         draft.affectedUsers(),
         draft.createdAt(),
         draft.updatedAt()));
+    approvalWorkflowService.openCycle(saved, WorkflowTrigger.SYSTEM_CREATED);
   }
 }

@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { siteConfig } from "@/lib/site-config";
 
-const GA_MEASUREMENT_ID =
-  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "";
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "";
 
-const inter = Inter({
+const plexSans = IBM_Plex_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const plexSerif = IBM_Plex_Serif({
+  variable: "--font-heading",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -19,6 +24,8 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
 });
+
+const themeBootScript = `(function(){try{var t=localStorage.getItem("eu-ai-theme");var d=t==="dark";var r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -79,8 +86,14 @@ export default function RootLayout({
     <html
       lang="en-GB"
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${plexSans.variable} ${plexSerif.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          // Apply stored theme before paint to avoid light/dark flash.
+          dangerouslySetInnerHTML={{ __html: themeBootScript }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
         {GA_MEASUREMENT_ID && process.env.NODE_ENV === "production" ? (

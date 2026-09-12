@@ -25,7 +25,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-eu_ai_assurance}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eu_ai_assurance}
     ports:
-      - "5432:5432"
+      # Dell lab overrides via .env.dell: POSTGRES_HOST_PORT=5433
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -42,7 +43,8 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     ports:
-      - "8080:8080"
+      # Dell lab overrides via .env.dell: API_HOST_PORT=9080
+      - "${API_HOST_PORT:-8080}:8080"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
       DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/eu_ai_assurance}

@@ -21,14 +21,26 @@ export function normaliseContractStatus(raw: string): DataContractStatus {
   return raw.toUpperCase() as DataContractStatus;
 }
 
+/** Deterministic UTC formatting so SSR and CSR match. */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("en-GB", {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+    hour12: false,
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/** Stable short stamp from an ISO string (no locale / timezone drift). */
+export function formatIsoStamp(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  // 2026-08-10T04:49:12.345Z → 2026-08-10 04:49
+  return iso.slice(0, 16).replace("T", " ");
 }
 
 export function decisionColor(decision: "Pass" | "Review" | "Blocked"): string {

@@ -12,6 +12,8 @@ const PROTECTED_PREFIXES = [
   "/evals",
   "/contracts",
   "/audit",
+  "/readiness",
+  "/reg-monitor",
 ];
 
 function isProtectedPath(pathname: string): boolean {
@@ -20,17 +22,23 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
+function hasSession(request: NextRequest): boolean {
+  return (
+    Boolean(request.cookies.get(ACCESS_COOKIE)?.value) ||
+    Boolean(request.cookies.get(REFRESH_COOKIE)?.value)
+  );
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Never bounce /login based on cookie presence — stale cookies plus a 401
+  // redirect created a /login ↔ /command reload loop in production.
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
 
-  const hasSession =
-    Boolean(request.cookies.get(ACCESS_COOKIE)?.value) ||
-    Boolean(request.cookies.get(REFRESH_COOKIE)?.value);
-
-  if (hasSession) {
+  if (hasSession(request)) {
     return NextResponse.next();
   }
 
@@ -42,12 +50,23 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/command",
     "/command/:path*",
+    "/systems",
     "/systems/:path*",
+    "/approvals",
     "/approvals/:path*",
+    "/evidence",
     "/evidence/:path*",
+    "/evals",
     "/evals/:path*",
+    "/contracts",
     "/contracts/:path*",
+    "/audit",
     "/audit/:path*",
+    "/readiness",
+    "/readiness/:path*",
+    "/reg-monitor",
+    "/reg-monitor/:path*",
   ],
 };

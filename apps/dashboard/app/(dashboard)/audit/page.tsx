@@ -1,10 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useAuditEvents } from "@/hooks/use-audit-events";
-import { MOCK_AUDIT_EVENTS } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import { ShieldCheck, FileText, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useDashboard } from "@/context/dashboard-context";
 
 const EVENT_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   RELEASE_GATE_CALCULATED: { icon: ShieldCheck,   color: "text-indigo-600 dark:text-indigo-400",  bg: "bg-indigo-50 dark:bg-indigo-950/50" },
@@ -71,8 +70,6 @@ function PayloadSummary({ eventType, payload }: { eventType: string; payload: Re
   }
   return null;
 }
-
-import { useDashboard } from "@/context/dashboard-context";
 
 export default function AuditPage() {
   const { allAudits: events } = useDashboard();

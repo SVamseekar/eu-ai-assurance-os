@@ -23,7 +23,20 @@ import type {
   WorkflowNotification,
 } from "./types";
 
+import { loginRedirectHref } from "./auth-redirect";
+
 const BASE = "/api/proxy";
+
+/** Parallel 401s must not keep assigning window.location (reload flicker). */
+let loginRedirectStarted = false;
+
+function redirectToLoginOnUnauthorized() {
+  if (typeof window === "undefined" || loginRedirectStarted) return;
+  const href = loginRedirectHref(window.location.pathname, window.location.search);
+  if (!href) return;
+  loginRedirectStarted = true;
+  window.location.assign(href);
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
@@ -35,8 +48,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers,
   });
-  if (res.status === 401 && typeof window !== "undefined") {
-    window.location.href = "/login";
+  if (res.status === 401) {
+    redirectToLoginOnUnauthorized();
   }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.status === 204 ? (null as T) : res.json();
@@ -71,8 +84,8 @@ export const api = {
      */
     evidencePackPdf: async (id: string): Promise<{ contentSha256: string; filename: string }> => {
       const res = await fetch(`${BASE}/systems/${id}/evidence-pack.pdf`);
-      if (res.status === 401 && typeof window !== "undefined") {
-        window.location.href = "/login";
+      if (res.status === 401) {
+        redirectToLoginOnUnauthorized();
       }
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const contentSha256 = res.headers.get("X-Content-Sha256") ?? "";
@@ -96,8 +109,8 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format }),
       });
-      if (res.status === 401 && typeof window !== "undefined") {
-        window.location.href = "/login";
+      if (res.status === 401) {
+        redirectToLoginOnUnauthorized();
       }
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const readinessStatus = res.headers.get("X-Readiness-Status") ?? "";

@@ -1,8 +1,10 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
+import { LogOut, Moon, Sun, FileJson, FileText, RefreshCw } from "lucide-react";
 
 interface HeaderProps {
   title: string;
@@ -21,7 +23,23 @@ export function Header({
   onRunControls,
   exportBusy,
 }: HeaderProps) {
-  const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
+  // Theme class is set pre-hydration via layout script; icon still waits for mount.
+  const [mounted, setMounted] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <header className="flex justify-between items-start gap-6 mb-6">
@@ -31,11 +49,11 @@ export function Header({
       </div>
       <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
         <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label="Toggle theme"
           className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
         <Button
           variant="outline"
@@ -60,6 +78,17 @@ export function Header({
         <Button size="sm" className="h-8 text-xs font-medium" onClick={onRunControls}>
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
           Refresh
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-medium"
+          onClick={handleSignOut}
+          disabled={signingOut}
+          aria-label="Sign out"
+        >
+          <LogOut className="h-3.5 w-3.5 mr-1.5" />
+          {signingOut ? "Signing out…" : "Sign out"}
         </Button>
       </div>
     </header>
