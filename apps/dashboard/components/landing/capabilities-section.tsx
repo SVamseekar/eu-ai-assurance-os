@@ -1,12 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { capabilities } from "@/lib/landing-content";
 
-export function CapabilitiesSection({ showHeading = true }: { showHeading?: boolean }) {
+export function CapabilitiesSection({
+  showHeading = true,
+  heading = "What's in the control plane",
+}: {
+  showHeading?: boolean;
+  heading?: string;
+}) {
   return (
     <section aria-label="Product capabilities" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       {showHeading ? (
         <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-          Everything a release decision needs, in one place
+          {heading}
         </h2>
       ) : null}
       <div className={showHeading ? "mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>

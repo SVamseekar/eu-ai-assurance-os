@@ -10,6 +10,287 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+/** Primary-law sources cited on marketing pages. Not legal advice. */
+export const actSources = {
+  aiAct: {
+    label: "Regulation (EU) 2024/1689",
+    href: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+  },
+  omnibus: {
+    label: "Regulation (EU) 2026/1744",
+    href: "https://eur-lex.europa.eu/eli/reg/2026/1744/oj",
+  },
+} as const;
+
+export const actTimeline = [
+  {
+    date: "2 August 2026",
+    status: "In force",
+    title: "Article 50 transparency",
+    body: "Disclose AI interaction when it is not obvious, mark synthetic content, and inform people exposed to certain recognition systems. The high-risk deferral did not move this date.",
+  },
+  {
+    date: "2 December 2027",
+    status: "Upcoming",
+    title: "Annex III high-risk duties",
+    body: "Standalone high-risk systems — including many employment, credit, and essential-services uses — after the Digital Omnibus on AI.",
+  },
+  {
+    date: "2 August 2028",
+    status: "Upcoming",
+    title: "Annex I embedded high-risk",
+    body: "AI embedded in regulated products listed in Annex I. A separate track from standalone Annex III systems.",
+  },
+] as const;
+
+export const releaseDecisionMeanings = [
+  {
+    decision: "PASS",
+    meaning:
+      "Evidence, evals, contracts, and promotion checks all clear the configured bar. The sealed pack can be exported.",
+  },
+  {
+    decision: "REVIEW",
+    meaning:
+      "Something is incomplete or under the review threshold. Owner, compliance, or legal still have to act.",
+  },
+  {
+    decision: "BLOCKED",
+    meaning:
+      "A hard stop: open contract breach, prohibited class, missing high-risk oversight, or a promotion file that does not pass.",
+  },
+] as const;
+
+export const gateInputs = [
+  {
+    title: "Cited evidence",
+    body: "Indexed policy docs, DPIAs, model cards, and vendor files. Coverage below the bar does not pass.",
+  },
+  {
+    title: "Eval scores",
+    body: "Latest completed run against the system’s thresholds. Miss the threshold and the gate does not pass.",
+  },
+  {
+    title: "Data contracts",
+    body: "Open BREACH drift on an input schema blocks release until it is closed.",
+  },
+  {
+    title: "Promotion files",
+    body: "Evgraph checks approval-before-deploy and dataset license. Missing fields are not invented.",
+  },
+] as const;
+
+export const productNotThis = [
+  {
+    title: "Not a notified body",
+    body: "We do not assess conformity for placing a high-risk system on the market, and we do not issue a certificate or CE mark.",
+  },
+  {
+    title: "Not legal advice",
+    body: "Risk class and obligation maps are assisted records you own. Counsel still signs the legal determination.",
+  },
+  {
+    title: "Not a public price list",
+    body: "Work is scoped after a demo, for named systems, with a written quote. There is no self-serve checkout.",
+  },
+] as const;
+
+export const methodSteps = [
+  {
+    title: "Read what is already public",
+    description:
+      "Press notes, product pages, and AI Act stance pages the organisation published. Every example on this site cites a URL.",
+  },
+  {
+    title: "Rebuild only what those pages support",
+    description:
+      "A model card can often be reconstructed. An approval timestamp or dataset license usually cannot — public pages rarely publish them.",
+  },
+  {
+    title: "Run the same fail-closed checks",
+    description:
+      "The same promotion and dataset checks used on customer systems. If a required field is missing, the check does not pass. We do not fill gaps.",
+  },
+] as const;
+
+export const methodLimits = [
+  "We do not invent an approval timestamp or dataset license.",
+  "We do not treat a published legal stance as a release record.",
+  "We do not call a company non-compliant or illegal.",
+  "Named organisations are examples, not customers.",
+] as const;
+
+export const typicalSectors = [
+  {
+    title: "Insurance",
+    body: "Claims, advice, and contract-close assistants that already appear in public product copy.",
+  },
+  {
+    title: "Consumer credit",
+    body: "Scoring and automation in lending — high-stakes if the use is Annex III-shaped.",
+  },
+  {
+    title: "Recruitment and HR",
+    body: "Matching, ranking, and selection tools. Employment-shaped uses need extra care; this is not a legal class.",
+  },
+  {
+    title: "Internal assistants",
+    body: "Support RAG and chat that still need Article 50 disclosure even when they are not high-risk.",
+  },
+] as const;
+
+export const packContents = [
+  "Release decision and the controls behind it",
+  "Cited evidence snapshot and eval run",
+  "Contract status and open drift",
+  "Approvals and human-oversight records",
+  "Evgraph promotion and dataset artifacts",
+  "Annex IV-shaped checklist — not a legal instrument",
+] as const;
+
+export const quotingSteps = [
+  {
+    title: "Demo one named system",
+    body: "A short call on the system you actually ship — owner, purpose, data, and where it runs.",
+  },
+  {
+    title: "Written quote",
+    body: "Fees, term, and scope in writing. Nothing is billed from a public page.",
+  },
+  {
+    title: "Readiness work, then a pack",
+    body: "Register, classify, run the gates, export the sealed pack, and readout with the people who own the release.",
+  },
+] as const;
+
+export type RelatedLink = {
+  href: string;
+  title: string;
+  description: string;
+};
+
+export const relatedByPath: Record<string, RelatedLink[]> = {
+  "/product": [
+    {
+      href: "/how-it-works",
+      title: "How it works",
+      description: "Four steps from register to PASS, REVIEW, or BLOCKED.",
+    },
+    {
+      href: "/method",
+      title: "Method",
+      description: "What a fail-closed check sees on public pages.",
+    },
+    {
+      href: "/faq",
+      title: "FAQ",
+      description: "Dates, risk class, evidence packs, and how to start.",
+    },
+  ],
+  "/how-it-works": [
+    {
+      href: "/product",
+      title: "Product",
+      description: "Registry, evidence, evals, contracts, and the sealed pack.",
+    },
+    {
+      href: "/who-its-for",
+      title: "Who it's for",
+      description: "Engineering, compliance, legal, data, product, and audit.",
+    },
+    {
+      href: "/request-demo",
+      title: "Request a demo",
+      description: "Walk through a release decision on one named system.",
+    },
+  ],
+  "/who-its-for": [
+    {
+      href: "/product",
+      title: "Product",
+      description: "What sits in the control plane.",
+    },
+    {
+      href: "/how-it-works",
+      title: "How it works",
+      description: "The path from register to sealed pack.",
+    },
+    {
+      href: "/pricing",
+      title: "How we work",
+      description: "Demo first, then a written quote.",
+    },
+  ],
+  "/method": [
+    {
+      href: "/faq",
+      title: "FAQ",
+      description: "Are named firms customers? What is Evgraph?",
+    },
+    {
+      href: "/product",
+      title: "Product",
+      description: "The same gates, used on your systems.",
+    },
+    {
+      href: "/disclaimer",
+      title: "Disclaimer",
+      description: "Not a notified body and not a legal finding.",
+    },
+  ],
+  "/faq": [
+    {
+      href: "/method",
+      title: "Method",
+      description: "How public-claims examples are built.",
+    },
+    {
+      href: "/how-it-works",
+      title: "How it works",
+      description: "What PASS, REVIEW, and BLOCKED mean.",
+    },
+    {
+      href: "/pricing",
+      title: "How we work",
+      description: "Commercial work after a demo — not a price list.",
+    },
+  ],
+  "/pricing": [
+    {
+      href: "/request-demo",
+      title: "Request a demo",
+      description: "Start with one named AI system.",
+    },
+    {
+      href: "/product",
+      title: "Product",
+      description: "What the control plane actually does.",
+    },
+    {
+      href: "/faq",
+      title: "FAQ",
+      description: "Certification, GRC tools, and how to start.",
+    },
+  ],
+  "/request-demo": [
+    {
+      href: "/product",
+      title: "Product",
+      description: "What you will see in the walkthrough.",
+    },
+    {
+      href: "/how-it-works",
+      title: "How it works",
+      description: "The four steps behind a release decision.",
+    },
+    {
+      href: "/pricing",
+      title: "How we work",
+      description: "Quote after the call, not on this page.",
+    },
+  ],
+};
+
 export type Capability = {
   icon: LucideIcon;
   title: string;
@@ -21,49 +302,49 @@ export const capabilities: Capability[] = [
     icon: Server,
     title: "AI System Registry",
     description:
-      "Record every AI system with owner, purpose, risk class, deployment context, vendor/model info, data sources, and release status in one place.",
+      "The AI system register: owner, purpose, risk class, deployment context, vendor and model, data sources, and release status — the inventory EU AI Act work actually starts from.",
   },
   {
     icon: ShieldCheck,
     title: "Risk Classification",
     description:
-      "A guided workflow records risk class, rationale, affected users, sector, decision impact, and the controls each tier requires.",
+      "Record prohibited, high, limited, or minimal risk with rationale, affected users, sector, and decision impact. The tier sets which controls must be on file before release.",
   },
   {
     icon: FileSearch,
     title: "Evidence RAG",
     description:
-      "Get cited answers from policy docs, DPIAs, model cards, vendor docs, incident records, and data contracts — no more digging through shared drives.",
+      "Cited answers from DPIAs, model cards, vendor docs, incident records, and data contracts. Technical documentation stays attached to the system, not lost in a shared drive.",
   },
   {
     icon: FlaskConical,
     title: "Eval Gates",
     description:
-      "Store eval datasets, model and prompt versions, scores, thresholds, and guard metrics that feed directly into the release decision.",
+      "Datasets, model and prompt versions, scores, and thresholds feed the gate. The latest completed run must meet the bar or the release does not pass.",
   },
   {
     icon: GitBranch,
     title: "Data Contract Monitor",
     description:
-      "Track input schemas, semantic contracts, lineage, and drift events — with severity and remediation state visible before release.",
+      "Input schemas, lineage, and drift events with severity. An open breach-severity event blocks the release until it is remediated.",
   },
   {
     icon: ClipboardCheck,
     title: "Approval Workflow & Audit Ledger",
     description:
-      "Route blocked or in-review systems through owner, compliance, legal, and human-oversight approvals, with an append-only audit trail of every decision.",
+      "Route REVIEW and BLOCKED systems through owner, compliance, legal, and human-oversight sign-off. Every decision is written to a hash-chained audit ledger.",
   },
   {
     icon: BadgeCheck,
     title: "Certification readiness automation",
     description:
-      "Weighted readiness score (0–100) and structured gap report toward conformity documentation — never a legal certificate or notified-body attestation.",
+      "A 0–100 readiness score and gap report toward Annex IV-shaped documentation. It is a worklist, not a certificate and not a notified-body attestation.",
   },
   {
     icon: ScanSearch,
     title: "Evgraph promotion & dataset gates",
     description:
-      "Promotion and dataset-license checks sit beside the release gate. If an approval timestamp or dataset license is missing, the gate does not pass.",
+      "A separate library checks approval-before-deploy and dataset licenses. Missing timestamps or licenses fail closed. We do not invent the fields.",
   },
 ];
 
@@ -76,22 +357,22 @@ export const howItWorksSteps: HowItWorksStep[] = [
   {
     title: "Register the system",
     description:
-      "Add the AI system with its owner, purpose, deployment context, and data sources.",
+      "Add the AI system with owner, purpose, deployment context, and data sources. This is the register the rest of the gate reads from.",
   },
   {
     title: "Classify risk & attach evidence",
     description:
-      "Record the risk tier and rationale, then attach DPIAs, model cards, vendor docs, and policy evidence.",
+      "Record prohibited, high, limited, or minimal risk and why. Attach DPIAs, model cards, vendor docs, and the human-oversight record high-risk systems need.",
   },
   {
     title: "Run Evgraph, evals, and contracts",
     description:
-      "Evgraph checks promotion timestamps and dataset licenses. Eval scores and open contract breaches also feed the gate.",
+      "Evgraph checks promotion timestamps and dataset licenses. Eval scores and open data-contract breaches feed the same decision. Missing files do not pass.",
   },
   {
     title: "Get a release decision",
     description:
-      "Receive a PASS, REVIEW, or BLOCKED decision with the controls behind it, and export a sealed evidence pack (JSON + PDF) that includes the Evgraph artifacts.",
+      "Take PASS, REVIEW, or BLOCKED with the controls behind it. Export a sealed evidence pack (JSON + PDF hash) that includes the Evgraph artifacts.",
   },
 ];
 
@@ -104,32 +385,32 @@ export const personas: Persona[] = [
   {
     role: "AI Engineering Lead",
     description:
-      "Get release gates for model and prompt changes, wired to eval scores and thresholds you control.",
+      "Ship model and prompt changes behind a gate wired to eval scores you set. A failed run is a REVIEW or BLOCKED, not a Slack thread.",
   },
   {
     role: "Compliance Officer",
     description:
-      "See evidence that every AI system meets its regulatory obligations, with citations you can hand to an auditor.",
+      "See, per system, which EU AI Act-style obligations are on file, with citations you can hand to an auditor — without claiming a legal determination.",
   },
   {
     role: "Legal Counsel",
     description:
-      "Get documented risk classifications, oversight records, and audit trails for every release decision.",
+      "Documented risk class, oversight records, and a hash-chained trail of who approved what. Counsel still owns the legal opinion.",
   },
   {
     role: "Data Platform Lead",
     description:
-      "Monitor data-contract drift and lineage so a broken upstream schema can't silently block or sink a release.",
+      "See schema drift before release. An open BREACH on an upstream contract is a hard stop, not a surprise in production.",
   },
   {
     role: "Product Owner",
     description:
-      "Get a clear PASS, REVIEW, or BLOCKED decision before launch — with the reasons, not just a status.",
+      "A single PASS, REVIEW, or BLOCKED before launch, with the reasons — so go-live is not a committee of inboxes.",
   },
   {
     role: "Auditor",
     description:
-      "Review an immutable record of who approved what, when, and on what evidence.",
+      "Review who approved what, when, and on which evidence pack. The ledger is append-only.",
   },
 ];
 
@@ -217,63 +498,73 @@ export const homeDestinations = [
     href: "/product",
     title: "Product",
     description:
-      "Registry, risk class, cited evidence, eval gates, contracts, approvals, and a sealed pack — one release decision.",
+      "EU AI Act control plane: system register, risk class, cited evidence, eval gates, contracts, approvals, sealed pack.",
   },
   {
     href: "/how-it-works",
     title: "How it works",
     description:
-      "Register → classify → run Evgraph, evals, and contracts → PASS / REVIEW / BLOCKED.",
-  },
-  {
-    href: "/request-demo",
-    title: "Talk to us",
-    description:
-      "Request a demo for one named system. We follow up with a written quote.",
+      "Register, classify, run promotion and eval checks, then take PASS, REVIEW, or BLOCKED.",
   },
   {
     href: "/method",
     title: "Method",
     description:
-      "What a fail-closed check sees from pages a company already published. Named firms are examples, not customers.",
+      "What a fail-closed check sees on pages a company already published. Named firms are examples, not customers.",
+  },
+  {
+    href: "/faq",
+    title: "FAQ",
+    description:
+      "Article 50 dates, Annex III high-risk, evidence packs, and how commercial work starts.",
   },
 ] as const;
 
 export const faqItems: FaqItem[] = [
   {
-    question: "How do you start?",
+    question: "What is the EU AI Act?",
     answer:
-      "Request a demo. We scope one named AI system and send a written quote. This is not a self-serve subscription and not a legal certificate.",
+      "Regulation (EU) 2024/1689 is the EU’s risk-based law for placing and using AI systems on the Union market. Duties depend on risk class and on whether you are a provider or a deployer. This product organises evidence against those duties. It is not legal advice.",
   },
   {
-    question: "Are the named EU companies on this site customers?",
+    question: "When do high-risk AI duties apply?",
     answer:
-      "No. Those examples are reconstructed from pages the organisations already published. They are not customers, not legal findings, and not accusations of non-compliance. Annex III high-risk duties apply from 2 December 2027; Article 50 has applied since 2 August 2026.",
+      "Standalone Annex III high-risk obligations apply from 2 December 2027 under Regulation (EU) 2026/1744. AI embedded in Annex I products applies from 2 August 2028. Article 50 transparency has applied since 2 August 2026 and was not deferred.",
   },
   {
-    question: "What is Evgraph?",
+    question: "What is Article 50 of the EU AI Act?",
     answer:
-      "A promotion and dataset-license check that sits beside the release gate. If an approval timestamp or dataset license is not in the files, the check does not pass. We do not invent missing fields.",
+      "Article 50 is the transparency layer: disclose AI interaction when it is not obvious, mark synthetic content in a machine-readable way, and inform people exposed to certain emotion-recognition or biometric systems. It can apply even when the system is not high-risk.",
   },
   {
     question: "What is an EU AI Act risk classification?",
     answer:
-      "It's the tier (e.g. minimal, limited, high) assigned to an AI system based on its sector, decision impact, and affected users. The tier determines which controls and evidence are required before release.",
+      "The tier assigned to a system — prohibited, high, limited, or minimal — from its intended use, sector, decision impact, and affected users. Annex III lists use cases presumed high-risk. The tier sets which controls and evidence this product requires before release.",
+  },
+  {
+    question: "Does this certify my AI system or replace a notified body?",
+    answer:
+      "No. EU AI Assurance OS is software for your own release governance. It is not a notified body, not a CE-mark issuer, and not a legal certificate. Counsel still owns the determination of obligations.",
+  },
+  {
+    question: "How is this different from a GRC platform?",
+    answer:
+      "Most GRC tools inventory policies and collect evidence across many frameworks. This is a fail-closed release gate for AI systems: missing evidence, a failed eval, an open contract breach, or a missing promotion timestamp does not pass.",
+  },
+  {
+    question: "What is Evgraph?",
+    answer:
+      "A separate library that checks promotion files and dataset licenses beside the release gate. If an approval timestamp or dataset license is not in the files, the check does not pass. We do not invent missing fields.",
   },
   {
     question: "What is an evidence pack?",
     answer:
-      "An evidence pack is a deterministic, exportable bundle of the documents, citations, eval results, and approvals behind a release decision — built for audit review.",
+      "A sealed, exportable bundle (JSON plus a hashed PDF) of the documents, citations, eval results, contract status, approvals, and Evgraph artifacts behind a release decision — built for audit review, not as a legal Annex IV filing.",
   },
   {
-    question: "How does an eval gate determine release readiness?",
+    question: "Are the named EU companies on this site customers?",
     answer:
-      "Each AI system has eval runs scored against thresholds for faithfulness, bias, refusal behavior, accuracy, latency, and cost. The latest completed run must meet its threshold for the release gate to pass.",
-  },
-  {
-    question: "What counts as a data contract drift event?",
-    answer:
-      "A drift event is recorded when an input data source no longer matches its agreed schema or semantic contract. An open breach-severity drift event blocks the release gate until it's resolved.",
+      "No. Those examples are reconstructed from pages the organisations already published. They are not customers, not legal findings, and not accusations of non-compliance.",
   },
   {
     question: "Who needs to approve a high-risk AI system release?",
@@ -281,8 +572,13 @@ export const faqItems: FaqItem[] = [
       "High-risk systems route through owner, compliance, and legal approval, and require documented human-oversight evidence before the release gate can pass.",
   },
   {
-    question: "Does this replace a legal determination of EU AI Act obligations?",
+    question: "What counts as a data-contract drift event?",
     answer:
-      "No. EU AI Assurance OS is a control plane that organizes evidence, evals, and approvals against EU AI Act-style obligations — it doesn't provide legal certification or a final legal determination.",
+      "A drift event is recorded when an input source no longer matches its agreed schema or semantic contract. An open breach-severity event blocks the release gate until it is closed.",
+  },
+  {
+    question: "How do you start?",
+    answer:
+      "Request a demo. We scope one named AI system and send a written quote. This is not a self-serve subscription and not a legal certificate.",
   },
 ];

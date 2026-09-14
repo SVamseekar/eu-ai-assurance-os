@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "EU AI Assurance OS",
   shortName: "Assurance OS",
   description:
-    "Fail-closed release governance for AI systems in the EU market. Register systems, classify risk, cite evidence, run eval and data-contract gates, and export a sealed pack. Evgraph (a separate library) checks promotion and dataset files. Not a notified body and not legal certification.",
+    "Fail-closed EU AI Act release gates. Register AI systems, classify risk, cite evidence, and only ship when evals, contracts, and promotion files pass. Article 50 is live. Not a notified body.",
   url:
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ??
     "https://euassuranceai.souravamseekar.com",

@@ -10,8 +10,8 @@ export function HomeDestinations() {
         Explore the product
       </h2>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        See how a release decision is made, how we read public AI claims, and
-        how to start a conversation about your systems.
+        See the control plane, how a release decision is made, and how we read
+        public AI claims.
       </p>
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {homeDestinations.map((item) => (
