@@ -35,8 +35,7 @@ export default function OrderFormPage() {
           <p className="mt-2">
             <strong>EU AI Act release readiness sprint</strong> — one named AI
             system. Fees, extra systems, term, and payment schedule are those
-            set out in the written quote. This page is a template, not an offer
-            of a list price.
+            set out in the written quote.
           </p>
         </section>
         <section>

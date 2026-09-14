@@ -63,7 +63,7 @@ export const capabilities: Capability[] = [
     icon: ScanSearch,
     title: "Evgraph promotion & dataset gates",
     description:
-      "Export the model-card, approval, and dataset-manifest files the Evgraph library already reads. This repository does not vendor Evgraph. scan-promotion --gate --strict and scan-dataset-manifest --gate fail closed when timestamps or licenses are missing.",
+      "Promotion and dataset-license checks sit beside the release gate. If an approval timestamp or dataset license is missing, the gate does not pass.",
   },
 ];
 
@@ -86,7 +86,7 @@ export const howItWorksSteps: HowItWorksStep[] = [
   {
     title: "Run Evgraph, evals, and contracts",
     description:
-      "Evgraph (a separate PyPI library) scans promotion timestamps and dataset licenses. Assurance OS scores evals and blocks on open BREACH drift. Missing public timestamps are INCONCLUSIVE, not invented.",
+      "Evgraph checks promotion timestamps and dataset licenses. Eval scores and open contract breaches also feed the gate.",
   },
   {
     title: "Get a release decision",
@@ -171,7 +171,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceUrl:
       "https://www.hellogetsafe.com/en-de/press-releases/getsafe-relies-on-ai-instead-of-licenses",
     evgraphNote:
-      "Public pages do not publish an approval timestamp or dataset license. Promotion --strict is INCONCLUSIVE; dataset-manifest-complete is not met.",
+      "Public pages do not publish an approval timestamp or dataset license, so the check does not pass.",
   },
   {
     slug: "auxmoney",
@@ -184,7 +184,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceUrl:
       "https://www.it-finanzmagazin.de/granular-statt-pauschal-kreditwuerdigkeit-im-detail-verstehen-237084/",
     evgraphNote:
-      "Public pages do not publish an approval timestamp or dataset license. Same fail-closed result.",
+      "Public pages do not publish an approval timestamp or dataset license, so the check does not pass.",
   },
   {
     slug: "softgarden",
@@ -196,7 +196,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceTitle: "AI recruitment solutions — softgarden",
     sourceUrl: "https://softgarden.com/en/ai-recruitment/",
     evgraphNote:
-      "No public approval or deploy timestamp. Highlighting applicants is employment-shaped; this is not a legal classification.",
+      "No public approval or deploy timestamp. Ranking applicants is employment-shaped — this is not a legal classification.",
   },
   {
     slug: "retorio",
@@ -208,7 +208,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceTitle: "The AI Act — Retorio",
     sourceUrl: "https://www.retorio.com/en/ai-act",
     evgraphNote:
-      "A published legal stance is not a machine-checkable approval or eval pack. This teaser does not adjudicate Article 5.",
+      "A published legal stance is not the same as an approval record or eval pack. This example does not adjudicate Article 5.",
   },
 ];
 
@@ -229,36 +229,31 @@ export const homeDestinations = [
     href: "/request-demo",
     title: "Talk to us",
     description:
-      "Scoped readiness work for one named system. Quote after a short call — not a self-serve subscription.",
+      "Request a demo for one named system. We follow up with a written quote.",
   },
   {
     href: "/method",
     title: "Method",
     description:
-      "Public pages in, fail-closed checks out. Named EU firms are teasers reconstructed from cited pages — not customers.",
+      "What a fail-closed check sees from pages a company already published. Named firms are examples, not customers.",
   },
 ] as const;
 
 export const faqItems: FaqItem[] = [
   {
-    question: "How do you charge?",
+    question: "How do you start?",
     answer:
-      "Like other EU AI Act governance vendors, we do not publish a list price. Work is scoped to one named AI system after a short call, then we send a written quote. It is not a notified-body certificate and not a self-serve subscription.",
+      "Request a demo. We scope one named AI system and send a written quote. This is not a self-serve subscription and not a legal certificate.",
   },
   {
     question: "Are the named EU companies on this site customers?",
     answer:
-      "No. Public-claims teasers reconstruct model cards from pages those organisations already published. They are not customers, not legal findings, and not accusations of non-compliance. Annex III high-risk duties apply from 2 December 2027; Article 50 has applied since 2 August 2026.",
+      "No. Those examples are reconstructed from pages the organisations already published. They are not customers, not legal findings, and not accusations of non-compliance. Annex III high-risk duties apply from 2 December 2027; Article 50 has applied since 2 August 2026.",
   },
   {
-    question: "What is Evgraph, and is it in this repository?",
+    question: "What is Evgraph?",
     answer:
-      "Evgraph is a separate BSD-licensed Python library on PyPI. This product does not vendor it. Assurance OS exports the JSON and CSV files the library already reads, and the sprint runs those scans with --gate (and --strict on promotion). Missing timestamps stay INCONCLUSIVE — we do not invent approved_at.",
-  },
-  {
-    question: "What is public in the GitHub repo versus private to the operator?",
-    answer:
-      "The MIT repository is product source, template DPA/MSA/order form, and sourced public-claims packs. Operator lab files (.local), git worktrees, .env secrets, outreach queues, invoices, and customer tenant data are not in git. Hosted postgres must keep ASSURANCE_PUBLIC_CLAIMS=false.",
+      "A promotion and dataset-license check that sits beside the release gate. If an approval timestamp or dataset license is not in the files, the check does not pass. We do not invent missing fields.",
   },
   {
     question: "What is an EU AI Act risk classification?",

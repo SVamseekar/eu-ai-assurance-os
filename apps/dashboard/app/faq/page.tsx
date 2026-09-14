@@ -11,7 +11,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "FAQ";
 const description =
-  "What we sell, what Evgraph is, what is public in git, and what a release gate actually decides. Not legal advice.";
+  "How a release gate works, what Evgraph checks, and how to start. Not legal advice.";
 
 export const metadata: Metadata = {
   title,

@@ -7,12 +7,11 @@ export function HomeDestinations() {
   return (
     <section aria-label="Explore the product" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
       <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-        Separate pages, not a long scroll
+        Explore the product
       </h2>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        Product, method, and FAQ each have their own URL. Commercial work is
-        scoped after a demo — not a public price list. Lab secrets, outreach
-        lists, and customer tenants are not in git.
+        See how a release decision is made, how we read public AI claims, and
+        how to start a conversation about your systems.
       </p>
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {homeDestinations.map((item) => (

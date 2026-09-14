@@ -41,8 +41,7 @@ export function LandingHero() {
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
             Evgraph checks the files. {siteConfig.name} turns evidence, evals,
             and contracts into PASS, REVIEW, or BLOCKED — with a sealed pack.
-            Not a notified body. Commercial work is scoped after a demo, not
-            listed as a public price.
+            Not a notified body and not legal certification.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" render={<Link href="/request-demo" />}>
@@ -83,12 +82,11 @@ export function LandingHero() {
             </li>
           </ul>
           <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
-            Demo fixture, not a customer. Public-claims teasers of named EU
-            firms live on{" "}
+            Illustrative example.{" "}
             <Link href="/method" className="underline-offset-2 hover:underline">
-              Method
-            </Link>{" "}
-            and are labelled in the registry.
+              See how we read public AI claims
+            </Link>
+            .
           </p>
         </div>
       </div>

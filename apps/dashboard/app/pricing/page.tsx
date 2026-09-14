@@ -11,7 +11,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "How we work";
 const description =
-  "Scoped EU AI Act readiness work for one named system. Quote after a short call — not a published list price, not a self-serve subscription, not a certificate.";
+  "Start with a demo. We scope one named AI system and send a written quote. Not a self-serve subscription and not a certificate.";
 
 export const metadata: Metadata = {
   title,
@@ -41,7 +41,7 @@ export default function PricingPage() {
     <MarketingPageShell jsonLd={jsonLd()}>
       <PageIntro
         eyebrow="Commercial"
-        title="Scoped engagement, not a public price list"
+        title="Start with a demo"
         description={description}
       />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
@@ -54,8 +54,8 @@ export default function PricingPage() {
               Release readiness sprint
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              One named AI system. Fees and term are in the written quote after
-              a demo. We do not publish a starting amount on this site.
+              One named AI system. After a short call we send a written quote
+              with fees and term.
             </p>
             <ul className="mt-6 space-y-3 text-sm text-foreground/90">
               <li>Evgraph library scan (approval-before-deploy, dataset license) — you keep the CLI</li>
