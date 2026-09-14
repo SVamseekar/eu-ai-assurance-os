@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 
 import { CtaSection } from "@/components/landing/cta-section";
@@ -6,43 +5,51 @@ import {
   MarketingPageShell,
   PageIntro,
 } from "@/components/landing/marketing-page-shell";
+import { RelatedPages } from "@/components/landing/related-pages";
 import { Button } from "@/components/ui/button";
+import { quotingSteps } from "@/lib/landing-content";
+import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 
 const title = "How we work";
 const description =
   "Start with a demo. We scope one named AI system and send a written quote. Not a self-serve subscription and not a certificate.";
+const path = "/pricing";
+const crumbs = [
+  { name: "Home", path: "/" },
+  { name: "How we work", path },
+];
 
-export const metadata: Metadata = {
+export const metadata = marketingMetadata({
   title,
   description,
-  alternates: { canonical: "/pricing" },
-  openGraph: {
-    title: `${title} — ${siteConfig.name}`,
-    description,
-    url: `${siteConfig.url}/pricing`,
-    type: "website",
-  },
-};
-
-function jsonLd() {
-  return {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: `${title} — ${siteConfig.name}`,
-    description,
-    url: `${siteConfig.url}/pricing`,
-    inLanguage: "en-GB",
-  };
-}
+  path,
+  keywords: [
+    "EU AI Act demo",
+    "AI governance quote",
+    "release readiness",
+    "how EU AI Act software is scoped",
+  ],
+});
 
 export default function PricingPage() {
   return (
-    <MarketingPageShell jsonLd={jsonLd()}>
+    <MarketingPageShell
+      jsonLd={webPageJsonLd({
+        name: `${title} — ${siteConfig.name}`,
+        description,
+        path,
+        crumbs,
+      })}
+    >
       <PageIntro
         eyebrow="Commercial"
         title="Start with a demo"
         description={description}
+        crumbs={[
+          { href: "/", label: "Home" },
+          { href: path, label: "How we work" },
+        ]}
       />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
@@ -51,19 +58,26 @@ export default function PricingPage() {
               Typical first engagement
             </p>
             <h2 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
-              Release readiness sprint
+              Release readiness on one system
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
               One named AI system. After a short call we send a written quote
-              with fees and term.
+              with fees and term. Competitors in this category quote the same
+              way — there is no public price list.
             </p>
             <ul className="mt-6 space-y-3 text-sm text-foreground/90">
-              <li>Evgraph library scan (approval-before-deploy, dataset license) — you keep the CLI</li>
+              <li>
+                Evgraph scan of promotion and dataset files — you keep the
+                library
+              </li>
               <li>
                 System registered in {siteConfig.name}: risk class, assisted
                 obligation map, PASS / REVIEW / BLOCKED
               </li>
-              <li>Sealed evidence pack (JSON + PDF hash) including Annex IV-shaped checklist</li>
+              <li>
+                Sealed evidence pack (JSON + PDF hash), including an Annex
+                IV-shaped checklist
+              </li>
               <li>Optional CI snippets for both gates</li>
               <li>Readout with the people who own the release</li>
             </ul>
@@ -109,6 +123,28 @@ export default function PricingPage() {
           </aside>
         </div>
       </section>
+
+      <section className="border-y border-border bg-muted/40">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            After the demo
+          </h2>
+          <ol className="mt-8 grid gap-6 md:grid-cols-3">
+            {quotingSteps.map((step, index) => (
+              <li key={step.title}>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                  {index + 1}
+                </div>
+                <h3 className="mt-3 font-heading text-base font-semibold">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+      <RelatedPages path={path} />
       <CtaSection />
     </MarketingPageShell>
   );

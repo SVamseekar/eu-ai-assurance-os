@@ -21,7 +21,7 @@ export function ProblemSection() {
     <section aria-label="The problem" className="border-y border-border bg-muted/40">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-          Releasing AI in the EU shouldn't mean a fire drill
+          EU AI Act work stalls when evidence lives in inboxes
         </h2>
         <div className="mt-8 grid gap-8 sm:grid-cols-3">
           {problems.map((problem) => (

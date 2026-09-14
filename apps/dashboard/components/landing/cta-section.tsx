@@ -10,8 +10,8 @@ export function CtaSection() {
           Ready to see your release gate?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Request a demo for one named system, or sign in if you already have a
-          workspace. This is not a legal certificate.
+          Request a demo for one named AI system. We follow up with a written
+          quote. This is not a legal certificate.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" render={<Link href="/request-demo" />}>

@@ -1,55 +1,69 @@
-import type { Metadata } from "next";
+import Link from "next/link";
 
 import { DemoRequestForm } from "@/components/landing/demo-request-form";
 import { MarketingPageShell } from "@/components/landing/marketing-page-shell";
+import { RelatedPages } from "@/components/landing/related-pages";
+import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 
 const title = "Request a demo";
 const description =
-  "Request a walkthrough of fail-closed gates, Evgraph artifacts, and sealed evidence packs. Work is scoped after the call. Not legal certification.";
+  "Walk through fail-closed gates, promotion checks, and a sealed evidence pack on one named AI system. Work is scoped after the call. Not legal certification.";
+const path = "/request-demo";
+const crumbs = [
+  { name: "Home", path: "/" },
+  { name: "Request a demo", path },
+];
 
-export const metadata: Metadata = {
+export const metadata = marketingMetadata({
   title,
   description,
-  alternates: { canonical: "/request-demo" },
-  openGraph: {
-    title: `${title} — ${siteConfig.name}`,
-    description,
-    url: `${siteConfig.url}/request-demo`,
-    type: "website",
-  },
-};
+  path,
+  keywords: [
+    "EU AI Act demo",
+    "AI governance demo",
+    "request demo release gate",
+  ],
+});
 
 export default function RequestDemoPage() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: `${title} — ${siteConfig.name}`,
-    description,
-    url: `${siteConfig.url}/request-demo`,
-    isPartOf: {
-      "@type": "WebSite",
-      name: siteConfig.name,
-      url: siteConfig.url,
-    },
-    inLanguage: "en-GB",
-  };
-
   return (
-    <MarketingPageShell jsonLd={jsonLd}>
+    <MarketingPageShell
+      jsonLd={webPageJsonLd({
+        name: `${title} — ${siteConfig.name}`,
+        description,
+        path,
+        crumbs,
+      })}
+    >
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mb-8">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            Request a demo
-          </h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            See how {siteConfig.name} turns risk classification, evidence, eval
-            gates, Evgraph artifacts, and data contracts into PASS / REVIEW /
-            BLOCKED — without claiming legal certification.
-          </p>
+        <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+          <ol className="flex flex-wrap items-center gap-1.5">
+            <li>
+              <Link href="/" className="hover:text-foreground">
+                Home
+              </Link>
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span aria-hidden>/</span>
+              <span className="text-foreground">Request a demo</span>
+            </li>
+          </ol>
+        </nav>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+          Request a demo
+        </h1>
+        <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>
+        <ul className="mt-6 space-y-2 text-sm text-foreground/90">
+          <li>One named system — owner, purpose, data, where it runs.</li>
+          <li>A PASS / REVIEW / BLOCKED walkthrough, including what fails closed.</li>
+          <li>Written quote after the call. No public price list.</li>
+        </ul>
+        <div className="mt-8">
+          <DemoRequestForm />
         </div>
-        <DemoRequestForm />
       </div>
+      <RelatedPages path={path} />
     </MarketingPageShell>
   );
 }

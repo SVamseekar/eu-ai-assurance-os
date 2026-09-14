@@ -27,8 +27,7 @@ export function MetricsStrip() {
           ))}
         </ul>
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Product facts from code freeze — {measuredScaleLine}. Not legal
-          certification or notified-body status.
+          {measuredScaleLine}. Not legal certification or notified-body status.
         </p>
       </div>
     </section>

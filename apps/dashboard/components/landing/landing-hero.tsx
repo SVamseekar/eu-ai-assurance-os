@@ -39,9 +39,9 @@ export function LandingHero() {
             Fail-closed release gates for AI in the EU.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-            Evgraph checks the files. {siteConfig.name} turns evidence, evals,
-            and contracts into PASS, REVIEW, or BLOCKED — with a sealed pack.
-            Not a notified body and not legal certification.
+            Register every AI system, classify EU AI Act risk, and only ship
+            when evidence, evals, contracts, and promotion files pass. Article
+            50 is already live. Not a notified body.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" render={<Link href="/request-demo" />}>

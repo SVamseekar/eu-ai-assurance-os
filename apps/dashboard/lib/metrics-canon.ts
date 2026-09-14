@@ -14,14 +14,14 @@ export type MetricChip = {
 
 /** Measured scale line for optional copy (not a customer metric). */
 export const measuredScaleLine =
-  "Flyway through V17 · Next.js 16 · Spring Boot 3.3 · Evgraph is a separate library";
+  "Product facts — not customer counts, and not certification status";
 
 export const landingMetricChips: MetricChip[] = [
   {
     label: "Release decisions",
     value: "PASS · REVIEW · BLOCKED",
     detail:
-      "Deterministic release gate from evidence coverage, eval thresholds, and data-contract status",
+      "Deterministic release gate from evidence coverage, eval thresholds, data-contract status, and promotion checks",
   },
   {
     label: "Risk classes",
@@ -29,27 +29,27 @@ export const landingMetricChips: MetricChip[] = [
     detail: "Guided EU AI Act–oriented risk classification (not ML auto-inference)",
   },
   {
-    label: "API + migrations",
-    value: "Flyway V17 · sealed packs",
-    detail: measuredScaleLine,
+    label: "Evidence pack",
+    value: "Sealed JSON + hashed PDF",
+    detail:
+      "Exportable citations, eval snapshot, contract status, approvals, and Evgraph artifacts",
   },
   {
-    label: "Evidence stack",
-    value: "DJL/ONNX · pgvector HNSW",
+    label: "Promotion checks",
+    value: "Fail-closed Evgraph artifacts",
     detail:
-      "Cited-evidence RAG: all-MiniLM-L6-v2 via DJL/ONNX on postgres; local-hash in dev",
+      "Approval-before-deploy and dataset-license checks. Missing fields do not pass.",
   },
   {
-    label: "Audit & evals",
-    value: "Hash-chained · HMAC callbacks",
-    detail:
-      "Hash-chained append-only audit ledger; HMAC-SHA-256 signed eval-result callbacks",
+    label: "Audit ledger",
+    value: "Hash-chained · append-only",
+    detail: "Hash-chained append-only audit ledger of every release decision",
   },
   {
-    label: "Readiness & packs",
-    value: "Score + 3 sector packs",
+    label: "Honest limit",
+    value: "Not a notified body",
     detail:
-      "Certification readiness (0–100 + gaps) — not legal certification; insurance, HR, finance SPI packs",
+      "Readiness score and sealed pack are work products — not legal certification",
   },
 ];
 
