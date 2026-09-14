@@ -12,7 +12,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "Product";
 const description =
-  "One control plane for AI system registry, guided risk class, cited evidence, eval gates, data-contract drift, approvals, and a sealed evidence pack. Evgraph is a separate library. Not a notified body.";
+  "One control plane for AI system registry, guided risk class, cited evidence, eval gates, data-contract drift, approvals, and a sealed evidence pack. Not a notified body.";
 
 export const metadata: Metadata = {
   title,

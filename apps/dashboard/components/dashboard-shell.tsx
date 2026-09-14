@@ -59,7 +59,7 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   },
   "/settings": {
     title: "Workspace",
-    subtitle: "Users, invites, and operator readiness. Not a customer admin console for named teasers.",
+    subtitle: "Users, invites, and workspace settings.",
   },
 };
 
