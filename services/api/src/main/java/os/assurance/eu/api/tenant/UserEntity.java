@@ -99,4 +99,16 @@ public class UserEntity {
     this.oauthProvider = provider;
     this.oauthSubject = subject;
   }
+
+  public Instant createdAt() {
+    return createdAt;
+  }
+
+  public void setPasswordHash(String passwordHash) {
+    this.passwordHash = passwordHash;
+  }
+
+  public void setRole(UserRole role) {
+    this.role = role;
+  }
 }

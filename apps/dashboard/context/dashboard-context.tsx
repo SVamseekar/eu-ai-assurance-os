@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import type { AiSystem, DataContract, DriftEvent, AuditEvent, DataContractStatus, ReleaseDecision } from "@/lib/types";
+import { allowMockFallback } from "@/lib/live-mode";
 import { MOCK_SYSTEMS, MOCK_CONTRACTS, MOCK_DRIFT_EVENTS, MOCK_AUDIT_EVENTS } from "@/lib/mock-data";
 import { useSystems } from "@/hooks/use-systems";
 import { useContracts } from "@/hooks/use-contracts";
@@ -142,13 +143,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setCustomAudits((p) => [newEvent, ...p]); // Prepended so it shows at the top
   }
 
-  const baseSystems = liveSystems ?? MOCK_SYSTEMS;
-  const baseContracts = liveContracts ?? MOCK_CONTRACTS;
+  const baseSystems = liveSystems ?? (allowMockFallback() ? MOCK_SYSTEMS : (apiSystems ?? []));
+  const baseContracts = liveContracts ?? (allowMockFallback() ? MOCK_CONTRACTS : (apiContracts ?? []));
   // Local drift mock only when not on live contracts (demo offline mode).
   const driftEvents = liveContracts ? [] : localDriftEvents;
 
   const allAudits = useMemo(
-    () => [...customAudits, ...(liveAudits ?? MOCK_AUDIT_EVENTS)],
+    () => [...customAudits, ...(liveAudits ?? (allowMockFallback() ? MOCK_AUDIT_EVENTS : []))],
     [customAudits, liveAudits],
   );
 

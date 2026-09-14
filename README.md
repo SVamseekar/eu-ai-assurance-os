@@ -29,6 +29,20 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 
 > This product assists governance and release readiness. It is **not** a notified body, does **not** issue legal certifications, and does **not** replace qualified legal counsel.
 
+**First paid offer:** €4,900 release-readiness sprint for one named AI system (ten working days). See [`/pricing`](https://euassuranceai.souravamseekar.com/pricing). Evgraph is a **separate** PyPI library — this repo exports the files it already reads.
+
+## What is public vs private
+
+| In this MIT repository (public) | Not in git (operator / customer private) |
+|---|---|
+| Product source, tests, docs, infra skeletons | `.local/` lab SSH, host IPs, runbooks |
+| Sourced **public-claims teasers** (named EU firms reconstructed from cited pages — **not customers**) | `.env` / `.env.local` secrets |
+| Template DPA, MSA, order form | Outreach queues and named contact lists (kept outside this repo) |
+| Marketing pages: `/product`, `/how-it-works`, `/pricing`, `/method`, `/faq` | Invoices, signed contracts, customer tenant data |
+| | Git worktrees (`.worktrees/`) |
+
+Customer postgres must keep `ASSURANCE_PUBLIC_CLAIMS=false`. Demo H2 may seed teasers. Method page: [`/method`](https://euassuranceai.souravamseekar.com/method).
+
 **Authoritative platform numbers** (endpoints, tests, LOC, stack versions): [`docs/METRICS_CANONICAL.md`](./docs/METRICS_CANONICAL.md) — do not invent customer counts or ARR.
 
 ## Stack
@@ -36,7 +50,7 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 | Layer | Technology |
 |---|---|
 | Dashboard + landing | **Next.js 16**, React 19, TypeScript, Tailwind CSS v4, TanStack Query, shadcn/ui |
-| API | **Spring Boot 3.3**, Java 17, Flyway **V1–V16** (+ postgres V4), Spring Data JPA |
+| API | **Spring Boot 3.3**, Java 17, Flyway **V1–V17** (+ postgres V4), Spring Data JPA |
 | Auth | Password JWT + refresh · API keys (`X-Api-Key`) · JWKS · Google/Microsoft OAuth **implemented** (prod smoke pending) |
 | Data | H2 (local default) or PostgreSQL (+ optional pgvector HNSW) |
 | Deploy | Dashboard on Vercel; API via Docker Compose or host (Flyway on boot); Terraform skeleton in `infra/terraform/` |
@@ -71,7 +85,7 @@ See [`infra/README.md`](./infra/README.md) and [`docs/DEPLOYMENT.md`](./docs/DEP
 cd services/api
 mvn test
 mvn spring-boot:run
-# → http://localhost:8080  (Flyway through V16)
+# → http://localhost:8080  (Flyway through V17)
 ```
 
 Postgres profile:
@@ -118,6 +132,8 @@ Full template: [`.env.example`](./.env.example). Deploy matrix: [`docs/DEPLOYMEN
 | `DISCORD_WEBHOOK_URL` / `DISCORD_DEMO_WEBHOOK_URL` | Dashboard | Server-only: demo form → Discord |
 | `ASSURANCE_STORAGE_*` | API | Optional S3/MinIO object store for evidence uploads |
 | `EVIDENCE_EMBEDDING_PROVIDER` | API | `local-hash` (H2) or `djl-sentence` (postgres default) |
+| `ASSURANCE_PUBLIC_CLAIMS` | API | Seed named public-claims teasers. **false** on customer postgres |
+| `NEXT_PUBLIC_USE_MOCK_DATA` | Dashboard | Production must stay false |
 | OAuth client id/secret (Google/Microsoft) | API + dashboard | Part 4 — see `.env.example` and `docs/oauth-production-smoke-test.md` |
 
 ## Roadmap status (honest)

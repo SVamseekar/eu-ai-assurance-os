@@ -16,11 +16,14 @@ import {
   ClipboardCheck,
   BadgeCheck,
   Newspaper,
+  Users,
+  Landmark,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/command", label: "Dashboard", icon: LayoutDashboard },
   { href: "/systems", label: "AI Systems", icon: Server },
+  { href: "/public-claims", label: "Public claims", icon: Landmark },
   { href: "/readiness", label: "Readiness", icon: BadgeCheck },
   { href: "/reg-monitor", label: "Reg Monitor", icon: Newspaper },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
@@ -28,6 +31,7 @@ const NAV_ITEMS = [
   { href: "/evals", label: "Eval Gates", icon: FlaskConical },
   { href: "/contracts", label: "Contracts", icon: GitBranch },
   { href: "/audit", label: "Audit Log", icon: ScrollText },
+  { href: "/settings", label: "Workspace", icon: Users },
 ];
 
 interface SidebarProps {

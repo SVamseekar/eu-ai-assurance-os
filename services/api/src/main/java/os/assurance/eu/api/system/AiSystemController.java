@@ -240,6 +240,16 @@ public class AiSystemController {
   /**
    * Primary sealed JSON evidence pack (PRD MVP). Includes contentSha256 seal fields.
    */
+  @GetMapping("/{systemId}/evgraph-artifacts")
+  public Map<String, Object> getEvgraphArtifacts(@PathVariable UUID systemId) {
+    requireEvidencePackRole();
+    try {
+      return evidencePackService.evgraphArtifactFiles(systemId);
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+  }
+
   @GetMapping("/{systemId}/evidence-pack")
   public EvidencePackResponse getEvidencePack(@PathVariable UUID systemId) {
     requireEvidencePackRole();

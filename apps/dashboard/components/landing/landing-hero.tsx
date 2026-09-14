@@ -36,22 +36,24 @@ export function LandingHero() {
             {siteConfig.name}
           </p>
           <h1 className="mt-4 max-w-xl font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            Ship AI systems in the EU with evidence, not guesswork.
+            Fail-closed release gates for AI in the EU.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-            Risk classification, cited evidence, eval gates, and data-contract
-            checks become one release decision — PASS, REVIEW, or BLOCKED —
-            with an audit-ready evidence pack.
+            Evgraph checks the files. {siteConfig.name} turns evidence, evals,
+            and contracts into PASS, REVIEW, or BLOCKED — with a sealed pack.
+            First paid offer: €{siteConfig.sprintPriceEur.toLocaleString("en-GB")}{" "}
+            for one system, {siteConfig.sprintDays} working days. Not a
+            notified body.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" render={<Link href="/request-demo" />}>
-              Request demo
+              Request the sprint
             </Button>
-            <Button size="lg" variant="outline" render={<Link href="/login" />}>
-              Sign in
+            <Button size="lg" variant="outline" render={<Link href="/pricing" />}>
+              Pricing
             </Button>
-            <Button size="lg" variant="ghost" render={<a href="#how-it-works" />}>
-              See how it works
+            <Button size="lg" variant="ghost" render={<Link href="/how-it-works" />}>
+              How it works
             </Button>
           </div>
         </div>
@@ -84,6 +86,14 @@ export function LandingHero() {
               Human oversight SOP: on file
             </li>
           </ul>
+          <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+            Demo fixture, not a customer. Public-claims teasers of named EU
+            firms live on{" "}
+            <Link href="/method" className="underline-offset-2 hover:underline">
+              Method
+            </Link>{" "}
+            and are labelled in the registry.
+          </p>
         </div>
       </div>
     </section>

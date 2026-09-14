@@ -14,7 +14,7 @@ export type MetricChip = {
 
 /** Measured scale line for optional copy (not a customer metric). */
 export const measuredScaleLine =
-  "~64 API endpoints · 190 automated tests · Flyway through V16 · Next.js 16 · Spring Boot 3.3";
+  "Flyway through V17 · Next.js 16 · Spring Boot 3.3 · Evgraph is a separate library";
 
 export const landingMetricChips: MetricChip[] = [
   {
@@ -29,8 +29,8 @@ export const landingMetricChips: MetricChip[] = [
     detail: "Guided EU AI Act–oriented risk classification (not ML auto-inference)",
   },
   {
-    label: "API surface",
-    value: "64 endpoints · 190 tests",
+    label: "API + migrations",
+    value: "Flyway V17 · sealed packs",
     detail: measuredScaleLine,
   },
   {

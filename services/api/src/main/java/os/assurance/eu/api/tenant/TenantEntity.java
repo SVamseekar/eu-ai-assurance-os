@@ -35,4 +35,24 @@ public class TenantEntity {
     this.dataRegion = dataRegion;
     this.createdAt = createdAt;
   }
+
+  public UUID id() {
+    return id;
+  }
+
+  public String name() {
+    return name;
+  }
+
+  public String plan() {
+    return plan;
+  }
+
+  public String dataRegion() {
+    return dataRegion;
+  }
+
+  public Instant createdAt() {
+    return createdAt;
+  }
 }

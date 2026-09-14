@@ -1,5 +1,6 @@
 package os.assurance.eu.api.tenant;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,8 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
   Optional<UserEntity> findByEmail(String email);
 
   Optional<UserEntity> findByOauthProviderAndOauthSubject(String oauthProvider, String oauthSubject);
+
+  List<UserEntity> findAllByTenantIdOrderByCreatedAtAsc(UUID tenantId);
+
+  boolean existsByEmailIgnoreCase(String email);
 }

@@ -10,14 +10,17 @@ export function CtaSection() {
           Ready to see your release gate?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Request a tailored demo for your AI systems, or sign in if you already
-          have a workspace.
+          Book the €4,900 readiness sprint for one named system, or sign in if
+          you already have a workspace. This is not a legal certificate.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" render={<Link href="/request-demo" />}>
-            Request demo
+            Request the sprint
           </Button>
-          <Button size="lg" variant="outline" render={<Link href="/login" />}>
+          <Button size="lg" variant="outline" render={<Link href="/pricing" />}>
+            See pricing
+          </Button>
+          <Button size="lg" variant="ghost" render={<Link href="/login" />}>
             Sign in
           </Button>
         </div>

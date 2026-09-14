@@ -36,6 +36,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         "/auth/login",
         "/auth/refresh",
         "/auth/logout",
+        "/auth/accept-invite",
         "/actuator/health");
 
     private final ApiKeyJpaRepository apiKeys;
@@ -56,6 +57,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
             return false;
         }
         if (UNAUTHENTICATED_PATHS.contains(requestUri) || requestUri.startsWith("/actuator/health")) {
+            return true;
+        }
+        if (requestUri.startsWith("/auth/invites/")) {
             return true;
         }
         // Part 4: Google/Microsoft OAuth start + callback must be reachable without a session.

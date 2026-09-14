@@ -159,6 +159,20 @@ public class BootstrapData implements CommandLineRunner {
           DataContractStatus.HEALTHY,
           List.of("Update chatbot disclosure copy"));
     }
+    boolean dogfoodPresent = systems.findAll().stream()
+        .anyMatch(system -> "EU AI Assurance OS".equals(system.name()));
+    if (!dogfoodPresent) {
+      seed(
+          "EU AI Assurance OS",
+          "MSV AI Labs",
+          "Governance control plane with cited evidence RAG and assisted obligation mapping for operators of AI systems",
+          RiskClass.LIMITED,
+          "Internal B2B governance tool; Art. 50-style transparency if operators interact with the assistant. Not a high-risk Annex III use by default — human legal review required.",
+          70,
+          80,
+          DataContractStatus.HEALTHY,
+          List.of("Dogfood: run obligation map + conformity dossier on this product"));
+    }
 
     // Lab/demo: open an approval cycle for systems that have never had a workflow
     // (seed path used to skip openCycle; existing DBs may also be missing rows).

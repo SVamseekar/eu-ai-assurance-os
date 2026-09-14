@@ -1,0 +1,173 @@
+{
+  "disclaimer": "PUBLIC CLAIMS TEASER. Named organisations are not customers. Packs are reconstructed from publicly available pages only. Not a legal finding, not an accusation of non-compliance, not a notified-body assessment, not a claim that the organisation uses this product. Risk class is an assisted note. Annex III high-risk duties apply 2 December 2027. Article 50 transparency has applied since 2 August 2026. Evgraph is an external PyPI library; this API does not bundle it.",
+  "retrievedAt": "2026-09-15",
+  "library": "evgraph (PyPI). Not bundled in this API.",
+  "howtoPromotion": "evgraph scan-promotion --model-card model_card.json --approval approval.json --deployment deployment.json --format markdown --gate --strict",
+  "howtoDataset": "evgraph scan-dataset-manifest dataset_manifest.csv --format markdown --gate",
+  "systems": [
+    {
+      "slug": "getsafe",
+      "legalName": "Getsafe GmbH",
+      "hq": "Heidelberg, Germany",
+      "systemName": "[Public claims] Getsafe claims agents",
+      "owner": "Public-claims teaser (not a customer)",
+      "purpose": "NOT A CUSTOMER. Reconstruction from public pages only. Getsafe press dated 5 June 2025 states AI agents already handle a large part of claims settlement, consulting, and contract conclusion on an MGA platform with 500,000+ customers in DE/AT/FR.",
+      "riskClass": "HIGH",
+      "riskBasis": "Assisted note only — not a legal classification. Public claim of AI agents in claims settlement is Annex III §5(b)-shaped (essential private services / insurance). Annex III high-risk duties apply 2 Dec 2027. This teaser is not an accusation of non-compliance.",
+      "sector": "insurance",
+      "decisionImpact": "eligibility",
+      "vendorName": "Getsafe",
+      "modelName": "getsafe-claims-agents-public",
+      "modelVersion": "public-claims-2026-09-15",
+      "affectedUsers": ["policyholders (DE/AT/FR, as stated on public pages)"],
+      "evidenceCoverage": 22,
+      "evalScore": 0,
+      "claimedInProductionAt": "2025-06-05T00:00:00Z",
+      "includeDeployedAt": true,
+      "openGaps": [
+        "PUBLIC CLAIMS TEASER — not a customer; not a legal finding",
+        "No public approval timestamp — Evgraph INCONCLUSIVE unless --strict",
+        "No published dataset license — Evgraph dataset-manifest-complete not met",
+        "Human oversight SOP not published as an indexed artefact",
+        "Eval score 0 = no operator eval of this model, not a measured fail"
+      ],
+      "sources": [
+        {
+          "title": "Getsafe relies on AI instead of licenses",
+          "url": "https://www.hellogetsafe.com/en-de/press-releases/getsafe-relies-on-ai-instead-of-licenses",
+          "retrievedAt": "2026-09-15",
+          "quote": "Our AI agents already handle a large part of claims settlement, consulting, and contract conclusion."
+        }
+      ]
+    },
+    {
+      "slug": "auxmoney",
+      "legalName": "auxmoney GmbH",
+      "hq": "Düsseldorf, Germany",
+      "systemName": "[Public claims] auxmoney credit-risk models",
+      "owner": "Public-claims teaser (not a customer)",
+      "purpose": "NOT A CUSTOMER. Reconstruction from public pages only. COO writing (5 Dec 2025) describes machine learning in credit-risk, a Digital Account Check on Open Banking data, and more than 90 percent end-to-end automation on consumer credit.",
+      "riskClass": "HIGH",
+      "riskBasis": "Assisted note only — not a legal classification. Automated credit-risk / scorecarding is Annex III §5(b)-shaped (creditworthiness / essential private services). Annex III high-risk duties apply 2 Dec 2027. This teaser is not an accusation of non-compliance.",
+      "sector": "finance",
+      "decisionImpact": "eligibility",
+      "vendorName": "auxmoney",
+      "modelName": "auxmoney-credit-risk-public",
+      "modelVersion": "public-claims-2026-09-15",
+      "affectedUsers": ["consumer-credit applicants (as stated on public pages)"],
+      "evidenceCoverage": 20,
+      "evalScore": 0,
+      "claimedInProductionAt": "2025-12-05T00:00:00Z",
+      "includeDeployedAt": true,
+      "openGaps": [
+        "PUBLIC CLAIMS TEASER — not a customer; not a legal finding",
+        "No public approval timestamp — Evgraph INCONCLUSIVE unless --strict",
+        "No published dataset license — Evgraph dataset-manifest-complete not met",
+        "Human oversight SOP not published as an indexed artefact",
+        "Eval score 0 = no operator eval of this model, not a measured fail"
+      ],
+      "sources": [
+        {
+          "title": "Granular statt pauschal: Kreditwürdigkeit mit KI im Detail verstehen",
+          "url": "https://www.it-finanzmagazin.de/granular-statt-pauschal-kreditwuerdigkeit-im-detail-verstehen-237084/",
+          "retrievedAt": "2026-09-15",
+          "quote": "Das Ergebnis ist ein durchgängig digitaler Prozess mit über 90 Prozent End-to-End-Automatisierungsgrad. Machine Learning ist seit Jahren fester Bestandteil unserer Arbeit."
+        },
+        {
+          "title": "Sagard AI Pulse — June Edition (COO interview)",
+          "url": "https://www.sagard.com/blog/2025/06/30/sagard-ai-pulse-june-edition/",
+          "retrievedAt": "2026-09-15",
+          "quote": "A foundation of standardized, high-quality data enables auxmoney to update its credit-risk models far more frequently than competitors and automate significant internal workflows."
+        }
+      ]
+    },
+    {
+      "slug": "softgarden",
+      "legalName": "softgarden ltd. (Berlin)",
+      "hq": "Berlin, Germany",
+      "systemName": "[Public claims] softgarden AI Matching",
+      "owner": "Public-claims teaser (not a customer)",
+      "purpose": "NOT A CUSTOMER. Reconstruction from public pages only. Product pages describe AI Matching: on request the model compares job requirements with incoming applications and highlights high-potential candidates. Vendor states a human recruiter makes the final decision.",
+      "riskClass": "HIGH",
+      "riskBasis": "Assisted note only — not a legal classification. Ranking or highlighting applicants is Annex III §4-shaped (employment / recruitment) even when a human decides. Annex III high-risk duties apply 2 Dec 2027. This teaser is not an accusation of non-compliance.",
+      "sector": "hr",
+      "decisionImpact": "employment",
+      "vendorName": "softgarden",
+      "modelName": "softgarden-ai-matching-public",
+      "modelVersion": "public-claims-2026-09-15",
+      "affectedUsers": ["job applicants ranked or highlighted in an ATS (as stated on public pages)"],
+      "evidenceCoverage": 24,
+      "evalScore": 0,
+      "claimedInProductionAt": null,
+      "includeDeployedAt": false,
+      "openGaps": [
+        "PUBLIC CLAIMS TEASER — not a customer; not a legal finding",
+        "No public approval or deploy timestamp — Evgraph INCONCLUSIVE unless --strict",
+        "No published dataset license — Evgraph dataset-manifest-complete not met",
+        "Human oversight SOP not published as an indexed artefact",
+        "Eval score 0 = no operator eval of this model, not a measured fail"
+      ],
+      "sources": [
+        {
+          "title": "AI recruitment solutions — softgarden",
+          "url": "https://softgarden.com/en/ai-recruitment/",
+          "retrievedAt": "2026-09-15",
+          "quote": "On request, the feature compares the requirements of the job posting with the content of incoming applications – and also incorporates experience from previous, successful application processes. AI then highlights promising candidates."
+        },
+        {
+          "title": "AI Matching FAQ (anonymised training data)",
+          "url": "https://softgarden.com/en/ai-recruitment/",
+          "retrievedAt": "2026-09-15",
+          "quote": "Our AI matching function is based on a proprietary machine-learning model that was trained exclusively with anonymized data."
+        }
+      ]
+    },
+    {
+      "slug": "retorio",
+      "legalName": "Retorio GmbH",
+      "hq": "Munich, Germany",
+      "systemName": "[Public claims] Retorio AI coach",
+      "owner": "Public-claims teaser (not a customer)",
+      "purpose": "NOT A CUSTOMER. Reconstruction from public pages only. Vendor publishes that the coaching product is not an emotion-recognition system and checks readily apparent expressions such as a smile. The same site describes HR selection and development use. This teaser does not adjudicate Article 5.",
+      "riskClass": "HIGH",
+      "riskBasis": "Assisted note only — not a legal classification. Public pages describe HR selection and development (Annex III §4-shaped). Vendor also publishes a non-emotion-recognition stance under Art. 5. Counsel reviews that memo. This teaser does not relitigate or confirm it.",
+      "sector": "hr",
+      "decisionImpact": "employment",
+      "vendorName": "Retorio",
+      "modelName": "retorio-ai-coach-public",
+      "modelVersion": "public-claims-2026-09-15",
+      "affectedUsers": ["employees and applicants using the coaching/selection product (as stated on public pages)"],
+      "evidenceCoverage": 26,
+      "evalScore": 0,
+      "claimedInProductionAt": null,
+      "includeDeployedAt": false,
+      "openGaps": [
+        "PUBLIC CLAIMS TEASER — not a customer; not a legal finding",
+        "Published legal stance is not a machine-checkable approval or eval pack",
+        "No public approval or deploy timestamp — Evgraph INCONCLUSIVE unless --strict",
+        "No published dataset license — Evgraph dataset-manifest-complete not met",
+        "Eval score 0 = no operator eval of this model, not a measured fail"
+      ],
+      "sources": [
+        {
+          "title": "The AI Act — Retorio",
+          "url": "https://www.retorio.com/en/ai-act",
+          "retrievedAt": "2026-09-15",
+          "quote": "Yes, Retorio is 100% AI Act compliant. It uses neither biometric data to recognize individuals nor is it an “emotion recognition system”, as the law calls it."
+        },
+        {
+          "title": "Is Retorio doing emotion recognition?",
+          "url": "https://www.retorio.com/en/ai-act",
+          "retrievedAt": "2026-09-15",
+          "quote": "The AI only checks facial expressions, such as a smile. The legal text explicitly distinguishes between emotion recognition systems and unproblematic behavior recognition."
+        },
+        {
+          "title": "What problems does Retorio actually solve?",
+          "url": "https://www.retorio.com/en/ai-act",
+          "retrievedAt": "2026-09-15",
+          "quote": "Retorio is used in HR to support companies in the selection and development of employees."
+        }
+      ]
+    }
+  ]
+}

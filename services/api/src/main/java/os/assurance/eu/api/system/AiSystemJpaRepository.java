@@ -10,5 +10,7 @@ public interface AiSystemJpaRepository extends JpaRepository<AiSystemEntity, UUI
 
   Optional<AiSystemEntity> findByTenantIdAndId(UUID tenantId, UUID id);
 
+  Optional<AiSystemEntity> findByTenantIdAndModelName(UUID tenantId, String modelName);
+
   boolean existsByTenantId(UUID tenantId);
 }

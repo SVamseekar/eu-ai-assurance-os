@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { allowMockFallback } from "@/lib/live-mode";
 import { MOCK_AUDIT_EVENTS } from "@/lib/mock-data";
 
 export function useAuditEvents(
@@ -9,7 +10,7 @@ export function useAuditEvents(
   return useQuery({
     queryKey: ["audit-events", systemId],
     queryFn: () => api.audit.list(systemId),
-    placeholderData: MOCK_AUDIT_EVENTS,
+    placeholderData: allowMockFallback() ? MOCK_AUDIT_EVENTS : undefined,
     refetchInterval: options?.refetchInterval ?? false,
   });
 }

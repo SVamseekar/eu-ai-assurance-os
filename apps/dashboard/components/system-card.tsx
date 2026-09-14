@@ -7,6 +7,7 @@ import { normaliseDecision } from "@/lib/utils";
 import type { AiSystem } from "@/lib/types";
 import { useDashboard } from "@/context/dashboard-context";
 import { useCertificationReadiness } from "@/hooks/use-certification-readiness";
+import { isPublicClaimsSystem } from "@/lib/public-claims";
 
 interface SystemCardProps {
   system: AiSystem;
@@ -29,6 +30,11 @@ export function SystemCard({ system }: SystemCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <RiskBadge risk={system.riskClass} />
             <SectorPackBadge sector={system.sector} />
+            {isPublicClaimsSystem(system) && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                Public claims
+              </span>
+            )}
             <span className="text-xs text-muted-foreground">{system.owner}</span>
           </div>
         </div>

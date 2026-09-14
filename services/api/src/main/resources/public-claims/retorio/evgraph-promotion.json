@@ -1,0 +1,86 @@
+{
+  "graph": {
+    "egs_version": "0.1",
+    "graph_id": "scan_2026-09-14T19:03:05.436756+00:00_bd5ec2",
+    "created_at": "2026-09-14T19:03:05.436756Z",
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "ModelCard",
+        "observed_at": "2026-09-14T19:03:05.436756Z",
+        "source": {
+          "path": "/Users/souravamseekarmarti/Projects/eu-ai-assurance-os/services/api/src/main/resources/public-claims/retorio/model_card.json"
+        },
+        "evidence_level": "STRUCTURAL",
+        "attributes": {
+          "model_name": "retorio-ai-coach-public",
+          "has_intended_use": true
+        }
+      },
+      {
+        "id": "n2",
+        "type": "HumanApproval",
+        "observed_at": "2026-09-14T19:03:05.436756Z",
+        "source": {
+          "path": "/Users/souravamseekarmarti/Projects/eu-ai-assurance-os/services/api/src/main/resources/public-claims/retorio/approval.json"
+        },
+        "evidence_level": "STRUCTURAL",
+        "attributes": {
+          "approver": "not-published-in-public-materials"
+        }
+      },
+      {
+        "id": "n3",
+        "type": "DeploymentRecord",
+        "observed_at": "2026-09-14T19:03:05.436756Z",
+        "source": {
+          "path": "/Users/souravamseekarmarti/Projects/eu-ai-assurance-os/services/api/src/main/resources/public-claims/retorio/deployment.json"
+        },
+        "evidence_level": "STRUCTURAL",
+        "attributes": {}
+      }
+    ],
+    "edges": [
+      {
+        "source_id": "n3",
+        "target_id": "n1",
+        "type": "DEPLOYS",
+        "observed_at": "2026-09-14T19:03:05.436756Z"
+      },
+      {
+        "source_id": "n3",
+        "target_id": "n2",
+        "type": "REQUIRES_APPROVAL",
+        "observed_at": "2026-09-14T19:03:05.436756Z"
+      }
+    ],
+    "adapter_manifest": [
+      {
+        "adapter": "evgraph-adapter-modelcard",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "res_version": "0.1",
+      "id": "finding_63b81536",
+      "rule_id": "approval-precedes-deployment",
+      "level": "CONSISTENCY",
+      "outcome": "INCONCLUSIVE",
+      "statement": "DeploymentRecord n3 or HumanApproval n2 is missing a timestamp needed to compare deployment and approval order.",
+      "cited_node_ids": [
+        "n3",
+        "n2"
+      ],
+      "trace": [
+        {
+          "source_id": "n3",
+          "target_id": "n2",
+          "type": "REQUIRES_APPROVAL",
+          "observed_at": "2026-09-14T19:03:05.436756Z"
+        }
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import {
   GitBranch,
   ClipboardCheck,
   BadgeCheck,
+  ScanSearch,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,12 @@ export const capabilities: Capability[] = [
     description:
       "Weighted readiness score (0–100) and structured gap report toward conformity documentation — never a legal certificate or notified-body attestation.",
   },
+  {
+    icon: ScanSearch,
+    title: "Evgraph promotion & dataset gates",
+    description:
+      "Export the model-card, approval, and dataset-manifest files the Evgraph library already reads. This repository does not vendor Evgraph. scan-promotion --gate --strict and scan-dataset-manifest --gate fail closed when timestamps or licenses are missing.",
+  },
 ];
 
 export type HowItWorksStep = {
@@ -77,14 +84,14 @@ export const howItWorksSteps: HowItWorksStep[] = [
       "Record the risk tier and rationale, then attach DPIAs, model cards, vendor docs, and policy evidence.",
   },
   {
-    title: "Run eval gates & check contracts",
+    title: "Run Evgraph, evals, and contracts",
     description:
-      "Score the model against faithfulness, bias, accuracy, and cost thresholds, and confirm data contracts have no open drift.",
+      "Evgraph (a separate PyPI library) scans promotion timestamps and dataset licenses. Assurance OS scores evals and blocks on open BREACH drift. Missing public timestamps are INCONCLUSIVE, not invented.",
   },
   {
     title: "Get a release decision",
     description:
-      "Receive a PASS, REVIEW, or BLOCKED decision with the controls behind it, and export an evidence pack for audit.",
+      "Receive a PASS, REVIEW, or BLOCKED decision with the controls behind it, and export a sealed evidence pack (JSON + PDF) that includes the Evgraph artifacts.",
   },
 ];
 
@@ -128,10 +135,11 @@ export const personas: Persona[] = [
 
 export const trustBadges: string[] = [
   "EU AI Act-aligned controls",
+  "Fail-closed Evgraph artifacts",
   "Tenant data isolation",
   "Encryption in transit & at rest",
   "Append-only audit ledger",
-  "Deterministic evidence export",
+  "Not a notified body",
 ];
 
 export type FaqItem = {
@@ -139,7 +147,119 @@ export type FaqItem = {
   answer: string;
 };
 
+export type PublicClaimsMarketing = {
+  slug: string;
+  legalName: string;
+  hq: string;
+  hook: string;
+  quote: string;
+  sourceTitle: string;
+  sourceUrl: string;
+  evgraphNote: string;
+};
+
+/** Public marketing copy only. Named orgs are not customers. */
+export const publicClaimsMarketing: PublicClaimsMarketing[] = [
+  {
+    slug: "getsafe",
+    legalName: "Getsafe GmbH",
+    hq: "Heidelberg, Germany",
+    hook: "Press dated 5 June 2025: AI agents already handle claims, advice, and contract close.",
+    quote:
+      "Our AI agents already handle a large part of claims settlement, consulting, and contract conclusion.",
+    sourceTitle: "Getsafe relies on AI instead of licenses",
+    sourceUrl:
+      "https://www.hellogetsafe.com/en-de/press-releases/getsafe-relies-on-ai-instead-of-licenses",
+    evgraphNote:
+      "Public pages do not publish an approval timestamp or dataset license. Promotion --strict is INCONCLUSIVE; dataset-manifest-complete is not met.",
+  },
+  {
+    slug: "auxmoney",
+    legalName: "auxmoney GmbH",
+    hq: "Düsseldorf, Germany",
+    hook: "COO writing, December 2025: machine learning in credit-risk, >90% automation.",
+    quote:
+      "Das Ergebnis ist ein durchgängig digitaler Prozess mit über 90 Prozent End-to-End-Automatisierungsgrad. Machine Learning ist seit Jahren fester Bestandteil unserer Arbeit.",
+    sourceTitle: "Kreditwürdigkeit mit KI im Detail verstehen",
+    sourceUrl:
+      "https://www.it-finanzmagazin.de/granular-statt-pauschal-kreditwuerdigkeit-im-detail-verstehen-237084/",
+    evgraphNote:
+      "Public pages do not publish an approval timestamp or dataset license. Same fail-closed result.",
+  },
+  {
+    slug: "softgarden",
+    legalName: "softgarden ltd.",
+    hq: "Berlin, Germany",
+    hook: "Product pages: AI Matching highlights applicants; a recruiter decides.",
+    quote:
+      "On request, the feature compares the requirements of the job posting with the content of incoming applications … AI then highlights promising candidates.",
+    sourceTitle: "AI recruitment solutions — softgarden",
+    sourceUrl: "https://softgarden.com/en/ai-recruitment/",
+    evgraphNote:
+      "No public approval or deploy timestamp. Highlighting applicants is employment-shaped; this is not a legal classification.",
+  },
+  {
+    slug: "retorio",
+    legalName: "Retorio GmbH",
+    hq: "Munich, Germany",
+    hook: "Publishes an AI Act stance and describes HR selection / development.",
+    quote:
+      "Retorio is used in HR to support companies in the selection and development of employees.",
+    sourceTitle: "The AI Act — Retorio",
+    sourceUrl: "https://www.retorio.com/en/ai-act",
+    evgraphNote:
+      "A published legal stance is not a machine-checkable approval or eval pack. This teaser does not adjudicate Article 5.",
+  },
+];
+
+export const homeDestinations = [
+  {
+    href: "/product",
+    title: "Product",
+    description:
+      "Registry, risk class, cited evidence, eval gates, contracts, approvals, and a sealed pack — one release decision.",
+  },
+  {
+    href: "/how-it-works",
+    title: "How it works",
+    description:
+      "Register → classify → run Evgraph, evals, and contracts → PASS / REVIEW / BLOCKED.",
+  },
+  {
+    href: "/pricing",
+    title: "Pricing",
+    description:
+      "First paid offer: €4,900 readiness sprint for one named AI system, ten working days. Not Stripe self-serve.",
+  },
+  {
+    href: "/method",
+    title: "Method",
+    description:
+      "Public pages in, fail-closed checks out. Named EU firms are teasers reconstructed from cited pages — not customers.",
+  },
+] as const;
+
 export const faqItems: FaqItem[] = [
+  {
+    question: "What do you sell first?",
+    answer:
+      "A €4,900 release-readiness sprint for one named AI system over ten working days. You keep the Evgraph CLI run, a sealed evidence pack, and a PASS / REVIEW / BLOCKED decision. Extra system in the same sprint: +€1,500. It is not a notified-body certificate and not a Stripe self-serve subscription.",
+  },
+  {
+    question: "Are the named EU companies on this site customers?",
+    answer:
+      "No. Public-claims teasers reconstruct model cards from pages those organisations already published. They are not customers, not legal findings, and not accusations of non-compliance. Annex III high-risk duties apply from 2 December 2027; Article 50 has applied since 2 August 2026.",
+  },
+  {
+    question: "What is Evgraph, and is it in this repository?",
+    answer:
+      "Evgraph is a separate BSD-licensed Python library on PyPI. This product does not vendor it. Assurance OS exports the JSON and CSV files the library already reads, and the sprint runs those scans with --gate (and --strict on promotion). Missing timestamps stay INCONCLUSIVE — we do not invent approved_at.",
+  },
+  {
+    question: "What is public in the GitHub repo versus private to the operator?",
+    answer:
+      "The MIT repository is product source, template DPA/MSA/order form, and sourced public-claims packs. Operator lab files (.local), git worktrees, .env secrets, outreach queues, invoices, and customer tenant data are not in git. Hosted postgres must keep ASSURANCE_PUBLIC_CLAIMS=false.",
+  },
   {
     question: "What is an EU AI Act risk classification?",
     answer:

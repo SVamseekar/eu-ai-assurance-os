@@ -30,7 +30,9 @@ class EvidencePackPdfRendererTest {
             "Assisted determination (not legal advice). Suggested applicability / obligation map only.",
             "status",
             "NONE"),
-        "1.0",
+        Map.of("disclaimer", "Assisted conformity dossier."),
+        Map.of("howto", "evgraph scan-promotion --gate"),
+        "1.1",
         "a".repeat(64),
         "eu-ai-assurance-api/0.1.0",
         "chain-head-example");

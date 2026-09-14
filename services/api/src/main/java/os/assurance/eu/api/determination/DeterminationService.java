@@ -53,7 +53,7 @@ public class DeterminationService {
 
   @Transactional(readOnly = true)
   public QuestionnaireDefinition questionnaire() {
-    return QuestionnaireDefinition.v1();
+    return QuestionnaireDefinition.current();
   }
 
   @Transactional
@@ -247,9 +247,20 @@ public class DeterminationService {
         .anyMatch(o -> o.applicability() == Applicability.APPLICABLE
             && "TRANSPARENCY_NATURAL_PERSONS".equals(o.ruleCode()));
 
+    Set<String> prohibitedRules = evaluated.stream()
+        .filter(o -> o.applicability() == Applicability.APPLICABLE)
+        .map(DeterminationObligation::ruleCode)
+        .filter(code -> code != null && code.startsWith("PROHIBITED_"))
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+
     String suggested;
     String rationale;
-    if (!highRules.isEmpty()) {
+    if (!prohibitedRules.isEmpty()) {
+      suggested = RiskClass.PROHIBITED.name();
+      rationale = "Art. 5-style prohibited-practice screen suggested applicable: "
+          + String.join(", ", prohibitedRules)
+          + ". Human legal review required. Gate will BLOCK if this mapping stands.";
+    } else if (!highRules.isEmpty()) {
       suggested = RiskClass.HIGH.name();
       rationale = "HIGH-severity applicable obligations suggested: " + String.join(", ", highRules)
           + ". Human confirmation required before changing system risk class.";

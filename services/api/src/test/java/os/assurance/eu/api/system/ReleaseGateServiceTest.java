@@ -60,6 +60,16 @@ class ReleaseGateServiceTest {
   }
 
   @Test
+  void blocksWhenProhibitedPracticeMapped() {
+    ReleaseGateResponse response = service.calculate(
+        system(RiskClass.LIMITED, 90, 90, DataContractStatus.HEALTHY, List.of()),
+        List.of("PROHIBITED_PRACTICE:PROHIBITED_SOCIAL_SCORING"));
+
+    assertThat(response.decision()).isEqualTo(ReleaseDecision.BLOCKED);
+    assertThat(response.blockers()).contains("PROHIBITED_PRACTICE:PROHIBITED_SOCIAL_SCORING");
+  }
+
+  @Test
   void passesCleanSystem() {
     ReleaseGateResponse response = service.calculate(system(
         RiskClass.MINIMAL,

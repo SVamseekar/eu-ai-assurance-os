@@ -1,12 +1,18 @@
 package os.assurance.eu.api.auth;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import os.assurance.eu.api.observability.AssuranceMetrics;
+import os.assurance.eu.api.tenant.AcceptInviteRequest;
+import os.assurance.eu.api.tenant.InvitePreview;
+import os.assurance.eu.api.tenant.TenantAdminService;
 import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 
@@ -17,6 +23,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final AssuranceMetrics assuranceMetrics;
+    private final TenantAdminService tenantAdminService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     // Constant-time defense against email-enumeration via login latency: bcrypt verification
@@ -29,11 +36,13 @@ public class AuthController {
             UserJpaRepository users,
             JwtService jwtService,
             RefreshTokenService refreshTokenService,
-            AssuranceMetrics assuranceMetrics) {
+            AssuranceMetrics assuranceMetrics,
+            TenantAdminService tenantAdminService) {
         this.users = users;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.assuranceMetrics = assuranceMetrics;
+        this.tenantAdminService = tenantAdminService;
     }
 
     @PostMapping("/auth/login")
@@ -69,6 +78,16 @@ public class AuthController {
     @PostMapping("/auth/logout")
     public void logout(@RequestBody RefreshRequest request) {
         refreshTokenService.revoke(request.refreshToken());
+    }
+
+    @GetMapping("/auth/invites/{token}")
+    public InvitePreview previewInvite(@PathVariable String token) {
+        return tenantAdminService.previewInvite(token);
+    }
+
+    @PostMapping("/auth/accept-invite")
+    public TokenResponse acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
+        return tenantAdminService.acceptInvite(request);
     }
 
     private TokenResponse issueTokenPair(java.util.UUID userId, java.util.UUID tenantId, os.assurance.eu.api.tenant.UserRole role) {

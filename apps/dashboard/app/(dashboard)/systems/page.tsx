@@ -9,6 +9,8 @@ import { RegisterSystemModal } from "@/components/register-system-modal";
 import { ObligationMapWizard } from "@/components/obligation-map-wizard";
 import { Button } from "@/components/ui/button";
 import { Plus, Scale } from "lucide-react";
+import Link from "next/link";
+import { isPublicClaimsSystem } from "@/lib/public-claims";
 
 export default function SystemsPage() {
   const { allSystems, registerSystem } = useDashboard();
@@ -25,9 +27,21 @@ export default function SystemsPage() {
         </p>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
           Open a system and run the obligation map wizard for a{" "}
-          <strong className="font-semibold text-foreground">suggested applicability / obligation map</strong>.
-          Not legal advice; requires human legal review. Not certification or official conformity assessment.
+          <strong className="font-semibold text-foreground">suggested applicability / obligation map</strong>
+          {" "}(ruleset v2 includes Art. 5 screens and Art. 50). Not legal advice; requires human
+          legal review. Export Evgraph JSON from a system card for{" "}
+          <code className="text-[10px]">evgraph scan-promotion --gate</code> — the library is not
+          bundled in this app.
         </p>
+        {allSystems.some(isPublicClaimsSystem) && (
+          <p className="text-[10px] text-muted-foreground leading-relaxed mt-2">
+            Named EU firms in this registry are{" "}
+            <Link href="/public-claims" className="text-primary hover:underline">
+              public-claims teasers
+            </Link>
+            , not customers.
+          </p>
+        )}
         {allSystems.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {allSystems.slice(0, 4).map((system) => (

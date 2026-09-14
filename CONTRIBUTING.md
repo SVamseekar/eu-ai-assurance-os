@@ -50,8 +50,13 @@ The dashboard proxies authenticated API traffic through `/api/proxy` to `ASSURAN
 ## Never commit
 
 - `.env`, `.env.*`, API keys, JWT signing material, or production credentials
+- `.local/` (lab SSH env, host IPs, operator runbooks)
+- `.worktrees/`
+- Outreach queues, named contact lists, invoices, or signed customer contracts
 - Tenant customer data or real personal data used as fixtures
 - Large binary dumps unrelated to the product (prefer Git LFS only if deliberately adopted)
+
+Public-claims packs in `services/api/src/main/resources/public-claims/` **are** in git: they are reconstructed from cited public pages, labelled as teasers, and are not customers. Do not seed them on customer postgres (`ASSURANCE_PUBLIC_CLAIMS=false`).
 
 ## Branch protection (maintainers)
 

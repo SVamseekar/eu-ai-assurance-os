@@ -56,7 +56,7 @@ Single deployable Spring Boot app under `os.assurance.eu.api`. Domain packages m
 ### Dashboard (Next.js)
 
 - Route group `app/(dashboard)/` with shared sidebar/header.
-- Public marketing: landing, login, request-demo, privacy, terms, refunds, disclaimer.
+- Public marketing: `/`, `/product`, `/how-it-works`, `/who-its-for`, `/pricing`, `/method`, `/faq`, login, request-demo, privacy, terms, refunds, disclaimer, DPA/MSA/order-form templates.
 - Product routes: command, systems, approvals, evidence, evals, contracts, audit, readiness, reg-monitor.
 - BFF-style proxy to Spring API; session via httpOnly cookies; browser never trusts client-supplied tenant headers.
 
