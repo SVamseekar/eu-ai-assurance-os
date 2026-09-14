@@ -9,18 +9,28 @@ describe("shouldHardRedirectToLogin", () => {
       "/",
       "/login",
       "/login/",
+      "/product",
+      "/how-it-works",
+      "/who-its-for",
+      "/pricing",
+      "/method",
+      "/faq",
       "/request-demo",
       "/privacy",
       "/terms",
       "/refunds",
       "/disclaimer",
+      "/dpa",
+      "/msa",
+      "/order-form",
+      "/invite",
     ]) {
       assert.equal(shouldHardRedirectToLogin(path), false, path);
     }
   });
 
   it("redirects authenticated dashboard routes", () => {
-    for (const path of ["/command", "/systems", "/approvals", "/evidence"]) {
+    for (const path of ["/command", "/systems", "/approvals", "/evidence", "/settings", "/public-claims"]) {
       assert.equal(shouldHardRedirectToLogin(path), true, path);
     }
   });
@@ -38,6 +48,12 @@ describe("loginRedirectHref", () => {
 
   it("returns null on the marketing homepage", () => {
     assert.equal(loginRedirectHref("/", ""), null);
+  });
+
+  it("returns null on split marketing pages", () => {
+    assert.equal(loginRedirectHref("/pricing", ""), null);
+    assert.equal(loginRedirectHref("/method", ""), null);
+    assert.equal(loginRedirectHref("/product", ""), null);
   });
 
   it("sends dashboard routes to /login with a safe next path", () => {

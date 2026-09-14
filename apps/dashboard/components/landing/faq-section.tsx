@@ -1,12 +1,14 @@
 import { faqItems } from "@/lib/landing-content";
 
-export function FaqSection() {
+export function FaqSection({ showHeading = true }: { showHeading?: boolean }) {
   return (
-    <section id="faq" aria-label="Frequently asked questions" className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-        Frequently asked questions
-      </h2>
-      <div className="mt-8 space-y-3">
+    <section aria-label="Frequently asked questions" className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      {showHeading ? (
+        <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+          Frequently asked questions
+        </h2>
+      ) : null}
+      <div className={showHeading ? "mt-8 space-y-3" : "space-y-3"}>
         {faqItems.map((item) => (
           <details key={item.question} className="group rounded-lg border border-border p-4">
             <summary className="cursor-pointer list-none font-heading text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring/60 [&::-webkit-details-marker]:hidden">

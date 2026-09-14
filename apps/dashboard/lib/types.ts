@@ -175,6 +175,8 @@ export interface EvidencePack {
   auditEvents: AuditEvent[];
   /** Assisted obligation determination snapshot (not legal advice). */
   determination?: Record<string, unknown>;
+  conformity?: Record<string, unknown>;
+  evgraphArtifacts?: Record<string, unknown>;
   evidencePackVersion: string;
   contentSha256: string;
   generator: string;
@@ -195,6 +197,33 @@ export interface DeterminationQuestion {
   type: string;
   required: boolean;
   options: DeterminationQuestionOption[];
+}
+
+export interface WorkspaceUser {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: string;
+  hasPassword: boolean;
+  oauthProvider: string | null;
+  createdAt: string;
+}
+
+export interface WorkspaceInvite {
+  inviteId: string;
+  tenantId: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+  inviteToken?: string | null;
+  acceptPath: string;
+}
+
+export interface OpsReadiness {
+  disclaimer: string;
+  productionReady: boolean;
+  checks: Record<string, boolean>;
+  blockers: string[];
 }
 
 export interface DeterminationQuestionnaire {

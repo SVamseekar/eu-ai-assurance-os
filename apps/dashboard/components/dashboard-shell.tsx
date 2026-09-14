@@ -52,6 +52,15 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     subtitle:
       "Weighted readiness score and gaps toward conformity documentation — not legal certification.",
   },
+  "/public-claims": {
+    title: "Public-claims teasers",
+    subtitle:
+      "Four EU firms reconstructed from public pages. Not customers. Evgraph fails closed when approval or dataset license is unpublished.",
+  },
+  "/settings": {
+    title: "Workspace",
+    subtitle: "Users, invites, and operator readiness. Not a customer admin console for named teasers.",
+  },
 };
 
 function downloadJson(filename: string, payload: unknown) {

@@ -5,7 +5,7 @@ package os.assurance.eu.api.determination;
  * Never claim compliance, certification, or official conformity assessment.
  */
 public final class DeterminationDisclaimers {
-  public static final String RULESET_VERSION = "v1";
+  public static final String RULESET_VERSION = "v2";
 
   public static final String SHORT =
       "Assisted determination (not legal advice). Suggested applicability / obligation map only. "

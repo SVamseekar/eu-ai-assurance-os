@@ -1,16 +1,26 @@
 package os.assurance.eu.api.system;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import os.assurance.eu.api.conformity.ConformityService;
 import os.assurance.eu.api.control.ControlEntity;
 import os.assurance.eu.api.control.ControlJpaRepository;
 import os.assurance.eu.api.control.ControlStatus;
 import os.assurance.eu.api.control.SystemControlEntity;
 import os.assurance.eu.api.control.SystemControlJpaRepository;
+import os.assurance.eu.api.determination.Applicability;
+import os.assurance.eu.api.determination.DeterminationObligation;
+import os.assurance.eu.api.determination.DeterminationObligationEntity;
+import os.assurance.eu.api.determination.DeterminationObligationJpaRepository;
+import os.assurance.eu.api.determination.DeterminationRunEntity;
+import os.assurance.eu.api.determination.DeterminationRunJpaRepository;
 import os.assurance.eu.api.tenant.TenantContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,14 +32,24 @@ public class ReleaseGateService {
   private final SystemControlJpaRepository systemControls;
   private final ControlJpaRepository controls;
   private final TenantContext tenantContext;
+  private final DeterminationRunJpaRepository determinationRuns;
+  private final DeterminationObligationJpaRepository determinationObligations;
+  private final ConformityService conformityService;
 
+  @Autowired
   public ReleaseGateService(
       SystemControlJpaRepository systemControls,
       ControlJpaRepository controls,
-      TenantContext tenantContext) {
+      TenantContext tenantContext,
+      DeterminationRunJpaRepository determinationRuns,
+      DeterminationObligationJpaRepository determinationObligations,
+      ConformityService conformityService) {
     this.systemControls = systemControls;
     this.controls = controls;
     this.tenantContext = tenantContext;
+    this.determinationRuns = determinationRuns;
+    this.determinationObligations = determinationObligations;
+    this.conformityService = conformityService;
   }
 
   /** Test/local constructor without control lookup. */
@@ -37,10 +57,16 @@ public class ReleaseGateService {
     this.systemControls = null;
     this.controls = null;
     this.tenantContext = null;
+    this.determinationRuns = null;
+    this.determinationObligations = null;
+    this.conformityService = null;
   }
 
   public ReleaseGateResponse calculate(AiSystem system) {
-    return calculate(system, loadControlBlockers(system.id()));
+    List<String> extra = new ArrayList<>();
+    extra.addAll(loadControlBlockers(system.id()));
+    extra.addAll(loadDeterminationHardBlockers(system.id()));
+    return calculate(system, extra);
   }
 
   public ReleaseGateResponse calculate(AiSystem system, List<String> controlBlockers) {
@@ -74,6 +100,9 @@ public class ReleaseGateService {
         || system.evalScore() < EVAL_PASS_THRESHOLD
         || system.dataContractStatus() == DataContractStatus.WARNING
         || !system.openGaps().isEmpty();
+    if (!needsReview && system.riskClass() == RiskClass.HIGH) {
+      needsReview = !loadConformityReviewFlags(system.id(), system.riskClass()).isEmpty();
+    }
 
     return new ReleaseGateResponse(
         system.id(),
@@ -96,6 +125,73 @@ public class ReleaseGateService {
         .map(id -> "CONTROL:" + codes.getOrDefault(id, "UNKNOWN"))
         .distinct()
         .toList();
+  }
+
+  private List<String> loadDeterminationHardBlockers(UUID systemId) {
+    if (determinationRuns == null || determinationObligations == null || tenantContext == null
+        || systemId == null || systemControls == null || controls == null) {
+      return List.of();
+    }
+    DeterminationRunEntity run = determinationRuns
+        .findFirstByTenantIdAndSystemIdOrderByCreatedAtDesc(tenantContext.tenantId(), systemId)
+        .orElse(null);
+    if (run == null) {
+      return List.of();
+    }
+    Map<String, ControlStatus> controlStatusByCode = controlStatusIndex(systemId);
+    List<String> blockers = new ArrayList<>();
+    for (DeterminationObligationEntity entity :
+        determinationObligations.findAllByRunIdOrderByRuleCodeAsc(run.id())) {
+      DeterminationObligation item = entity.toDomain();
+      if (item.applicability() != Applicability.APPLICABLE) {
+        continue;
+      }
+      String code = item.ruleCode() == null ? "" : item.ruleCode();
+      if (code.startsWith("PROHIBITED_")) {
+        blockers.add("PROHIBITED_PRACTICE:" + code);
+        continue;
+      }
+      boolean highOrMedium = "HIGH".equalsIgnoreCase(item.severity())
+          || "MEDIUM".equalsIgnoreCase(item.severity());
+      if (!highOrMedium || item.controlCodes() == null) {
+        continue;
+      }
+      for (String controlCode : item.controlCodes()) {
+        if (controlCode == null || controlCode.isBlank()) {
+          continue;
+        }
+        ControlStatus status = controlStatusByCode.get(controlCode.toUpperCase(Locale.ROOT));
+        if (status != ControlStatus.PASS) {
+          String marker = "OBLIGATION_UNMET:" + code + ":" + controlCode;
+          if (!blockers.contains(marker)) {
+            blockers.add(marker);
+          }
+        }
+      }
+    }
+    return blockers;
+  }
+
+  private Map<String, ControlStatus> controlStatusIndex(UUID systemId) {
+    Map<UUID, String> codes = controls.findAll().stream()
+        .map(ControlEntity::toDomain)
+        .collect(Collectors.toMap(c -> c.id(), c -> c.code(), (a, b) -> a));
+    Map<String, ControlStatus> index = new LinkedHashMap<>();
+    for (SystemControlEntity row : systemControls.findAllByTenantIdAndSystemIdOrderByUpdatedAtDesc(
+        tenantContext.tenantId(), systemId)) {
+      String code = codes.get(row.controlId());
+      if (code != null) {
+        index.putIfAbsent(code.toUpperCase(Locale.ROOT), row.status());
+      }
+    }
+    return index;
+  }
+
+  private List<String> loadConformityReviewFlags(UUID systemId, RiskClass riskClass) {
+    if (conformityService == null || systemId == null) {
+      return List.of();
+    }
+    return conformityService.reviewBlockers(systemId, riskClass);
   }
 
   private boolean hasOversightGap(List<String> gaps) {

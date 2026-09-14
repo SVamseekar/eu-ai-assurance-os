@@ -43,20 +43,28 @@ export function LandingFooter() {
             <ul className="mt-3 space-y-2 text-sm">
               {landingNavLinks.map((link) => (
                 <li key={link.href}>
-                  <a
-                    href={link.href.startsWith("#") ? `/${link.href}` : link.href}
+                  <Link
+                    href={link.href}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  href="/who-its-for"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Who it&apos;s for
+                </Link>
+              </li>
               <li>
                 <Link
                   href="/request-demo"
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Request demo
+                  Request a demo
                 </Link>
               </li>
               <li>
@@ -73,9 +81,25 @@ export function LandingFooter() {
             </h2>
             <ul className="mt-3 space-y-2 text-sm">
               <li>
-                <a href="/#faq" className="text-muted-foreground hover:text-foreground">
+                <Link href="/faq" className="text-muted-foreground hover:text-foreground">
                   FAQ
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/pricing"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  How we work
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/method"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Public claims method
+                </Link>
               </li>
               <li>
                 <a
@@ -126,6 +150,21 @@ export function LandingFooter() {
                   Disclaimer
                 </Link>
               </li>
+              <li>
+                <Link href="/dpa" className="text-muted-foreground hover:text-foreground">
+                  DPA (template)
+                </Link>
+              </li>
+              <li>
+                <Link href="/msa" className="text-muted-foreground hover:text-foreground">
+                  MSA (template)
+                </Link>
+              </li>
+              <li>
+                <Link href="/order-form" className="text-muted-foreground hover:text-foreground">
+                  Order form
+                </Link>
+              </li>
             </ul>
           </nav>
 
@@ -147,7 +186,7 @@ export function LandingFooter() {
                   href="/request-demo"
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Request demo
+                  Request a demo
                 </Link>
               </li>
               <li>

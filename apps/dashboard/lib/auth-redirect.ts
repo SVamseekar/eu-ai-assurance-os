@@ -2,11 +2,21 @@
 const PUBLIC_PATH_PREFIXES = [
   "/",
   "/login",
+  "/product",
+  "/how-it-works",
+  "/who-its-for",
+  "/pricing",
+  "/method",
+  "/faq",
   "/request-demo",
   "/privacy",
   "/terms",
   "/refunds",
   "/disclaimer",
+  "/dpa",
+  "/msa",
+  "/order-form",
+  "/invite",
 ] as const;
 
 /** Safe same-origin path for post-login redirects (`?next=` / OAuth return). */

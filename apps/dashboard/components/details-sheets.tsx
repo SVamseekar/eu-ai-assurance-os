@@ -9,6 +9,9 @@ import { DecisionBadge } from "./decision-badge";
 import { normaliseDecision, cn, formatDate } from "@/lib/utils";
 import type { AiSystem, DataContract, DriftEvent, AuditEvent } from "@/lib/types";
 import { useDashboard } from "@/context/dashboard-context";
+import { isPublicClaimsSystem, publicClaimsSlug } from "@/lib/public-claims";
+import { api } from "@/lib/api";
+import Link from "next/link";
 import { ObligationMapWizard } from "./obligation-map-wizard";
 import { Button } from "./ui/button";
 import {
@@ -23,6 +26,7 @@ import {
   Layers,
   FileSpreadsheet,
   Scale,
+  Download,
 } from "lucide-react";
 
 interface SystemDetailsSheetProps {
@@ -126,6 +130,45 @@ export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: Sys
           {system.purpose}
         </p>
       </div>
+
+      {isPublicClaimsSystem(system) && (
+        <div className="rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15 p-3.5 space-y-2">
+          <p className="text-[11px] font-semibold text-foreground">Public-claims teaser</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Named organisation is not a customer. Artifacts are reconstructed from public pages.
+            Evgraph is a library: missing approval timestamps are INCONCLUSIVE unless you pass
+            --strict; empty dataset licenses fail --gate.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Link href="/public-claims" className="text-[10px] text-primary font-medium hover:underline">
+              Open public-claims catalog
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 w-full text-[10px] whitespace-nowrap"
+              onClick={async (event) => {
+                event.stopPropagation();
+                const slug = publicClaimsSlug(system);
+                if (!slug) return;
+                const files = await api.publicClaims.evgraph(slug);
+                const blob = new Blob([JSON.stringify(files, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${slug}-evgraph-artifacts.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Evgraph artifacts
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Legal Basis */}
       <div>

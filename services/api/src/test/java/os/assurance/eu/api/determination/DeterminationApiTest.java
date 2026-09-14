@@ -59,7 +59,7 @@ class DeterminationApiTest {
   void questionnaireIncludesDisclaimerAndVersionedQuestions() throws Exception {
     mockMvc.perform(get("/api/v1/determination/questionnaire").with(authenticated()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.rulesetVersion").value("v1"))
+        .andExpect(jsonPath("$.rulesetVersion").value("v2"))
         .andExpect(jsonPath("$.disclaimer", containsString("not legal advice")))
         .andExpect(jsonPath("$.disclaimer", containsString("human legal reviewer")))
         .andExpect(jsonPath("$.disclaimer", not(containsString("You are compliant"))))
@@ -92,7 +92,7 @@ class DeterminationApiTest {
                 """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.disclaimer", containsString("not legal advice")))
-        .andExpect(jsonPath("$.rulesetVersion").value("v1"))
+        .andExpect(jsonPath("$.rulesetVersion").value("v2"))
         .andExpect(jsonPath("$.result.riskSuggestion.autoApplied").value(false))
         .andExpect(jsonPath("$.result.riskSuggestion.requiresHumanConfirm").value(true))
         .andExpect(jsonPath("$.result.riskSuggestion.suggestedRiskClass").value("HIGH"))
@@ -157,6 +157,47 @@ class DeterminationApiTest {
         .andExpect(jsonPath("$.result.riskSuggestion.suggestedRiskClass").value("LIMITED"))
         .andExpect(jsonPath("$.result.riskSuggestion.autoApplied").value(false))
         .andExpect(jsonPath("$.disclaimer", containsString("not an official conformity assessment")));
+  }
+
+  @Test
+  void prohibitedPracticeScreenSuggestsProhibitedAndBlocksGate() throws Exception {
+    String systemId = createSystem("Social Score Demo", "limited");
+
+    mockMvc.perform(post("/api/v1/systems/{id}/determination/runs", systemId)
+            .with(authenticated())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "answers": {
+                    "operator_role": "provider",
+                    "sector": "other",
+                    "users_affected": "many",
+                    "decision_impact": "informational",
+                    "biometric": false,
+                    "employment": false,
+                    "essential_private_service": false,
+                    "human_in_loop": true,
+                    "interacts_with_natural_persons": false,
+                    "profiling": true,
+                    "high_risk_self_assessment": false,
+                    "art50_chatbot": false,
+                    "art50_synthetic": false,
+                    "gpai_model": false,
+                    "prohibited_social_scoring": true,
+                    "prohibited_emotion_workplace": false,
+                    "prohibited_subliminal": false,
+                    "prohibited_biometric_realtime": false
+                  }
+                }
+                """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.result.riskSuggestion.suggestedRiskClass").value("PROHIBITED"))
+        .andExpect(jsonPath("$.result.applicableRuleCodes", hasItem("PROHIBITED_SOCIAL_SCORING")));
+
+    mockMvc.perform(get("/api/v1/systems/{id}/release-gate", systemId).with(authenticated()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision").value("BLOCKED"))
+        .andExpect(jsonPath("$.blockers", hasItem("PROHIBITED_PRACTICE:PROHIBITED_SOCIAL_SCORING")));
   }
 
   private String createSystem(String name, String riskClass) throws Exception {

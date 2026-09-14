@@ -22,6 +22,8 @@ public record EvidencePackResponse(
     List<Map<String, Object>> approvals,
     List<AuditEvent> auditEvents,
     Map<String, Object> determination,
+    Map<String, Object> conformity,
+    Map<String, Object> evgraphArtifacts,
     String evidencePackVersion,
     String contentSha256,
     String generator,

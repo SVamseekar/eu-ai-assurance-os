@@ -116,7 +116,30 @@ public final class EvidencePackPdfRenderer {
         }
       }
 
-      addHeading(document, headingFont, "8. Audit excerpt");
+      addHeading(document, headingFont, "8. Conformity dossier (checklist, not a legal file)");
+      Map<String, Object> conformity = pack.conformity();
+      if (conformity == null || conformity.isEmpty()) {
+        addLine(document, bodyFont, "Conformity", "(none)");
+      } else {
+        addLine(document, bodyFont, "Disclaimer", conformity.get("disclaimer"));
+        addLine(document, bodyFont, "Updated at", conformity.get("updatedAt"));
+      }
+
+      addHeading(document, headingFont, "9. Evgraph artifacts (library JSON trio)");
+      Map<String, Object> evgraph = pack.evgraphArtifacts();
+      if (evgraph == null || evgraph.isEmpty()) {
+        addLine(document, bodyFont, "Evgraph", "(none)");
+      } else {
+        addLine(document, bodyFont, "How to run", evgraph.get("howto"));
+        if (evgraph.get("disclaimer") != null) {
+          addLine(document, bodyFont, "Public claims", evgraph.get("disclaimer"));
+        }
+        if (evgraph.get("howtoDataset") != null) {
+          addLine(document, bodyFont, "Dataset scan", evgraph.get("howtoDataset"));
+        }
+      }
+
+      addHeading(document, headingFont, "10. Audit excerpt");
       List<AuditEvent> audits = pack.auditEvents();
       int limit = Math.min(audits.size(), 15);
       if (limit == 0) {
@@ -132,7 +155,7 @@ public final class EvidencePackPdfRenderer {
         }
       }
 
-      addHeading(document, headingFont, "9. Seal");
+      addHeading(document, headingFont, "11. Seal");
       addLine(document, bodyFont, "contentSha256", pack.contentSha256());
       if (pack.auditChainHead() != null && !pack.auditChainHead().isBlank()) {
         addLine(document, bodyFont, "auditChainHead", pack.auditChainHead());

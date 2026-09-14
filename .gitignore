@@ -7,6 +7,17 @@ target/
 .env.*
 !.env.example
 *.log
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Operator-only lab files (SSH env, host IPs, runbooks). Never public.
+.local/
+
+# Linked git worktrees. Never public.
+.worktrees/
+
 # Terraform local state / plugins (skeleton uses null provider; never commit state)
 infra/terraform/.terraform/
 infra/terraform/*.tfstate

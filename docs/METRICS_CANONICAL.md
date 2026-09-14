@@ -48,7 +48,7 @@ ls services/api/src/main/resources/db/postgresql/
 | Release decisions | **PASS · REVIEW · BLOCKED** | `ReleaseGateService` |
 | Risk classes | **MINIMAL · LIMITED · HIGH · PROHIBITED** | Not “Unacceptable” as enum label |
 | Risk classification | **Guided / recorded** (caller supplies class + basis) | Not ML auto-inference |
-| Flyway | **V1–V16** (+ postgres **V4**) | Main: V1–V3, V5–V16; no V4 on H2 path |
+| Flyway | **V1–V17** (+ postgres **V4**) | Main: V1–V3, V5–V17; no V4 on H2 path. Re-count endpoints/tests after this PR lands. |
 | REST `@*Mapping` endpoints | **64** | All controllers under `services/api/src/main` |
 | Automated tests (`@Test` / `@ParameterizedTest`) | **190** | `services/api/src/test` |
 | Java production source files | **240** | |
@@ -58,8 +58,8 @@ ls services/api/src/main/resources/db/postgresql/
 | Dashboard TS/TSX files | **93** | excl. `node_modules` / `.next` |
 | Dashboard TS/TSX LOC | **~10.7k** (10,714) | |
 | Approx. combined app LOC | **~31.2k** | Java main+test + dashboard TS only |
-| Dashboard product routes | **9** | command, systems, approvals, evidence, evals, contracts, audit, readiness, reg-monitor |
-| Public / marketing routes | Landing `/`, login, request-demo, privacy, terms, refunds, disclaimer | Part 3 complete |
+| Dashboard product routes | **11** | command, systems, approvals, evidence, evals, contracts, audit, readiness, reg-monitor, settings, public-claims |
+| Public / marketing routes | `/`, `/product`, `/how-it-works`, `/who-its-for`, `/pricing`, `/method`, `/faq`, login, request-demo, privacy, terms, refunds, disclaimer, DPA/MSA/order-form | Split landing; not a single scroll |
 | Capability modules (landing) | **7** | Registry, risk, evidence RAG, eval gates, contracts, approvals/audit, certification readiness |
 | Sector packs | **3** — insurance · HR · finance | SPI + vertical overlays; not live vendor connectors |
 | Eval callback integrity | **HMAC-SHA-256** (`X-Eval-Signature: v1=<hex>`) | Eval result callback only |

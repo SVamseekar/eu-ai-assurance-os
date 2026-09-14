@@ -1,0 +1,74 @@
+{
+  "graph": {
+    "egs_version": "0.1",
+    "graph_id": "scan_2026-09-14T19:03:03.834528+00:00_cfa541",
+    "created_at": "2026-09-14T19:03:03.834528Z",
+    "nodes": [
+      {
+        "id": "dataset_open-banking-account-check-public-claim",
+        "type": "Dataset",
+        "observed_at": "2026-09-14T19:03:03.834528Z",
+        "source": {
+          "path": "/Users/souravamseekarmarti/Projects/eu-ai-assurance-os/services/api/src/main/resources/public-claims/auxmoney/dataset_manifest.csv",
+          "row": 0
+        },
+        "evidence_level": "STRUCTURAL",
+        "attributes": {
+          "dataset_id": "open-banking-account-check-public-claim",
+          "source": "it-finanzmagazin-2025-12-05",
+          "license": "",
+          "contains_pii": true
+        }
+      },
+      {
+        "id": "dataset_credit-risk-features-public-claim",
+        "type": "Dataset",
+        "observed_at": "2026-09-14T19:03:03.834528Z",
+        "source": {
+          "path": "/Users/souravamseekarmarti/Projects/eu-ai-assurance-os/services/api/src/main/resources/public-claims/auxmoney/dataset_manifest.csv",
+          "row": 1
+        },
+        "evidence_level": "STRUCTURAL",
+        "attributes": {
+          "dataset_id": "credit-risk-features-public-claim",
+          "source": "coo-article-2025-12-05",
+          "license": "",
+          "contains_pii": true
+        }
+      }
+    ],
+    "edges": [],
+    "adapter_manifest": [
+      {
+        "adapter": "evgraph-adapter-dataset-manifest",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "res_version": "0.1",
+      "id": "finding_7aa4098b",
+      "rule_id": "dataset-manifest-complete",
+      "level": "STRUCTURAL",
+      "outcome": "EXPECTATION_NOT_MET",
+      "statement": "Dataset open-banking-account-check-public-claim does not declare a license.",
+      "cited_node_ids": [
+        "dataset_open-banking-account-check-public-claim"
+      ],
+      "trace": []
+    },
+    {
+      "res_version": "0.1",
+      "id": "finding_f32eaceb",
+      "rule_id": "dataset-manifest-complete",
+      "level": "STRUCTURAL",
+      "outcome": "EXPECTATION_NOT_MET",
+      "statement": "Dataset credit-risk-features-public-claim does not declare a license.",
+      "cited_node_ids": [
+        "dataset_credit-risk-features-public-claim"
+      ],
+      "trace": []
+    }
+  ]
+}

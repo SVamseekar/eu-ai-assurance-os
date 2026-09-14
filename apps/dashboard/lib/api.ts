@@ -17,11 +17,19 @@ import type {
   RegItem,
   RegMonitorFeed,
   ReleaseGateResponse,
+  OpsReadiness,
   SectorPack,
   SectorPacksResponse,
   SystemControl,
   WorkflowNotification,
+  WorkspaceInvite,
+  WorkspaceUser,
 } from "./types";
+import type {
+  PublicClaimsArtifacts,
+  PublicClaimsIndex,
+  PublicClaimsTeaser,
+} from "./public-claims";
 
 import { loginRedirectHref } from "./auth-redirect";
 
@@ -79,6 +87,9 @@ export const api = {
       }),
     /** Primary sealed JSON evidence pack (authenticated proxy). */
     evidencePack: (id: string) => request<EvidencePack>(`/systems/${id}/evidence-pack`),
+    evgraphArtifacts: (id: string) =>
+      request<Record<string, unknown>>(`/systems/${id}/evgraph-artifacts`),
+    conformity: (id: string) => request<Record<string, unknown>>(`/systems/${id}/conformity`),
     /**
      * Phase 6 PDF export of the sealed pack. Returns contentSha256 from response header.
      */
@@ -239,6 +250,35 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ notes }),
       }),
+  },
+  admin: {
+    users: () => request<WorkspaceUser[]>("/admin/users"),
+    invites: () => request<WorkspaceInvite[]>("/admin/users/invites"),
+    inviteUser: (payload: { email: string; role: string }) =>
+      request<WorkspaceInvite>("/admin/users/invites", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    createTenant: (payload: {
+      name: string;
+      plan?: string;
+      dataRegion?: string;
+      adminEmail: string;
+      adminPassword: string;
+    }) =>
+      request<{ tenant: { id: string; name: string }; admin: WorkspaceUser }>("/admin/tenants", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
+  ops: {
+    readiness: () => request<OpsReadiness>("/ops/readiness"),
+  },
+  publicClaims: {
+    list: () => request<PublicClaimsIndex>("/public-claims"),
+    get: (slug: string) => request<PublicClaimsTeaser>(`/public-claims/${slug}`),
+    evgraph: (slug: string) =>
+      request<PublicClaimsArtifacts>(`/public-claims/${slug}/evgraph`),
   },
   sectorPacks: {
     list: () => request<SectorPacksResponse>("/sector-packs"),

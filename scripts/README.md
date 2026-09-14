@@ -43,6 +43,16 @@ ASSURANCE_API_BASE=http://localhost:8080 ./scripts/compose-evidence-smoke.sh
 
 Local bootstrap user: `compliance@example.com` / `dev-local-password-only` (never production).
 
+## `public-claims-evgraph.sh`
+
+Runs Evgraph on four EU public-claims packs (Getsafe, auxmoney, softgarden, Retorio). Not customers. Expects promotion `--gate --strict` exit 1 and dataset `--gate` exit 1.
+
+```bash
+./scripts/public-claims-evgraph.sh
+```
+
+Requires the Evgraph CLI (`pip install evgraph` or sibling `../evgraph/.venv`). Writes markdown/JSON next to the packs. If a sibling GTM tree exists it copies leave-behinds there — that tree is **not** this repository. See `docs/PUBLIC_CLAIMS.md`.
+
 ## `terraform-validate.sh` (Part 9)
 
 `fmt -check` + `init -backend=false` + `validate` for `infra/terraform` (null provider; no cloud credentials).

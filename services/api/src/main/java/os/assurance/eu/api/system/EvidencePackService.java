@@ -12,7 +12,10 @@ import os.assurance.eu.api.contract.DataContract;
 import os.assurance.eu.api.contract.DataContractService;
 import os.assurance.eu.api.contract.DriftEvent;
 import os.assurance.eu.api.contract.DriftStatus;
+import os.assurance.eu.api.conformity.ConformityService;
 import os.assurance.eu.api.determination.DeterminationService;
+import os.assurance.eu.api.publicclaims.PublicClaimsCatalog;
+import os.assurance.eu.api.publicclaims.PublicClaimsService;
 import os.assurance.eu.api.workflow.ApprovalStage;
 import os.assurance.eu.api.workflow.ApprovalWorkflow;
 import os.assurance.eu.api.workflow.ApprovalWorkflowService;
@@ -22,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EvidencePackService {
-  public static final String PACK_VERSION = "1.0";
+  public static final String PACK_VERSION = "1.1";
 
   private final AiSystemRepository repository;
   private final ReleaseGateService releaseGateService;
@@ -30,6 +33,8 @@ public class EvidencePackService {
   private final DataContractService dataContractService;
   private final ApprovalWorkflowService approvalWorkflowService;
   private final DeterminationService determinationService;
+  private final ConformityService conformityService;
+  private final PublicClaimsService publicClaimsService;
   private final Clock clock;
   private final String generator;
 
@@ -40,6 +45,8 @@ public class EvidencePackService {
       DataContractService dataContractService,
       ApprovalWorkflowService approvalWorkflowService,
       DeterminationService determinationService,
+      ConformityService conformityService,
+      PublicClaimsService publicClaimsService,
       Clock clock,
       @Value("${assurance.evidence-pack.generator:eu-ai-assurance-api/0.1.0}") String generator) {
     this.repository = repository;
@@ -48,6 +55,8 @@ public class EvidencePackService {
     this.dataContractService = dataContractService;
     this.approvalWorkflowService = approvalWorkflowService;
     this.determinationService = determinationService;
+    this.conformityService = conformityService;
+    this.publicClaimsService = publicClaimsService;
     this.clock = clock;
     this.generator = generator;
   }
@@ -68,6 +77,8 @@ public class EvidencePackService {
         .map(this::workflowEvidence)
         .toList();
     Map<String, Object> determination = determinationService.latestSnapshotForPack(system.id());
+    Map<String, Object> conformity = conformityService.snapshotForPack(system.id());
+    Map<String, Object> evgraphArtifacts = evgraphArtifacts(system, approvals);
     Map<String, Object> riskClassification = riskClassification(system);
     List<Map<String, Object>> evidence = List.of(Map.of(
         "coverage", system.evidenceCoverage(),
@@ -89,7 +100,9 @@ public class EvidencePackService {
         dataContracts,
         approvals,
         auditEvents,
-        determination);
+        determination,
+        conformity,
+        evgraphArtifacts);
     String contentSha256 = EvidencePackSealer.contentSha256(sealPayload);
 
     Map<String, Object> auditPayload = new LinkedHashMap<>();
@@ -115,10 +128,21 @@ public class EvidencePackService {
         approvals,
         auditEvents,
         determination,
+        conformity,
+        evgraphArtifacts,
         PACK_VERSION,
         contentSha256,
         generator,
         auditChainHead);
+  }
+
+  public Map<String, Object> evgraphArtifactFiles(UUID systemId) {
+    AiSystem system = repository.findById(systemId)
+        .orElseThrow(() -> new IllegalArgumentException("AI system not found"));
+    List<Map<String, Object>> approvals = approvalWorkflowService.listBySystemId(system.id()).stream()
+        .map(this::workflowEvidence)
+        .toList();
+    return evgraphArtifacts(system, approvals);
   }
 
   public byte[] renderPdf(EvidencePackResponse pack, String systemName) {
@@ -127,6 +151,66 @@ public class EvidencePackService {
 
   public String pdfFilename(EvidencePackResponse pack) {
     return EvidencePackPdfRenderer.filename(pack.systemId(), pack.generatedAt());
+  }
+
+  /**
+   * JSON trio Evgraph's ModelCardAdapter already understands. Run:
+   * {@code evgraph scan-promotion --model-card ... --approval ... --deployment ... --gate}
+   */
+  private Map<String, Object> evgraphArtifacts(AiSystem system, List<Map<String, Object>> approvals) {
+    String publicClaimsSlug = PublicClaimsCatalog.slugFromDataSources(system.dataSources());
+    if (publicClaimsSlug != null) {
+      return publicClaimsService.evgraphArtifacts(publicClaimsSlug);
+    }
+    Map<String, Object> modelCard = new LinkedHashMap<>();
+    String modelName = system.modelName() == null || system.modelName().isBlank()
+        ? system.name()
+        : system.modelName();
+    modelCard.put("model_name", modelName);
+    modelCard.put("intended_use", system.purpose() == null ? "" : system.purpose());
+
+    Map<String, Object> approval = new LinkedHashMap<>();
+    approval.put("approver", "unassigned");
+    for (Map<String, Object> workflow : approvals) {
+      Object stages = workflow.get("stages");
+      if (!(stages instanceof List<?> list)) {
+        continue;
+      }
+      for (Object stageObj : list) {
+        if (!(stageObj instanceof Map<?, ?> stage)) {
+          continue;
+        }
+        if (!"APPROVED".equals(String.valueOf(stage.get("status")))) {
+          continue;
+        }
+        Object actor = stage.get("actorId");
+        if (actor != null && !actor.toString().isBlank()) {
+          approval.put("approver", actor.toString());
+        }
+        Object actedAt = stage.get("actedAt");
+        if (actedAt != null && !actedAt.toString().isBlank()) {
+          approval.put("approved_at", actedAt.toString());
+        }
+      }
+    }
+
+    Map<String, Object> deployment = new LinkedHashMap<>();
+    Instant deployed = system.updatedAt() != null ? system.updatedAt() : system.createdAt();
+    if (deployed != null) {
+      deployment.put("deployed_at", deployed.toString());
+    }
+
+    Map<String, Object> root = new LinkedHashMap<>();
+    root.put(
+        "howto",
+        "Write these three JSON objects to files and run: evgraph scan-promotion "
+            + "--model-card model_card.json --approval approval.json --deployment deployment.json "
+            + "--format markdown --gate");
+    root.put("library", "evgraph (PyPI). Not bundled in this API.");
+    root.put("model_card", modelCard);
+    root.put("approval", approval);
+    root.put("deployment", deployment);
+    return root;
   }
 
   private Map<String, Object> riskClassification(AiSystem system) {

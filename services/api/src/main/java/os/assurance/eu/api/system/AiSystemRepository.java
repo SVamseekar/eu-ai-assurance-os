@@ -30,6 +30,15 @@ public class AiSystemRepository {
         .map(AiSystemEntity::toDomain);
   }
 
+  @Transactional(readOnly = true)
+  public Optional<AiSystem> findByModelName(String modelName) {
+    if (modelName == null || modelName.isBlank()) {
+      return Optional.empty();
+    }
+    return repository.findByTenantIdAndModelName(tenantContext.tenantId(), modelName)
+        .map(AiSystemEntity::toDomain);
+  }
+
   @Transactional
   public AiSystem save(AiSystem system) {
     return repository.save(new AiSystemEntity(tenantContext.tenantId(), system)).toDomain();

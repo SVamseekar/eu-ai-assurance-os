@@ -18,12 +18,24 @@ public record QuestionnaireDefinition(
       List<Map<String, String>> options) {
   }
 
+  public static QuestionnaireDefinition current() {
+    return v2();
+  }
+
   public static QuestionnaireDefinition v1() {
+    return v2();
+  }
+
+  public static QuestionnaireDefinition v2() {
     return new QuestionnaireDefinition(
         DeterminationDisclaimers.RULESET_VERSION,
         DeterminationDisclaimers.FULL,
         DeterminationDisclaimers.METRICS_LABEL,
         List.of(
+            q("operator_role", "Operator role",
+                "Are you acting as provider, deployer, importer, or distributor of this system?",
+                "select", true,
+                opts("provider", "deployer", "importer", "distributor", "unknown")),
             q("sector", "Sector / domain",
                 "Primary business domain of the AI system.",
                 "select", true,
@@ -63,6 +75,34 @@ public record QuestionnaireDefinition(
             q("high_risk_self_assessment", "Operator high-risk self-assessment",
                 "Does the operator currently treat this system as high-risk?",
                 "boolean_unknown", false,
+                booleanUnknownOpts()),
+            q("art50_chatbot", "Chatbot / conversational AI",
+                "Does a natural person interact with the system in a way that might be mistaken for a human?",
+                "boolean_unknown", true,
+                booleanUnknownOpts()),
+            q("art50_synthetic", "Synthetic content generation",
+                "Does the system generate synthetic audio, image, video, or text that should be marked as AI-generated?",
+                "boolean_unknown", true,
+                booleanUnknownOpts()),
+            q("gpai_model", "General-purpose AI model",
+                "Is this a GPAI model or a system that embeds one?",
+                "boolean_unknown", false,
+                booleanUnknownOpts()),
+            q("prohibited_social_scoring", "Social scoring of persons",
+                "Does the system score natural persons based on social behaviour or personal characteristics for detrimental treatment? (Art. 5 screen — not a legal finding.)",
+                "boolean_unknown", true,
+                booleanUnknownOpts()),
+            q("prohibited_emotion_workplace", "Workplace / education emotion recognition",
+                "Does the system infer emotions in the workplace or education? (Art. 5 screen.)",
+                "boolean_unknown", true,
+                booleanUnknownOpts()),
+            q("prohibited_subliminal", "Subliminal or manipulative techniques",
+                "Does the system use subliminal or purposefully manipulative techniques to distort behaviour? (Art. 5 screen.)",
+                "boolean_unknown", true,
+                booleanUnknownOpts()),
+            q("prohibited_biometric_realtime", "Real-time remote biometric ID in public",
+                "Is real-time remote biometric identification used in publicly accessible spaces? (Art. 5 screen.)",
+                "boolean_unknown", true,
                 booleanUnknownOpts())
         ));
   }

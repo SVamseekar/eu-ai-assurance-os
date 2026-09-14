@@ -840,7 +840,7 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.generatedAt", not(blankOrNullString())))
         .andExpect(jsonPath("$.riskClassification.riskClass").value("LIMITED"))
         .andExpect(jsonPath("$.auditEvents", not(hasSize(0))))
-        .andExpect(jsonPath("$.evidencePackVersion").value("1.0"))
+        .andExpect(jsonPath("$.evidencePackVersion").value("1.1"))
         .andExpect(jsonPath("$.contentSha256", not(blankOrNullString())))
         .andExpect(jsonPath("$.generator", not(blankOrNullString())));
   }

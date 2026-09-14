@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { CertificationReadiness } from "@/lib/types";
+import { allowMockFallback } from "@/lib/live-mode";
 import { MOCK_CERTIFICATION_READINESS } from "@/lib/mock-data";
 import { isLiveEntityId } from "@/lib/ids";
 
@@ -10,9 +11,10 @@ export function useCertificationReadiness(systemId: string | null | undefined) {
     queryFn: () => api.systems.certificationReadiness(systemId!),
     // Never call the real API with demo mock IDs (they 400 on Dell).
     enabled: isLiveEntityId(systemId),
-    placeholderData: systemId
-      ? MOCK_CERTIFICATION_READINESS[systemId] ?? mockFallback(systemId)
-      : undefined,
+    placeholderData:
+      allowMockFallback() && systemId
+        ? MOCK_CERTIFICATION_READINESS[systemId] ?? mockFallback(systemId)
+        : undefined,
   });
 }
 

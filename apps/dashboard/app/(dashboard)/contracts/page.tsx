@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ContractCard } from "@/components/contract-card";
 import { LineageGraph } from "@/components/lineage-graph";
 import { useContracts } from "@/hooks/use-contracts";
+import { allowMockFallback } from "@/lib/live-mode";
 import { MOCK_CONTRACTS, MOCK_DRIFT_EVENTS } from "@/lib/mock-data";
 import { useQueries } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -14,7 +15,7 @@ import { useDashboard } from "@/context/dashboard-context";
 
 export default function ContractsPage() {
   const { allSystems: systems } = useDashboard();
-  const { data: contracts = MOCK_CONTRACTS } = useContracts();
+  const { data: contracts = allowMockFallback() ? MOCK_CONTRACTS : [] } = useContracts();
 
   const driftQueries = useQueries({
     queries: contracts.map((contract) => ({
@@ -22,7 +23,9 @@ export default function ContractsPage() {
       queryFn: () => api.contracts.driftEvents(contract.id),
       // Skip API for demo mock contract ids (they 400 on the real backend).
       enabled: isLiveEntityId(contract.id),
-      placeholderData: MOCK_DRIFT_EVENTS.filter((e) => e.contractId === contract.id),
+      placeholderData: allowMockFallback()
+        ? MOCK_DRIFT_EVENTS.filter((e) => e.contractId === contract.id)
+        : undefined,
     })),
   });
 

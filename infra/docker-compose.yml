@@ -67,6 +67,8 @@ services:
       OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-http://localhost:3000}
       OAUTH_AUTO_PROVISION: ${OAUTH_AUTO_PROVISION:-false}
       OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
+      # Named public-claims teasers. Off on postgres unless you opt in for a demo tenant.
+      ASSURANCE_PUBLIC_CLAIMS: ${ASSURANCE_PUBLIC_CLAIMS:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,6 +96,7 @@ services:
       ASSURANCE_API_BASE_URL: ${ASSURANCE_API_BASE_URL:-http://api:8080}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+      NEXT_PUBLIC_USE_MOCK_DATA: ${NEXT_PUBLIC_USE_MOCK_DATA:-false}
     depends_on:
       api:
         condition: service_healthy

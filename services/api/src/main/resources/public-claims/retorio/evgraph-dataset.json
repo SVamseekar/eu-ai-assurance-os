@@ -1,0 +1,46 @@
+{
+  "graph": {
+    "egs_version": "0.1",
+    "graph_id": "scan_2026-09-14T19:03:05.889525+00:00_4dcbf5",
+    "created_at": "2026-09-14T19:03:05.889525Z",
+    "nodes": [
+      {
+        "id": "dataset_debiased-coaching-sets-public-claim",
+        "type": "Dataset",
+        "observed_at": "2026-09-14T19:03:05.889525Z",
+        "source": {
+          "path": "/Users/souravamseekarmarti/Projects/eu-ai-assurance-os/services/api/src/main/resources/public-claims/retorio/dataset_manifest.csv",
+          "row": 0
+        },
+        "evidence_level": "STRUCTURAL",
+        "attributes": {
+          "dataset_id": "debiased-coaching-sets-public-claim",
+          "source": "retorio-ai-act-page",
+          "license": "",
+          "contains_pii": false
+        }
+      }
+    ],
+    "edges": [],
+    "adapter_manifest": [
+      {
+        "adapter": "evgraph-adapter-dataset-manifest",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "res_version": "0.1",
+      "id": "finding_6bbf32c2",
+      "rule_id": "dataset-manifest-complete",
+      "level": "STRUCTURAL",
+      "outcome": "EXPECTATION_NOT_MET",
+      "statement": "Dataset debiased-coaching-sets-public-claim does not declare a license.",
+      "cited_node_ids": [
+        "dataset_debiased-coaching-sets-public-claim"
+      ],
+      "trace": []
+    }
+  ]
+}

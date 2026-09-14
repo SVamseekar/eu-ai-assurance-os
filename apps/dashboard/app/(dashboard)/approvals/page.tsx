@@ -3,6 +3,7 @@
 import { ApprovalActionModal } from "@/components/approval-action-modal";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { allowMockFallback } from "@/lib/live-mode";
 import {
   MOCK_MY_WORKFLOWS,
   MOCK_NOTIFICATIONS,
@@ -61,10 +62,11 @@ export default function ApprovalsPage() {
   });
 
   // Live API wins when online (including empty []). Mocks only if the API is unreachable.
-  const systemsList = systems.isError ? MOCK_SYSTEMS : (systems.data ?? []);
-  const mineList = mine.isError ? MOCK_MY_WORKFLOWS : (mine.data ?? []);
-  const openList = open.isError ? MOCK_OPEN_WORKFLOWS : (open.data ?? []);
-  const notificationList = notifications.isError ? MOCK_NOTIFICATIONS : (notifications.data ?? []);
+  const systemsList = systems.isError && allowMockFallback() ? MOCK_SYSTEMS : (systems.data ?? []);
+  const mineList = mine.isError && allowMockFallback() ? MOCK_MY_WORKFLOWS : (mine.data ?? []);
+  const openList = open.isError && allowMockFallback() ? MOCK_OPEN_WORKFLOWS : (open.data ?? []);
+  const notificationList =
+    notifications.isError && allowMockFallback() ? MOCK_NOTIFICATIONS : (notifications.data ?? []);
 
   const systemNames = new Map(systemsList.map((system) => [system.id, system.name]));
   const myWorkflowIds = new Set(mineList.map((workflow) => workflow.id));

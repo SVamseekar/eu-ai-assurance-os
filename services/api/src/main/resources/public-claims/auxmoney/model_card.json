@@ -1,0 +1,4 @@
+{
+  "model_name": "auxmoney-credit-risk-public",
+  "intended_use": "Public-claims reconstruction only. COO writing dated 2025-12-05 describes machine-learning credit-risk models and a Digital Account Check used in automated consumer-credit decisioning in the EU. Not a customer artefact."
+}
