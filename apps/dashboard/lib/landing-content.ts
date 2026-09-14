@@ -226,10 +226,10 @@ export const homeDestinations = [
       "Register → classify → run Evgraph, evals, and contracts → PASS / REVIEW / BLOCKED.",
   },
   {
-    href: "/pricing",
-    title: "Pricing",
+    href: "/request-demo",
+    title: "Talk to us",
     description:
-      "First paid offer: €4,900 readiness sprint for one named AI system, ten working days. Not Stripe self-serve.",
+      "Scoped readiness work for one named system. Quote after a short call — not a self-serve subscription.",
   },
   {
     href: "/method",
@@ -241,9 +241,9 @@ export const homeDestinations = [
 
 export const faqItems: FaqItem[] = [
   {
-    question: "What do you sell first?",
+    question: "How do you charge?",
     answer:
-      "A €4,900 release-readiness sprint for one named AI system over ten working days. You keep the Evgraph CLI run, a sealed evidence pack, and a PASS / REVIEW / BLOCKED decision. Extra system in the same sprint: +€1,500. It is not a notified-body certificate and not a Stripe self-serve subscription.",
+      "Like other EU AI Act governance vendors, we do not publish a list price. Work is scoped to one named AI system after a short call, then we send a written quote. It is not a notified-body certificate and not a self-serve subscription.",
   },
   {
     question: "Are the named EU companies on this site customers?",

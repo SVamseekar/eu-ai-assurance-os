@@ -41,18 +41,14 @@ export function LandingHero() {
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
             Evgraph checks the files. {siteConfig.name} turns evidence, evals,
             and contracts into PASS, REVIEW, or BLOCKED — with a sealed pack.
-            First paid offer: €{siteConfig.sprintPriceEur.toLocaleString("en-GB")}{" "}
-            for one system, {siteConfig.sprintDays} working days. Not a
-            notified body.
+            Not a notified body. Commercial work is scoped after a demo, not
+            listed as a public price.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" render={<Link href="/request-demo" />}>
-              Request the sprint
+              Request a demo
             </Button>
-            <Button size="lg" variant="outline" render={<Link href="/pricing" />}>
-              Pricing
-            </Button>
-            <Button size="lg" variant="ghost" render={<Link href="/how-it-works" />}>
+            <Button size="lg" variant="outline" render={<Link href="/how-it-works" />}>
               How it works
             </Button>
           </div>

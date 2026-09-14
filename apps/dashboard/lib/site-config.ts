@@ -12,9 +12,6 @@ export const siteConfig = {
   githubUrl: "https://github.com/SVamseekar/eu-ai-assurance-os",
   portfolioUrl: "https://souravamseekar.com",
   legalLastUpdated: "15 September 2026",
-  sprintPriceEur: 4900,
-  sprintExtraSystemEur: 1500,
-  sprintDays: 10,
 };
 
 /** Authenticated dashboard routes — excluded from sitemap, disallowed in robots.txt */
@@ -39,7 +36,7 @@ export const publicRoutes = [
   { path: "/product", changeFrequency: "weekly" as const, priority: 0.9 },
   { path: "/how-it-works", changeFrequency: "weekly" as const, priority: 0.8 },
   { path: "/who-its-for", changeFrequency: "monthly" as const, priority: 0.7 },
-  { path: "/pricing", changeFrequency: "weekly" as const, priority: 0.9 },
+  { path: "/pricing", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/method", changeFrequency: "weekly" as const, priority: 0.8 },
   { path: "/faq", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/request-demo", changeFrequency: "monthly" as const, priority: 0.9 },
@@ -55,7 +52,6 @@ export const publicRoutes = [
 export const landingNavLinks = [
   { href: "/product", label: "Product" },
   { href: "/how-it-works", label: "How it works" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/method", label: "Method" },
   { href: "/faq", label: "FAQ" },
 ] as const;

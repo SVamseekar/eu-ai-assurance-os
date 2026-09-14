@@ -10,9 +10,9 @@ export function HomeDestinations() {
         Separate pages, not a long scroll
       </h2>
       <p className="mt-3 max-w-2xl text-muted-foreground">
-        Product, method, pricing, and FAQ each have their own URL. The MIT
-        repository is the product. Lab secrets, outreach lists, and customer
-        tenants are not in git.
+        Product, method, and FAQ each have their own URL. Commercial work is
+        scoped after a demo — not a public price list. Lab secrets, outreach
+        lists, and customer tenants are not in git.
       </p>
       <ul className="mt-8 grid gap-4 sm:grid-cols-2">
         {homeDestinations.map((item) => (

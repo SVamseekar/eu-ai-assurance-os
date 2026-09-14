@@ -29,7 +29,7 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 
 > This product assists governance and release readiness. It is **not** a notified body, does **not** issue legal certifications, and does **not** replace qualified legal counsel.
 
-**First paid offer:** €4,900 release-readiness sprint for one named AI system (ten working days). See [`/pricing`](https://euassuranceai.souravamseekar.com/pricing). Evgraph is a **separate** PyPI library — this repo exports the files it already reads.
+**Commercial path:** scoped readiness work for one named AI system after a demo — no public list price. See [`/pricing`](https://euassuranceai.souravamseekar.com/pricing). Evgraph is a **separate** PyPI library — this repo exports the files it already reads.
 
 ## What is public vs private
 

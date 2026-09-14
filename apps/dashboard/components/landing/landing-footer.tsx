@@ -64,7 +64,7 @@ export function LandingFooter() {
                   href="/request-demo"
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Request sprint
+                  Request a demo
                 </Link>
               </li>
               <li>
@@ -83,6 +83,14 @@ export function LandingFooter() {
               <li>
                 <Link href="/faq" className="text-muted-foreground hover:text-foreground">
                   FAQ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/pricing"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  How we work
                 </Link>
               </li>
               <li>
@@ -178,7 +186,7 @@ export function LandingFooter() {
                   href="/request-demo"
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  Request sprint
+                  Request a demo
                 </Link>
               </li>
               <li>

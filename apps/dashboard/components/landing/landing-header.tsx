@@ -85,7 +85,7 @@ export function LandingHeader() {
           <Button variant="outline" render={<Link href="/login" />}>
             Sign in
           </Button>
-          <Button render={<Link href="/request-demo" />}>Request sprint</Button>
+          <Button render={<Link href="/request-demo" />}>Request a demo</Button>
         </div>
 
         <button
@@ -150,7 +150,7 @@ export function LandingHeader() {
               <Button variant="outline" render={<Link href="/login" />}>
                 Sign in
               </Button>
-              <Button render={<Link href="/request-demo" />}>Request sprint</Button>
+              <Button render={<Link href="/request-demo" />}>Request a demo</Button>
             </div>
           </nav>
         </div>

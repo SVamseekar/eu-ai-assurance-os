@@ -50,13 +50,6 @@ function jsonLd() {
         operatingSystem: "Web",
         description: siteConfig.description,
         url: siteConfig.url,
-        offers: {
-          "@type": "Offer",
-          name: "EU AI Act release readiness sprint",
-          price: String(siteConfig.sprintPriceEur),
-          priceCurrency: "EUR",
-          url: `${siteConfig.url}/pricing`,
-        },
       },
     ],
   };

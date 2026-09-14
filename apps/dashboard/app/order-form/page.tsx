@@ -8,7 +8,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "Order form — release readiness sprint";
 const description =
-  "Commercial offer for a two-week EU AI Act release-readiness sprint. Not a certificate.";
+  "Template order form for a scoped EU AI Act release-readiness engagement. Fees are those in the written quote. Not a certificate.";
 
 export const metadata: Metadata = {
   title,
@@ -31,11 +31,12 @@ export default function OrderFormPage() {
       />
       <LegalPageShell title={title} description={description}>
         <section>
-          <h2 className="font-heading text-lg font-semibold">SKU</h2>
+          <h2 className="font-heading text-lg font-semibold">Engagement</h2>
           <p className="mt-2">
             <strong>EU AI Act release readiness sprint</strong> — one named AI
-            system, ten working days. Price: <strong>€4,900</strong> net. Extra
-            system in the same sprint: +€1,500. 50% to start, 50% on delivery.
+            system. Fees, extra systems, term, and payment schedule are those
+            set out in the written quote. This page is a template, not an offer
+            of a list price.
           </p>
         </section>
         <section>
@@ -60,7 +61,8 @@ export default function OrderFormPage() {
           <h2 className="font-heading text-lg font-semibold">How to order</h2>
           <p className="mt-2">
             Email {siteConfig.supportEmail} with the system name and billing
-            entity. We send an invoice and a workspace invite. Execute the{" "}
+            entity. After a demo we send a written quote, then an invoice and a
+            workspace invite. Execute the{" "}
             <a href="/msa">MSA</a> and <a href="/dpa">DPA</a> templates after
             counsel review.
           </p>

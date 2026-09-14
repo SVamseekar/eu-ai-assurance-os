@@ -4,9 +4,9 @@ import { DemoRequestForm } from "@/components/landing/demo-request-form";
 import { MarketingPageShell } from "@/components/landing/marketing-page-shell";
 import { siteConfig } from "@/lib/site-config";
 
-const title = "Request the sprint";
+const title = "Request a demo";
 const description =
-  "Request the €4,900 release-readiness sprint or a walkthrough of fail-closed gates, Evgraph artifacts, and sealed evidence packs. Not legal certification.";
+  "Request a walkthrough of fail-closed gates, Evgraph artifacts, and sealed evidence packs. Work is scoped after the call. Not legal certification.";
 
 export const metadata: Metadata = {
   title,
@@ -40,7 +40,7 @@ export default function RequestDemoPage() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-            Request the sprint
+            Request a demo
           </h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">
             See how {siteConfig.name} turns risk classification, evidence, eval
