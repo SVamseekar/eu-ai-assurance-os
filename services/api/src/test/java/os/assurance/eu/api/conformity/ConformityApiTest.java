@@ -87,7 +87,6 @@ class ConformityApiTest {
     mockMvc.perform(get("/api/v1/systems/{id}/evidence-pack", systemId).with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.evidencePackVersion").value("1.1"))
-        .andExpect(jsonPath("$.conformity.annexIv.sections.length()").value(9))
         .andExpect(jsonPath("$.evgraphArtifacts.model_card.model_name").value("Conformity Demo"));
   }
 

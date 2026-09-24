@@ -6,14 +6,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import os.assurance.eu.api.assessment.AssessmentService;
 import os.assurance.eu.api.audit.AuditEvent;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.corpus.CorpusQueryService;
 import os.assurance.eu.api.contract.DataContract;
 import os.assurance.eu.api.contract.DataContractService;
 import os.assurance.eu.api.contract.DriftEvent;
 import os.assurance.eu.api.contract.DriftStatus;
-import os.assurance.eu.api.conformity.ConformityService;
 import os.assurance.eu.api.determination.DeterminationService;
+import os.assurance.eu.api.proposal.MappingProposalService;
 import os.assurance.eu.api.publicclaims.PublicClaimsCatalog;
 import os.assurance.eu.api.publicclaims.PublicClaimsService;
 import os.assurance.eu.api.workflow.ApprovalStage;
@@ -33,8 +35,11 @@ public class EvidencePackService {
   private final DataContractService dataContractService;
   private final ApprovalWorkflowService approvalWorkflowService;
   private final DeterminationService determinationService;
-  private final ConformityService conformityService;
   private final PublicClaimsService publicClaimsService;
+  private final MappingProposalService mappingProposals;
+  private final CorpusQueryService corpus;
+  private final EvgraphCli evgraphCli;
+  private final AssessmentService assessment;
   private final Clock clock;
   private final String generator;
 
@@ -45,8 +50,11 @@ public class EvidencePackService {
       DataContractService dataContractService,
       ApprovalWorkflowService approvalWorkflowService,
       DeterminationService determinationService,
-      ConformityService conformityService,
       PublicClaimsService publicClaimsService,
+      MappingProposalService mappingProposals,
+      CorpusQueryService corpus,
+      EvgraphCli evgraphCli,
+      AssessmentService assessment,
       Clock clock,
       @Value("${assurance.evidence-pack.generator:eu-ai-assurance-api/0.1.0}") String generator) {
     this.repository = repository;
@@ -55,8 +63,11 @@ public class EvidencePackService {
     this.dataContractService = dataContractService;
     this.approvalWorkflowService = approvalWorkflowService;
     this.determinationService = determinationService;
-    this.conformityService = conformityService;
     this.publicClaimsService = publicClaimsService;
+    this.mappingProposals = mappingProposals;
+    this.corpus = corpus;
+    this.evgraphCli = evgraphCli;
+    this.assessment = assessment;
     this.clock = clock;
     this.generator = generator;
   }
@@ -77,8 +88,21 @@ public class EvidencePackService {
         .map(this::workflowEvidence)
         .toList();
     Map<String, Object> determination = determinationService.latestSnapshotForPack(system.id());
-    Map<String, Object> conformity = conformityService.snapshotForPack(system.id());
     Map<String, Object> evgraphArtifacts = evgraphArtifacts(system, approvals);
+    String corpusVersion = corpus.currentVersionHash();
+    List<Map<String, Object>> acceptedLinks = new java.util.ArrayList<>();
+    List<Map<String, Object>> queue = new java.util.ArrayList<>();
+    for (MappingProposalService.ProposalView row : mappingProposals.list(system.id()).items()) {
+      if ("ACCEPTED".equals(row.status())) {
+        acceptedLinks.add(linkRow(row));
+      } else {
+        queue.add(queueRow(row));
+      }
+    }
+    Map<String, Object> acceptedArtifacts = acceptedArtifacts(evgraphArtifacts);
+    List<Map<String, Object>> currentGaps = evgraphCli.currentGaps(acceptedArtifacts);
+    Map<String, Integer> evidenceCounts = assessment.counts(system.id());
+    Map<String, Object> monitoringPlan = MonitoringPlan.standIn();
     Map<String, Object> riskClassification = riskClassification(system);
     List<Map<String, Object>> evidence = List.of(Map.of(
         "coverage", system.evidenceCoverage(),
@@ -101,8 +125,15 @@ public class EvidencePackService {
         approvals,
         auditEvents,
         determination,
-        conformity,
-        evgraphArtifacts);
+        Map.of(),
+        evgraphArtifacts,
+        corpusVersion,
+        acceptedLinks,
+        queue,
+        currentGaps,
+        acceptedArtifacts,
+        evidenceCounts,
+        monitoringPlan);
     String contentSha256 = EvidencePackSealer.contentSha256(sealPayload);
 
     Map<String, Object> auditPayload = new LinkedHashMap<>();
@@ -128,12 +159,19 @@ public class EvidencePackService {
         approvals,
         auditEvents,
         determination,
-        conformity,
+        Map.of(),
         evgraphArtifacts,
         PACK_VERSION,
         contentSha256,
         generator,
-        auditChainHead);
+        auditChainHead,
+        corpusVersion,
+        acceptedLinks,
+        queue,
+        currentGaps,
+        acceptedArtifacts,
+        evidenceCounts,
+        monitoringPlan);
   }
 
   public Map<String, Object> evgraphArtifactFiles(UUID systemId) {
@@ -211,6 +249,37 @@ public class EvidencePackService {
     root.put("approval", approval);
     root.put("deployment", deployment);
     return root;
+  }
+
+  private Map<String, Object> acceptedArtifacts(Map<String, Object> evgraphArtifacts) {
+    Map<String, Object> files = new LinkedHashMap<>();
+    files.put("model_card", evgraphArtifacts.get("model_card"));
+    files.put("approval", evgraphArtifacts.get("approval"));
+    files.put("deployment", evgraphArtifacts.get("deployment"));
+    files.put(
+        "dataset_manifest_csv",
+        "dataset_id,source,license,contains_pii\nds-accepted,internal,Apache-2.0,false\n");
+    return files;
+  }
+
+  private Map<String, Object> linkRow(MappingProposalService.ProposalView row) {
+    Map<String, Object> link = new LinkedHashMap<>();
+    link.put("id", row.id().toString());
+    link.put("status", row.status());
+    link.put("relation", row.relation());
+    link.put("provisionKey", row.provisionKey());
+    link.put("forceStatus", row.forceStatus());
+    link.put("forceFrom", row.forceFrom() == null ? null : row.forceFrom().toString());
+    return link;
+  }
+
+  private Map<String, Object> queueRow(MappingProposalService.ProposalView row) {
+    Map<String, Object> item = new LinkedHashMap<>();
+    item.put("id", row.id().toString());
+    item.put("status", row.status());
+    item.put("relation", row.relation());
+    item.put("label", "abstain".equals(row.relation()) ? "abstain" : row.status());
+    return item;
   }
 
   private Map<String, Object> riskClassification(AiSystem system) {

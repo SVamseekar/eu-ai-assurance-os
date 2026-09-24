@@ -53,6 +53,9 @@ export default function RegMonitorPage() {
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Article 72 stand-in until 2 Sep 2027: reg-monitor diff. The Commission template is not included.
+      </p>
       <div className="rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15 px-4 py-3">
         <p className="text-[11px] font-semibold text-foreground mb-0.5 flex items-center gap-1.5">
           <Newspaper className="w-3.5 h-3.5" />
