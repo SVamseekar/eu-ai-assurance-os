@@ -33,7 +33,7 @@ Status: **Complete**.
 Status: **Complete** (production-hardened foundation).
 
 - Evidence document upload metadata: implemented.
-- Text extraction pipeline: implemented for provided text with metadata fallback.
+- Text extraction pipeline: Apache Tika 4.0.0 for uploaded files, with metadata fallback for provided text.
 - Chunking and embedding: implemented with deterministic local embeddings (`local-hash`).
 - Embedding provider seam: implemented; postgres profile default `djl-sentence` (DJL + ONNX all-MiniLM-L6-v2).
 - pgvector similarity search: local cosine search + PostgreSQL HNSW migration path (`db/postgresql/V4`).

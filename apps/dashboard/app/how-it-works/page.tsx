@@ -11,7 +11,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "How an EU AI Act release gate works";
 const description =
-  "Register the AI system, classify risk, run promotion, eval, and contract checks, then take PASS, REVIEW, or BLOCKED with a sealed evidence pack.";
+  "Register the system, classify risk against a pinned corpus, queue mapping proposals until a person accepts them, then take PASS, REVIEW, or BLOCKED. The pack and evgraph-cli 0.1.2 share the current gap.";
 const path = "/how-it-works";
 const crumbs = [
   { name: "Home", path: "/" },
@@ -56,8 +56,8 @@ export default function HowItWorksPage() {
           What PASS, REVIEW, and BLOCKED mean
         </h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          One decision per system, with the controls behind it. Not a traffic
-          light on a slide.
+          One decision per system. An in-force control applies INFORMATIONAL,
+          WARNING, APPROVAL_REQUIRED, or BLOCKING before that decision is sealed.
         </p>
         <ul className="mt-8 grid gap-4 md:grid-cols-3">
           {releaseDecisionMeanings.map((item) => (
