@@ -70,7 +70,14 @@ public final class EvidencePackSealer {
         auditEvents,
         Map.of(),
         Map.of(),
-        Map.of());
+        Map.of(),
+        "",
+        java.util.List.of(),
+        java.util.List.of(),
+        java.util.List.of(),
+        Map.of(),
+        Map.of(),
+        MonitoringPlan.standIn());
   }
 
   public static Map<String, Object> sealPayload(
@@ -102,7 +109,14 @@ public final class EvidencePackSealer {
         auditEvents,
         determination,
         Map.of(),
-        Map.of());
+        Map.of(),
+        "",
+        java.util.List.of(),
+        java.util.List.of(),
+        java.util.List.of(),
+        Map.of(),
+        Map.of(),
+        MonitoringPlan.standIn());
   }
 
   public static Map<String, Object> sealPayload(
@@ -120,8 +134,20 @@ public final class EvidencePackSealer {
       Object auditEvents,
       Object determination,
       Object conformity,
-      Object evgraphArtifacts) {
+      Object evgraphArtifacts,
+      Object corpusVersion,
+      Object acceptedLinks,
+      Object queue,
+      Object currentGaps,
+      Object acceptedArtifacts,
+      Object evidenceCounts,
+      Object monitoringPlan) {
     Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("acceptedArtifacts", acceptedArtifacts == null ? Map.of() : acceptedArtifacts);
+    payload.put("acceptedLinks", acceptedLinks == null ? java.util.List.of() : acceptedLinks);
+    payload.put("corpusVersion", corpusVersion == null ? "" : corpusVersion);
+    payload.put("currentGaps", currentGaps == null ? java.util.List.of() : currentGaps);
+    payload.put("queue", queue == null ? java.util.List.of() : queue);
     payload.put("approvals", approvals);
     payload.put("auditChainHead", auditChainHead);
     payload.put("auditEvents", auditEvents);
@@ -132,9 +158,11 @@ public final class EvidencePackSealer {
     payload.put("evalRuns", evalRuns);
     payload.put("evgraphArtifacts", evgraphArtifacts == null ? Map.of() : evgraphArtifacts);
     payload.put("evidence", evidence);
+    payload.put("evidenceCounts", evidenceCounts == null ? Map.of() : evidenceCounts);
     payload.put("evidencePackVersion", evidencePackVersion);
     payload.put("generatedAt", generatedAt);
     payload.put("generator", generator);
+    payload.put("monitoringPlan", monitoringPlan == null ? MonitoringPlan.standIn() : monitoringPlan);
     payload.put("riskClassification", riskClassification);
     payload.put("systemId", systemId);
     return payload;

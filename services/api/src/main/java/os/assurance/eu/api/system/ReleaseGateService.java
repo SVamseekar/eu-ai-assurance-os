@@ -18,6 +18,7 @@ import os.assurance.eu.api.determination.DeterminationObligation;
 import os.assurance.eu.api.determination.DeterminationObligationEntity;
 import os.assurance.eu.api.determination.DeterminationObligationJpaRepository;
 import os.assurance.eu.api.determination.DeterminationRunEntity;
+import os.assurance.eu.api.corpus.CorpusForceLookup;
 import os.assurance.eu.api.determination.DeterminationRunJpaRepository;
 import os.assurance.eu.api.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class ReleaseGateService {
   private final DeterminationRunJpaRepository determinationRuns;
   private final DeterminationObligationJpaRepository determinationObligations;
   private final ConformityService conformityService;
+  private final CorpusForceLookup corpusForceLookup;
+  private final GateControlSource gateControls;
 
   @Autowired
   public ReleaseGateService(
@@ -43,13 +46,36 @@ public class ReleaseGateService {
       TenantContext tenantContext,
       DeterminationRunJpaRepository determinationRuns,
       DeterminationObligationJpaRepository determinationObligations,
-      ConformityService conformityService) {
+      ConformityService conformityService,
+      CorpusForceLookup corpusForceLookup,
+      GateControlSource gateControls) {
     this.systemControls = systemControls;
     this.controls = controls;
     this.tenantContext = tenantContext;
     this.determinationRuns = determinationRuns;
     this.determinationObligations = determinationObligations;
     this.conformityService = conformityService;
+    this.corpusForceLookup = corpusForceLookup;
+    this.gateControls = gateControls;
+  }
+
+  public ReleaseGateService(
+      SystemControlJpaRepository systemControls,
+      ControlJpaRepository controls,
+      TenantContext tenantContext,
+      DeterminationRunJpaRepository determinationRuns,
+      DeterminationObligationJpaRepository determinationObligations,
+      ConformityService conformityService,
+      CorpusForceLookup corpusForceLookup) {
+    this(
+        systemControls,
+        controls,
+        tenantContext,
+        determinationRuns,
+        determinationObligations,
+        conformityService,
+        corpusForceLookup,
+        null);
   }
 
   /** Test/local constructor without control lookup. */
@@ -60,6 +86,8 @@ public class ReleaseGateService {
     this.determinationRuns = null;
     this.determinationObligations = null;
     this.conformityService = null;
+    this.corpusForceLookup = null;
+    this.gateControls = null;
   }
 
   public ReleaseGateResponse calculate(AiSystem system) {
@@ -93,7 +121,7 @@ public class ReleaseGateService {
     }
 
     if (!blockers.isEmpty()) {
-      return new ReleaseGateResponse(system.id(), ReleaseDecision.BLOCKED, blockers);
+      return finish(system, ReleaseDecision.BLOCKED, blockers);
     }
 
     boolean needsReview = system.evidenceCoverage() < EVIDENCE_PASS_THRESHOLD
@@ -104,10 +132,22 @@ public class ReleaseGateService {
       needsReview = !loadConformityReviewFlags(system.id(), system.riskClass()).isEmpty();
     }
 
-    return new ReleaseGateResponse(
-        system.id(),
+    return finish(
+        system,
         needsReview ? ReleaseDecision.REVIEW : ReleaseDecision.PASS,
         List.of());
+  }
+
+  private ReleaseGateResponse finish(AiSystem system, ReleaseDecision decision, List<String> blockers) {
+    List<GateControl> controls = gateControls == null || system.id() == null
+        ? List.of()
+        : gateControls.acceptedLinks(system.id());
+    ReleaseDecision adjusted = ControlModePolicy.apply(decision, controls);
+    return new ReleaseGateResponse(
+        system.id(),
+        adjusted,
+        ControlModePolicy.blockers(adjusted, blockers, controls),
+        controls);
   }
 
   private List<String> loadControlBlockers(UUID systemId) {
@@ -144,6 +184,9 @@ public class ReleaseGateService {
         determinationObligations.findAllByRunIdOrderByRuleCodeAsc(run.id())) {
       DeterminationObligation item = entity.toDomain();
       if (item.applicability() != Applicability.APPLICABLE) {
+        continue;
+      }
+      if (corpusForceLookup != null && corpusForceLookup.citesFutureDuty(item.legalRefs())) {
         continue;
       }
       String code = item.ruleCode() == null ? "" : item.ruleCode();

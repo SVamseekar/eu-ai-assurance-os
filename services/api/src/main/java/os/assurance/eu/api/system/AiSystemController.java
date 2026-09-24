@@ -40,6 +40,7 @@ public class AiSystemController {
   private final NfrMetrics nfrMetrics;
   private final AssuranceMetrics assuranceMetrics;
   private final EvidencePackService evidencePackService;
+  private final LinkedControlReopenService linkedControlReopenService;
 
   public AiSystemController(
       AiSystemRepository repository,
@@ -50,7 +51,8 @@ public class AiSystemController {
       TenantAuthorizationService authorizationService,
       NfrMetrics nfrMetrics,
       AssuranceMetrics assuranceMetrics,
-      EvidencePackService evidencePackService) {
+      EvidencePackService evidencePackService,
+      LinkedControlReopenService linkedControlReopenService) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
@@ -60,6 +62,7 @@ public class AiSystemController {
     this.nfrMetrics = nfrMetrics;
     this.assuranceMetrics = assuranceMetrics;
     this.evidencePackService = evidencePackService;
+    this.linkedControlReopenService = linkedControlReopenService;
   }
 
   @GetMapping
@@ -154,6 +157,7 @@ public class AiSystemController {
     if (riskChanged || sectorChanged) {
       controlService.attachApplicableControls(draft);
     }
+    linkedControlReopenService.reopenIfSensitiveChange(existing, request);
     AiSystem saved = saveWithCalculatedDecision(draft);
     auditService.append(
         saved.id(),

@@ -33,6 +33,9 @@ export default function ContractsPage() {
 
   return (
     <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
+        Article 72 stand-in until 2 Sep 2027: contract drift. The Commission template is not included.
+      </p>
       <div className="grid grid-cols-2 gap-4">
         {contracts.map((contract) => {
           const events = allDriftEvents.filter((e) => e.contractId === contract.id);
