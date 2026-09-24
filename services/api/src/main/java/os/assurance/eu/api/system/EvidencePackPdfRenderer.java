@@ -116,10 +116,10 @@ public final class EvidencePackPdfRenderer {
         }
       }
 
-      addHeading(document, headingFont, "8. Conformity dossier (checklist, not a legal file)");
+      addHeading(document, headingFont, "8. Checklist");
       Map<String, Object> conformity = pack.conformity();
       if (conformity == null || conformity.isEmpty()) {
-        addLine(document, bodyFont, "Conformity", "(none)");
+        addLine(document, bodyFont, "Checklist", "(none)");
       } else {
         addLine(document, bodyFont, "Disclaimer", conformity.get("disclaimer"));
         addLine(document, bodyFont, "Updated at", conformity.get("updatedAt"));
@@ -155,7 +155,18 @@ public final class EvidencePackPdfRenderer {
         }
       }
 
-      addHeading(document, headingFont, "11. Seal");
+      addHeading(document, headingFont, "11. Post-market monitoring stand-in");
+      Map<String, Object> monitoringPlan = pack.monitoringPlan();
+      if (monitoringPlan == null || monitoringPlan.isEmpty()) {
+        addLine(document, bodyFont, "Plan", "(none)");
+      } else {
+        addLine(document, bodyFont, "Commission template due", monitoringPlan.get("commissionTemplateDue"));
+        addLine(document, bodyFont, "Signals", "eval drift, contract drift, reg-monitor diff");
+        addLine(document, bodyFont, "Annex III technical-documentation monitoring", "FUTURE until 2027-12-02");
+        addLine(document, bodyFont, "Annex I", "FUTURE until 2028-08-02");
+      }
+
+      addHeading(document, headingFont, "12. Seal");
       addLine(document, bodyFont, "contentSha256", pack.contentSha256());
       if (pack.auditChainHead() != null && !pack.auditChainHead().isBlank()) {
         addLine(document, bodyFont, "auditChainHead", pack.auditChainHead());

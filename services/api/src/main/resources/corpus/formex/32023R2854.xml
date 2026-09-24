@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DOC>
+  <ACT>
+    <ENACTING.TERMS>
+      <ARTICLE IDENTIFIER="001">
+        <TI.ART>Article 1</TI.ART>
+        <PARAG IDENTIFIER="001">
+          <ALINEA>This Regulation lays down harmonised rules on fair access to and use of data.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="003">
+        <TI.ART>Article 3</TI.ART>
+        <PARAG IDENTIFIER="001">
+          <ALINEA>Connected products placed on the market shall be designed so that data are accessible to the user.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+    </ENACTING.TERMS>
+  </ACT>
+</DOC>

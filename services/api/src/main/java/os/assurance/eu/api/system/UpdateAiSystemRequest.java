@@ -21,5 +21,9 @@ public record UpdateAiSystemRequest(
     List<String> dataSources,
     String sector,
     String decisionImpact,
-    List<String> affectedUsers) {
+    List<String> affectedUsers,
+    String prompt,
+    String retrievalCorpus,
+    String retention,
+    String humanReviewLogic) {
 }

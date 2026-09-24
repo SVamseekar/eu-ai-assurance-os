@@ -35,7 +35,14 @@ class EvidencePackPdfRendererTest {
         "1.1",
         "a".repeat(64),
         "eu-ai-assurance-api/0.1.0",
-        "chain-head-example");
+        "chain-head-example",
+        "",
+        List.of(),
+        List.of(),
+        List.of(),
+        Map.of(),
+        Map.of(),
+        MonitoringPlan.standIn());
 
     byte[] pdf = EvidencePackPdfRenderer.render(pack, "Claims Triage AI");
 

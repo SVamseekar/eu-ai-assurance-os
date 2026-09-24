@@ -18,6 +18,8 @@ import {
   Newspaper,
   Users,
   Landmark,
+  BookOpen,
+  ListChecks,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -26,6 +28,8 @@ const NAV_ITEMS = [
   { href: "/public-claims", label: "Public claims", icon: Landmark },
   { href: "/readiness", label: "Readiness", icon: BadgeCheck },
   { href: "/reg-monitor", label: "Reg Monitor", icon: Newspaper },
+  { href: "/corpus", label: "Law corpus", icon: BookOpen },
+  { href: "/proposals", label: "Proposal queue", icon: ListChecks },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
   { href: "/evidence", label: "Evidence", icon: FileSearch },
   { href: "/evals", label: "Eval Gates", icon: FlaskConical },

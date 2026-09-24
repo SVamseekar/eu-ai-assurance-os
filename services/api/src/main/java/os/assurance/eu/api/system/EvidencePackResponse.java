@@ -1,5 +1,6 @@
 package os.assurance.eu.api.system;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +23,17 @@ public record EvidencePackResponse(
     List<Map<String, Object>> approvals,
     List<AuditEvent> auditEvents,
     Map<String, Object> determination,
-    Map<String, Object> conformity,
+    @JsonIgnore Map<String, Object> conformity,
     Map<String, Object> evgraphArtifacts,
     String evidencePackVersion,
     String contentSha256,
     String generator,
-    String auditChainHead) {
+    String auditChainHead,
+    String corpusVersion,
+    List<Map<String, Object>> acceptedLinks,
+    List<Map<String, Object>> queue,
+    List<Map<String, Object>> currentGaps,
+    Map<String, Object> acceptedArtifacts,
+    Map<String, Integer> evidenceCounts,
+    Map<String, Object> monitoringPlan) {
 }
