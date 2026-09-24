@@ -87,7 +87,7 @@ See [`infra/README.md`](./infra/README.md) and [`docs/DEPLOYMENT.md`](./docs/DEP
 cd services/api
 mvn test
 mvn spring-boot:run
-# → http://localhost:8080  (Flyway through V17)
+# → http://localhost:8080  (Flyway through V20)
 ```
 
 Postgres profile:
@@ -160,7 +160,7 @@ See [`docs/ROADMAP.md`](./docs/ROADMAP.md) and [`docs/superpowers/plans/2026-07-
 - [`docs/ROADMAP.md`](./docs/ROADMAP.md) — phased delivery and honesty matrix
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design
 - [`docs/API.md`](./docs/API.md) — HTTP contract
-- [`docs/SCHEMA.md`](./docs/SCHEMA.md) — SQL tables (Flyway V1–V16)
+- [`docs/SCHEMA.md`](./docs/SCHEMA.md) — SQL tables (Flyway V1–V20)
 - [`docs/SECURITY.md`](./docs/SECURITY.md) — threat model
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — Docker, Vercel + API host, migrations, rollback
 - [`docs/OPS.md`](./docs/OPS.md) — CI release gate + observability
