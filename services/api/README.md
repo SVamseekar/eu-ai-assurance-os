@@ -16,7 +16,7 @@ Recommended initial stack:
 
 - Java 21 for production; this MVP targets Java 17 so it builds on the current
   local toolchain.
-- Spring Boot 3
+- Spring Boot 4.1.1
 - Spring Web
 - Spring Security
 - Spring Data JPA

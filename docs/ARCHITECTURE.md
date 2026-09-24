@@ -2,7 +2,7 @@
 
 ## System Overview
 
-EU AI Assurance OS is a multi-tenant SaaS governance control plane. **Implemented stack:** Spring Boot 3.3 API + Next.js 16 dashboard + PostgreSQL (or H2 for local tests). Kafka is **not** required; the eval worker uses a durable DB claim queue.
+EU AI Assurance OS is a multi-tenant SaaS governance control plane. **Implemented stack:** Spring Boot 4.1.1 API + Next.js 16 dashboard + PostgreSQL (or H2 for local tests). Kafka is **not** required; the eval worker uses a durable DB claim queue.
 
 ```mermaid
 flowchart LR
@@ -89,8 +89,8 @@ Append-only **hash-chained** ledger in PostgreSQL/H2 (`prev_event_hash`, `event_
 
 ## Backend stack (as shipped)
 
-- Spring Boot 3.3, Java 17, Spring Web, Spring Security (filter-level auth gate), Spring Data JPA
-- Flyway V1–V16 (+ postgres-only V4 pgvector)
+- Spring Boot 4.1.1, Java 17, Tika 4.0.0, Spring Web, Spring Security (filter-level auth gate), Spring Data JPA
+- Flyway V1–V20 (+ postgres-only V4 pgvector)
 - PostgreSQL production path; H2 for default tests
 - Optional Redis is **not** required for core paths
 - Optional Kafka is **not** required (DB worker is enough)
