@@ -9,9 +9,9 @@ EU AI Assurance OS is a governance control plane for teams shipping AI systems i
 ## Repository Layout
 
 ```
-apps/dashboard/ Next.js 14 + TypeScript production dashboard (primary frontend)
+apps/dashboard/ Next.js 16 + TypeScript production dashboard (primary frontend)
 apps/web/       Static HTML/CSS/JS prototype (legacy, kept for reference)
-services/api/   Spring Boot 3 backend MVP (Java 17, Maven)
+services/api/   Spring Boot 4.1.1 backend (Java 17, Maven)
 docs/           PRD, architecture, API contract, schema, roadmap, security
 infra/          Placeholder (Docker, Terraform — not yet implemented)
 scripts/        Local dev and smoke-test shell scripts

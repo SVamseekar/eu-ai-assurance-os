@@ -3,7 +3,7 @@
 [![CI](https://github.com/SVamseekar/eu-ai-assurance-os/actions/workflows/ci.yml/badge.svg)](https://github.com/SVamseekar/eu-ai-assurance-os/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-**Live product:** [https://euassuranceai.souravamseekar.com](https://euassuranceai.souravamseekar.com)  
+**Live product:** [https://euassuranceai.souravamseekar.com](https://euassuranceai.souravamseekar.com)
 **Repo:** [github.com/SVamseekar/eu-ai-assurance-os](https://github.com/SVamseekar/eu-ai-assurance-os)
 
 EU AI Assurance OS is a multi-tenant **governance control plane** for teams shipping AI systems into the EU market. Production surface:
@@ -25,6 +25,8 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 - **Hash-chained** append-only audit ledger with verify endpoints
 - Sealed evidence packs (**JSON** primary + **PDF**)
 - CI release-gate contract for deploy pipelines
+- **Pinned legal corpus**, a human **proposal queue** for control mappings, and release-gate modes
+- **Pinned Evgraph scan** (`evgraph-cli` **0.1.2**): the evidence pack and the live scan share the same current gap. Missing approval timestamps stay inconclusive
 - **Assisted** obligation determination, certification **readiness** scoring, polled reg-monitor feed, and 3 sector packs (insurance · HR · finance)
 
 > This product assists governance and release readiness. It is **not** a notified body, does **not** issue legal certifications, and does **not** replace qualified legal counsel.
@@ -50,7 +52,7 @@ Customer postgres must keep `ASSURANCE_PUBLIC_CLAIMS=false`. Demo H2 may seed te
 | Layer | Technology |
 |---|---|
 | Dashboard + landing | **Next.js 16**, React 19, TypeScript, Tailwind CSS v4, TanStack Query, shadcn/ui |
-| API | **Spring Boot 3.3**, Java 17, Flyway **V1–V17** (+ postgres V4), Spring Data JPA |
+| API | **Spring Boot 4.1.1**, Java 17, **Tika 4.0.0**, Flyway **V1–V20** (+ postgres V4), Spring Data JPA |
 | Auth | Password JWT + refresh · API keys (`X-Api-Key`) · JWKS · Google/Microsoft OAuth **implemented** (prod smoke pending) |
 | Data | H2 (local default) or PostgreSQL (+ optional pgvector HNSW) |
 | Deploy | Dashboard on Vercel; API via Docker Compose or host (Flyway on boot); Terraform skeleton in `infra/terraform/` |
@@ -85,7 +87,7 @@ See [`infra/README.md`](./infra/README.md) and [`docs/DEPLOYMENT.md`](./docs/DEP
 cd services/api
 mvn test
 mvn spring-boot:run
-# → http://localhost:8080  (Flyway through V17)
+# → http://localhost:8080  (Flyway through V20)
 ```
 
 Postgres profile:
@@ -158,7 +160,7 @@ See [`docs/ROADMAP.md`](./docs/ROADMAP.md) and [`docs/superpowers/plans/2026-07-
 - [`docs/ROADMAP.md`](./docs/ROADMAP.md) — phased delivery and honesty matrix
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system design
 - [`docs/API.md`](./docs/API.md) — HTTP contract
-- [`docs/SCHEMA.md`](./docs/SCHEMA.md) — SQL tables (Flyway V1–V16)
+- [`docs/SCHEMA.md`](./docs/SCHEMA.md) — SQL tables (Flyway V1–V20)
 - [`docs/SECURITY.md`](./docs/SECURITY.md) — threat model
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — Docker, Vercel + API host, migrations, rollback
 - [`docs/OPS.md`](./docs/OPS.md) — CI release gate + observability
