@@ -65,8 +65,11 @@ export default function ProductPage() {
           </p>
           <p>
             Policy GRC tools inventory many frameworks. This product is a
-            release gate: if evidence, scores, contracts, or promotion files
-            fail, the system does not pass.
+            release gate. An in-force control uses INFORMATIONAL (the decision
+            stays), WARNING (PASS becomes REVIEW), APPROVAL_REQUIRED (unsigned
+            becomes REVIEW), or BLOCKING (the decision becomes BLOCKED). If
+            cited evidence, the eval, or an open contract BREACH fails, the
+            system does not pass.
           </p>
         </div>
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
