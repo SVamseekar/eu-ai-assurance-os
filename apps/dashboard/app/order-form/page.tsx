@@ -41,7 +41,7 @@ export default function OrderFormPage() {
         <section>
           <h2 className="font-heading text-lg font-semibold">Deliverables</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Evgraph library scan (approval-before-deploy, dataset license) — you keep the CLI</li>
+            <li>Pinned evgraph-cli 0.1.2 scan (approval-before-deploy, dataset license). The pack and the scan share the current gap. You keep the CLI.</li>
             <li>System registered in {siteConfig.name}: risk class, obligation map (assisted), PASS / REVIEW / BLOCKED</li>
             <li>Sealed evidence pack (JSON + PDF hash) including Annex IV-shaped checklist</li>
             <li>Optional CI snippets for both gates</li>

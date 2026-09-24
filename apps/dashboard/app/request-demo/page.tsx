@@ -8,7 +8,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "Request a demo";
 const description =
-  "Walk through fail-closed gates, promotion checks, and a sealed evidence pack on one named AI system. Work is scoped after the call. Not legal certification.";
+  "Walk through a release gate on one named system: a pinned corpus, a proposal queue, and a sealed pack whose gap matches evgraph-cli 0.1.2. Work is scoped after the call. Not legal certification.";
 const path = "/request-demo";
 const crumbs = [
   { name: "Home", path: "/" },

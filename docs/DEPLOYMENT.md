@@ -64,7 +64,7 @@ Helper: `scripts/compose-with-minio.sh`.
 
 ### Flyway on a fresh volume
 
-On first API boot against empty Postgres, Flyway applies `V1`–latest under `services/api/src/main/resources/db/migration` plus postgres-only scripts (pgvector index is best-effort if the extension is missing).
+On first API boot against empty Postgres, Flyway applies `V1`–`V20` under `services/api/src/main/resources/db/migration` plus postgres-only `V4` (pgvector index is best-effort if the extension is missing).
 
 Verify:
 
@@ -167,8 +167,10 @@ Full template: [`.env.example`](../.env.example). Secrets handling: [NFR.md](./N
 
 ### C. Dashboard (Vercel)
 
-**Production project (canonical):** `eu-ai-assurance`  
-**Live domains:** `https://euassuranceai.souravamseekar.com`, `https://eu-ai-assurance.vercel.app`  
+**Production project (canonical):** `eu-ai-assurance`
+
+**Live domains:** `https://euassuranceai.souravamseekar.com`, `https://eu-ai-assurance.vercel.app`
+
 **Git root directory:** `apps/dashboard` (monorepo `SVamseekar/eu-ai-assurance-os`, production branch `main`)
 
 There is a second Vercel project `eu-ai-assurance-os` linked to the same GitHub repo for historical monorepo hooks. It is configured with **Ignore Build Step = `exit 1`** so it never builds (avoids burning Hobby build quota / rate limits on every PR). Do **not** use it for production.
