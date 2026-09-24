@@ -518,7 +518,7 @@ export const homeDestinations = [
     href: "/how-it-works",
     title: "How it works",
     description:
-      "Register the system, classify risk against a pinned corpus, queue mapping proposals for a person to accept, then take PASS, REVIEW, or BLOCKED.",
+      "Register the system, classify risk against a pinned corpus, and queue mapping proposals until a person accepts them. In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or BLOCKING. The pack and evgraph-cli 0.1.2 share the current gap.",
   },
   {
     href: "/method",
