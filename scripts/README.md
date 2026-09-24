@@ -1,5 +1,18 @@
 # Scripts
 
+## `check_commit_attribution.py`
+
+Solo-maintainer policy: reject `Co-authored-by` / `Co-committed-by` trailers
+and known agent emails in commit messages and PR bodies. Used by the
+commit-msg hook and the `No co-authors` CI job.
+
+```bash
+python3 tests/test_check_commit_attribution.py
+python3 scripts/check_commit_attribution.py --from-ref origin/main --to-ref HEAD
+```
+
+Dependabot `Signed-off-by` is allowed.
+
 ## `ci-release-gate.sh` (Part 8)
 
 Call Assurance OS from a deploy pipeline and fail when the system is BLOCKED.

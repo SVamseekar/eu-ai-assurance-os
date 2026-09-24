@@ -1,3 +1,7 @@
+<!-- Title must be a Conventional Commit — squash-merge uses it as the commit subject.
+     feat: | fix: | refactor: | perf: | test: | docs: | build: | ci: | chore: | revert:
+     Example: ci: run pre-commit hooks in GitHub Actions -->
+
 ## Summary
 
 <!-- What does this PR change and why? -->
@@ -14,6 +18,8 @@
 
 - [ ] `cd services/api && mvn test` (or CI API job) green for backend changes
 - [ ] `cd apps/dashboard && npx tsc --noEmit` (and build when UI changes)
+- [ ] Pre-commit hooks pass (`pre-commit run`)
+- [ ] No `Co-authored-by` / agent attribution in commits or this body
 - [ ] No secrets, credentials, or tenant data committed
 - [ ] Tests added or updated for behavior changes
 - [ ] Docs updated if user-facing API or workflow behavior changed
