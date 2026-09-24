@@ -1,8 +1,8 @@
 # EU AI Assurance OS — Canonical Metrics
 
-**Measured date:** 2026-07-20  
-**Git tip at freeze:** `c0d5cd4` (`origin/main` — Part 3 complete: live legal + demo verified)  
-**Use for:** CV, pitch deck, portfolio, landing strip, README, external copy  
+**Measured date:** 2026-07-20
+**Git tip at freeze:** `c0d5cd4` (`origin/main` — Part 3 complete: live legal + demo verified)
+**Use for:** CV, pitch deck, portfolio, landing strip, README, external copy
 **Regenerate:** re-run measurement commands below after any PR that changes API surface, tests, or migrations; update this file and `apps/dashboard/lib/metrics-canon.ts` together.
 
 ---
@@ -38,7 +38,7 @@ ls services/api/src/main/resources/db/postgresql/
 | Product | EU AI Assurance OS | Governance control plane for EU AI Act release governance |
 | Live URL | https://euassuranceai.souravamseekar.com | Landing + dashboard shell |
 | Repo | https://github.com/SVamseekar/eu-ai-assurance-os | Public |
-| Backend | Java **17** · Spring Boot **3.3.7** | `services/api/pom.xml` |
+| Backend | Java **17** · Spring Boot **4.1.1** · Tika **4.0.0** | `services/api/pom.xml` |
 | Frontend | Next.js **16.2.9** · React **19.2.4** · TypeScript | `apps/dashboard/package.json` |
 | Embeddings | DJL + ONNX Runtime · `sentence-transformers/all-MiniLM-L6-v2` | Postgres profile default `djl-sentence` |
 | Embeddings (dev) | `local-hash` deterministic provider | H2 / default profile |
@@ -48,7 +48,7 @@ ls services/api/src/main/resources/db/postgresql/
 | Release decisions | **PASS · REVIEW · BLOCKED** | `ReleaseGateService` |
 | Risk classes | **MINIMAL · LIMITED · HIGH · PROHIBITED** | Not “Unacceptable” as enum label |
 | Risk classification | **Guided / recorded** (caller supplies class + basis) | Not ML auto-inference |
-| Flyway | **V1–V17** (+ postgres **V4**) | Main: V1–V3, V5–V17; no V4 on H2 path. Re-count endpoints/tests after this PR lands. |
+| Flyway | **V1–V20** (+ postgres **V4**) | Main: V1–V3, V5–V20; no V4 on H2 path. |
 | REST `@*Mapping` endpoints | **64** | All controllers under `services/api/src/main` |
 | Automated tests (`@Test` / `@ParameterizedTest`) | **190** | `services/api/src/test` |
 | Java production source files | **240** | |
@@ -100,12 +100,12 @@ ls services/api/src/main/resources/db/postgresql/
 
 ## Landing metrics strip (subset)
 
-Source of UI chips: `apps/dashboard/lib/metrics-canon.ts`  
+Source of UI chips: `apps/dashboard/lib/metrics-canon.ts`
 Keep strip qualitative + structural (release decisions, risk classes, stack, scale). **Never** put invented customer counts, ARR, or “X enterprises in production” on the strip.
 
 Recommended scale line (measured):
 
-- **~64 API endpoints · 190 automated tests · Flyway through V16 · Next.js 16 · Spring Boot 3.3**
+- **Spring Boot 4.1.1 · Tika 4.0.0 · Flyway through V20 · Next.js 16 · pinned evgraph-cli 0.1.2**
 
 ---
 
@@ -118,7 +118,7 @@ Recommended scale line (measured):
 | Audit | Hash-chained append-only audit ledger |
 | Eval integrity | HMAC-SHA-256 signed eval-result callbacks |
 | Frontend | Next.js 16 |
-| Migrations | Flyway V1–V16 (+ postgres V4) |
+| Migrations | Flyway V1–V20 (+ postgres V4) |
 | Obligations | **Assisted** obligation determination / assisted obligation map |
 | Certification | Certification **readiness** (score + gaps) |
 | Sector | 3 sector packs (insurance, HR, finance) + SPI |
@@ -136,7 +136,7 @@ Recommended scale line (measured):
 | **FAISS** (for this product) | Not in this codebase; use DJL/ONNX |
 | **HMAC-SHA-256 signed audit event stream** as the *only* audit story without hash-chain | Audit is a **hash-chained** ledger; HMAC also signs **eval callbacks** and OAuth state — say both precisely |
 | **Next.js 14** | Product is Next.js **16** |
-| **Flyway V1–V6 only** | Migrations through **V16** (+ postgres V4) |
+| **Flyway V1–V6 only** | Migrations through **V20** (+ postgres V4) |
 | **“You are certified”** / legal certificate / notified-body attestation | Product does readiness only |
 | **“Legal determination”** without **assisted** | Part 12 is assisted obligation mapping with disclaimers |
 | **Automated risk classification** (ML sense) | API records submitted class + basis; guided workflow |
@@ -152,9 +152,9 @@ Recommended scale line (measured):
 ## Paste-ready short stack line
 
 ```text
-Spring Boot 3.3 · Java 17 · Next.js 16 · pgvector HNSW · DJL/ONNX embeddings · Multi-tenant
+Spring Boot 4.1.1 · Java 17 · Tika 4.0.0 · Next.js 16 · pgvector HNSW · DJL/ONNX embeddings · Multi-tenant
 JWT + API keys · Google/Microsoft OAuth (implemented; prod smoke pending)
-Flyway V1–V16 · Hash-chained audit · HMAC eval callbacks · Evidence Pack JSON+PDF
+Flyway V1–V20 · Hash-chained audit · HMAC eval callbacks · Evidence Pack JSON+PDF · pinned evgraph-cli 0.1.2
 ```
 
 ---
