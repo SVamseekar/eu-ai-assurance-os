@@ -12,8 +12,8 @@ import java.util.UUID;
 public class SigningKeyEntity {
     @Id private UUID kid;
     @Column(nullable = false) private String algorithm;
-    @Column(name = "public_key_pem", nullable = false) private String publicKeyPem;
-    @Column(name = "private_key_pem", nullable = false) private String privateKeyPem;
+    @Column(name = "public_key_pem", nullable = false, columnDefinition = "text") private String publicKeyPem;
+    @Column(name = "private_key_pem", nullable = false, columnDefinition = "text") private String privateKeyPem;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(nullable = false) private boolean active;
 

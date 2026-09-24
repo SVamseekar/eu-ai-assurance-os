@@ -1,8 +1,8 @@
 package os.assurance.eu.api;
 
 import os.assurance.eu.api.evidence.EvidenceEmbeddingProvider;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 @Component("embeddingProvider")

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 
 @SpringBootTest(properties = {
@@ -37,7 +37,7 @@ class OAuthAutoProvisionTest {
   @Autowired
   private JwtService jwtService;
 
-  @MockBean
+  @MockitoBean
   private OAuthTokenClient tokenClient;
 
   @BeforeEach
