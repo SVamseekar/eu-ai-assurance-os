@@ -1,0 +1,80 @@
+# Install: pip install pre-commit && pre-commit install
+# Run on the staged diff: pre-commit run
+#
+# Local hooks are fast feedback. CI re-runs the same file checks on the PR
+# diff so `git commit --no-verify` cannot land on main.
+default_language_version:
+  python: python3
+
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+ci:
+  skip: [no-commit-to-branch]
+  autofix_prs: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-illegal-windows-names
+      - id: check-ast
+      - id: debug-statements
+      - id: check-executables-have-shebangs
+      - id: destroyed-symlinks
+      - id: fix-byte-order-marker
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=5120]
+      - id: no-commit-to-branch
+        args: [--branch, main]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: no-coauthored-by
+        name: forbid Co-authored-by
+        language: python
+        entry: python scripts/check_commit_attribution.py
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: true
+      - id: test-commit-attribution
+        name: unit-test commit attribution policy
+        language: python
+        entry: python tests/test_check_commit_attribution.py
+        pass_filenames: false
+        files: ^(scripts/check_commit_attribution\.py|tests/test_check_commit_attribution\.py)$
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - refactor
+          - perf
+          - test
+          - docs
+          - build
+          - ci
+          - chore
+          - revert

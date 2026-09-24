@@ -28,9 +28,17 @@ updates:
           - minor
           - patch
 
+  # Majors stay ungrouped so each GitHub Action major is its own PR.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    groups:
+      github-actions-minor:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

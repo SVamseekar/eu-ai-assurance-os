@@ -31,3 +31,6 @@ tmp/
 .vercel
 *.tsbuildinfo
 .pre-commit-config.yaml.bak
+__pycache__/
+*.py[cod]
+.pytest_cache/
