@@ -1,8 +1,8 @@
 # EU AI Assurance OS — Canonical Metrics
 
-**Measured date:** 2026-07-20  
-**Git tip at freeze:** `c0d5cd4` (`origin/main` — Part 3 complete: live legal + demo verified)  
-**Use for:** CV, pitch deck, portfolio, landing strip, README, external copy  
+**Measured date:** 2026-07-20
+**Git tip at freeze:** `c0d5cd4` (`origin/main` — Part 3 complete: live legal + demo verified)
+**Use for:** CV, pitch deck, portfolio, landing strip, README, external copy
 **Regenerate:** re-run measurement commands below after any PR that changes API surface, tests, or migrations; update this file and `apps/dashboard/lib/metrics-canon.ts` together.
 
 ---
@@ -100,7 +100,7 @@ ls services/api/src/main/resources/db/postgresql/
 
 ## Landing metrics strip (subset)
 
-Source of UI chips: `apps/dashboard/lib/metrics-canon.ts`  
+Source of UI chips: `apps/dashboard/lib/metrics-canon.ts`
 Keep strip qualitative + structural (release decisions, risk classes, stack, scale). **Never** put invented customer counts, ARR, or “X enterprises in production” on the strip.
 
 Recommended scale line (measured):

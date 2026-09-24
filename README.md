@@ -3,7 +3,7 @@
 [![CI](https://github.com/SVamseekar/eu-ai-assurance-os/actions/workflows/ci.yml/badge.svg)](https://github.com/SVamseekar/eu-ai-assurance-os/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-**Live product:** [https://euassuranceai.souravamseekar.com](https://euassuranceai.souravamseekar.com)  
+**Live product:** [https://euassuranceai.souravamseekar.com](https://euassuranceai.souravamseekar.com)
 **Repo:** [github.com/SVamseekar/eu-ai-assurance-os](https://github.com/SVamseekar/eu-ai-assurance-os)
 
 EU AI Assurance OS is a multi-tenant **governance control plane** for teams shipping AI systems into the EU market. Production surface:
