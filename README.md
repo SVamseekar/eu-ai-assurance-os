@@ -33,20 +33,6 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 
 **Commercial path:** scoped readiness work for one named AI system after a demo — no public list price. See [`/pricing`](https://euassuranceai.souravamseekar.com/pricing). Evgraph is a **separate** PyPI library — this repo exports the files it already reads.
 
-## What is public vs private
-
-| In this MIT repository (public) | Not in git (operator / customer private) |
-|---|---|
-| Product source, tests, docs, infra skeletons | `.local/` lab SSH, host IPs, runbooks |
-| Sourced **public-claims teasers** (named EU firms reconstructed from cited pages — **not customers**) | `.env` / `.env.local` secrets |
-| Template DPA, MSA, order form | Outreach queues and named contact lists (kept outside this repo) |
-| Marketing pages: `/product`, `/how-it-works`, `/pricing`, `/method`, `/faq` | Invoices, signed contracts, customer tenant data |
-| | Git worktrees (`.worktrees/`) |
-
-Customer postgres must keep `ASSURANCE_PUBLIC_CLAIMS=false`. Demo H2 may seed teasers. Method page: [`/method`](https://euassuranceai.souravamseekar.com/method).
-
-**Authoritative platform numbers** (endpoints, tests, LOC, stack versions): [`docs/METRICS_CANONICAL.md`](./docs/METRICS_CANONICAL.md) — do not invent customer counts or ARR.
-
 ## Stack
 
 | Layer | Technology |
@@ -134,7 +120,6 @@ Full template: [`.env.example`](./.env.example). Deploy matrix: [`docs/DEPLOYMEN
 | `DISCORD_WEBHOOK_URL` / `DISCORD_DEMO_WEBHOOK_URL` | Dashboard | Server-only: demo form → Discord |
 | `ASSURANCE_STORAGE_*` | API | Optional S3/MinIO object store for evidence uploads |
 | `EVIDENCE_EMBEDDING_PROVIDER` | API | `local-hash` (H2) or `djl-sentence` (postgres default) |
-| `ASSURANCE_PUBLIC_CLAIMS` | API | Seed named public-claims teasers. **false** on customer postgres |
 | `NEXT_PUBLIC_USE_MOCK_DATA` | Dashboard | Production must stay false |
 | OAuth client id/secret (Google/Microsoft) | API + dashboard | Part 4 — see `.env.example` and `docs/oauth-production-smoke-test.md` |
 
