@@ -39,9 +39,11 @@ export function LandingHero() {
             Fail-closed release gates for AI in the EU.
           </h1>
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-            Register every AI system, classify EU AI Act risk, and only ship
-            when evidence, evals, contracts, and promotion files pass. Article
-            50 is already live. Not a notified body.
+            Register every AI system, classify EU AI Act risk against a pinned
+            corpus, and only ship when cited evidence, evals, data contracts,
+            and a pinned Evgraph 0.1.2 scan pass. The evidence pack and that
+            scan share the same gap. Article 50 is already live. Not a notified
+            body.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" render={<Link href="/request-demo" />}>

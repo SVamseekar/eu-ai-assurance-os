@@ -22,8 +22,12 @@ Schema as implemented by Flyway under `services/api/src/main/resources/db/migrat
 | V14 | oauth_provider / oauth_subject on users |
 | V15 | obligation_rules, determination_runs, determination_obligations |
 | V16 | reg_sources, reg_items, reg_impact_hints, reg_item_reviews |
+| V17 | user invites, conformity dossiers (assisted Act-as-code; not certification) |
+| V18 | pinned legal corpus: instruments, provisions, mapping proposals |
+| V19 | proposal control mode, system change scope |
+| V20 | evidence applicability and exceptions |
 
-Canonical counts: `docs/METRICS_CANONICAL.md` (Flyway **V1–V16** + postgres V4).
+Canonical counts: `docs/METRICS_CANONICAL.md` (Flyway **V1–V20** + postgres V4).
 
 ---
 
