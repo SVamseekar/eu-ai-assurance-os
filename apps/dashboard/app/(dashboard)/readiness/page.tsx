@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { ReadinessRing } from "@/components/readiness-ring";
 import { useDashboard } from "@/context/dashboard-context";
 import { useCertificationReadiness } from "@/hooks/use-certification-readiness";
+import { useAssessment } from "@/hooks/use-assessment";
 import { api } from "@/lib/api";
+import { isLiveEntityId } from "@/lib/ids";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
@@ -35,7 +37,7 @@ export default function ReadinessPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-sm text-muted-foreground p-4">Loading certification readiness…</div>
+        <div className="text-sm text-muted-foreground p-4">Loading readiness…</div>
       }
     >
       <ReadinessPageInner />
@@ -43,12 +45,28 @@ export default function ReadinessPage() {
   );
 }
 
+function Count({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border px-3 py-2">
+      <p className="text-lg font-semibold tabular-nums">{value}</p>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
 function ReadinessPageInner() {
   const { allSystems } = useDashboard();
   const searchParams = useSearchParams();
-  const initial = searchParams.get("systemId") ?? allSystems[0]?.id ?? "";
-  const [systemId, setSystemId] = useState(initial);
+  const liveSystems = useMemo(
+    () => allSystems.filter((system) => isLiveEntityId(system.id)),
+    [allSystems]
+  );
+  const [pickedId, setPickedId] = useState(searchParams.get("systemId") ?? "");
+  const systemId = liveSystems.some((system) => system.id === pickedId)
+    ? pickedId
+    : (liveSystems[0]?.id ?? "");
   const { data, isError, isFetching } = useCertificationReadiness(systemId || null);
+  const assessment = useAssessment(systemId || null);
   const [exporting, setExporting] = useState(false);
 
   const selectedName = useMemo(
@@ -73,13 +91,11 @@ function ReadinessPageInner() {
       <div className="rounded-xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15 px-4 py-3">
         <p className="text-[11px] font-semibold text-foreground mb-0.5 flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Certification readiness automation
+          Evidence count
         </p>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          Weighted readiness score (0–100) and structured gaps toward conformity documentation.
-          This is <strong className="font-semibold text-foreground">not legal certification</strong>,
-          not notified-body attestation, and not an official conformity assessment under the EU AI Act.
-          A qualified human reviewer must confirm documentation before any external process.
+          Count of evidence for this system and this corpus version.
+          A person still reviews the file before any external process.
         </p>
       </div>
 
@@ -88,12 +104,19 @@ function ReadinessPageInner() {
           <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             AI system
           </label>
-          <Select value={systemId} onValueChange={(v) => setSystemId(v ?? "")}>
+          <Select
+            value={systemId}
+            onValueChange={(value) => {
+              if (isLiveEntityId(value)) setPickedId(value);
+            }}
+          >
             <SelectTrigger className="h-9 text-xs">
-              <SelectValue placeholder="Select system" />
+              <SelectValue placeholder="Select system">
+                {selectedName ?? "Select system"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {allSystems.map((s) => (
+              {liveSystems.map((s) => (
                 <SelectItem key={s.id} value={s.id} className="text-xs">
                   {s.name}
                 </SelectItem>
@@ -128,6 +151,25 @@ function ReadinessPageInner() {
         )}
       </div>
 
+      {assessment.data && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Evidence count</CardTitle>
+            <CardDescription className="text-[10px] font-mono break-all">
+              Corpus version {assessment.data.corpusVersion}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-4">
+            <Count label="Satisfied" value={assessment.data.counts.satisfied} />
+            <Count label="Insufficient" value={assessment.data.counts.insufficient} />
+            <Count label="Missing" value={assessment.data.counts.missing} />
+            <Count label="Needs human review" value={assessment.data.counts.needsHumanReview} />
+            <Count label="Not applicable" value={assessment.data.counts.notApplicable} />
+            <Count label="Accepted exception" value={assessment.data.counts.acceptedException} />
+          </CardContent>
+        </Card>
+      )}
+
       {data && (
         <>
           <div className="grid grid-cols-3 gap-4">
@@ -141,7 +183,7 @@ function ReadinessPageInner() {
               <CardContent className="flex flex-col items-center pb-6">
                 <ReadinessRing score={data.score} status={data.readinessStatus} size={120} />
                 <p className="text-[10px] text-muted-foreground text-center mt-3 max-w-[200px] leading-relaxed">
-                  {data.productLabel}. Status is readiness for human review only.
+                  Score is a file review aid only.
                 </p>
               </CardContent>
             </Card>
@@ -150,7 +192,7 @@ function ReadinessPageInner() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Dimension breakdown</CardTitle>
                 <CardDescription className="text-[10px]">
-                  Weighted dimensions sum to 100. Config: assurance.certification-readiness.*
+                  Weighted dimensions sum to 100.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 pb-4">
@@ -202,8 +244,7 @@ function ReadinessPageInner() {
             <CardContent className="px-0 pb-0">
               {data.gaps.length === 0 ? (
                 <p className="px-6 pb-6 text-xs text-muted-foreground">
-                  No structured gaps recorded. Human legal/compliance review is still required —
-                  readiness never means “you are certified.”
+                  No structured gaps recorded. A person still reviews the file.
                 </p>
               ) : (
                 <div className="divide-y divide-border">
@@ -262,9 +303,6 @@ function ReadinessPageInner() {
             </CardContent>
           </Card>
 
-          <p className="text-[10px] text-muted-foreground leading-relaxed px-1">
-            {data.disclaimer}
-          </p>
         </>
       )}
     </div>

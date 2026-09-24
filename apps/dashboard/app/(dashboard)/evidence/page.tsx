@@ -16,6 +16,7 @@ import { MOCK_SYSTEMS } from "@/lib/mock-data";
 import type { EvidenceQueryResponse, EvidenceDocument } from "@/lib/types";
 import { formatDate, cn } from "@/lib/utils";
 import { useDashboard } from "@/context/dashboard-context";
+import { isLiveEntityId } from "@/lib/ids";
 import { UploadCloud, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 
 const EVIDENCE_TYPES = ["DPIA", "POLICY", "MODEL_CARD", "VENDOR_DOC", "CONTROL_MAP"];
@@ -46,7 +47,12 @@ export default function EvidencePage() {
   const qc = useQueryClient();
   const apiOnline = !systemsError && systems.length > 0 && systems[0]?.id !== "mock-sys-001"; // fallback details
 
-  const [selectedSystemId, setSelectedSystemId] = useState<string>(systems[0]?.id ?? "");
+  const liveSystems = systems.filter((system) => isLiveEntityId(system.id));
+  const systemOptions = liveSystems.length > 0 ? liveSystems : systems;
+  const [pickedId, setPickedId] = useState("");
+  const selectedSystemId = systemOptions.some((system) => system.id === pickedId)
+    ? pickedId
+    : (systemOptions.find((system) => system.name === "Claims Triage AI")?.id ?? systemOptions[0]?.id ?? "");
   const [question, setQuestion] = useState(
     "Which controls block the Claims Triage AI release, and what evidence is missing?"
   );
@@ -76,7 +82,7 @@ export default function EvidencePage() {
     ? documents
     : [...(MOCK_DOCUMENTS[selectedSystemId] ?? []), ...customDocuments.filter((d) => d.systemId === selectedSystemId)];
 
-  const selectedSystem = systems.find((s) => s.id === selectedSystemId) ?? systems[0];
+  const selectedSystem = systemOptions.find((s) => s.id === selectedSystemId) ?? systemOptions[0];
 
   function handleDrag(e: React.DragEvent) {
     e.preventDefault();
@@ -223,10 +229,10 @@ export default function EvidencePage() {
             <form onSubmit={handleQuery} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">System</label>
-                <Select value={selectedSystemId} onValueChange={(v) => v && setSelectedSystemId(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={selectedSystemId} onValueChange={(v) => v && setPickedId(v)}>
+                  <SelectTrigger><SelectValue>{selectedSystem?.name ?? "Select system"}</SelectValue></SelectTrigger>
                   <SelectContent>
-                    {systems.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    {systemOptions.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

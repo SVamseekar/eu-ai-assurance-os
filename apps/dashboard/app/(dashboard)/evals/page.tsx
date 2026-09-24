@@ -89,6 +89,9 @@ export default function EvalsPage() {
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Article 72 stand-in until 2 Sep 2027: eval drift. The Commission template is not included.
+      </p>
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardHeader>

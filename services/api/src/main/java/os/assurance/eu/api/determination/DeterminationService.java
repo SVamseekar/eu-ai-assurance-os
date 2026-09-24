@@ -176,19 +176,19 @@ public class DeterminationService {
                   .toList();
           DeterminationRun full = toRun(run, items);
           Map<String, Object> snap = new LinkedHashMap<>();
-          snap.put("disclaimer", DeterminationDisclaimers.FULL);
+          snap.put("disclaimer", DeterminationDisclaimers.SHORT);
           snap.put("productLabel", DeterminationDisclaimers.METRICS_LABEL);
           snap.put("runId", full.id().toString());
           snap.put("rulesetVersion", full.rulesetVersion());
           snap.put("status", full.status());
           snap.put("createdAt", full.createdAt().toString());
-          snap.put("result", full.result());
+          snap.put("result", packResult(full.result()));
           snap.put("obligations", items.stream().map(this::obligationMap).toList());
           return snap;
         })
         .orElseGet(() -> {
           Map<String, Object> empty = new LinkedHashMap<>();
-          empty.put("disclaimer", DeterminationDisclaimers.FULL);
+          empty.put("disclaimer", DeterminationDisclaimers.SHORT);
           empty.put("productLabel", DeterminationDisclaimers.METRICS_LABEL);
           empty.put("runId", null);
           empty.put("rulesetVersion", DeterminationDisclaimers.RULESET_VERSION);
@@ -197,6 +197,15 @@ public class DeterminationService {
           empty.put("obligations", List.of());
           return empty;
         });
+  }
+
+  private Map<String, Object> packResult(Map<String, Object> result) {
+    Map<String, Object> copy = new LinkedHashMap<>();
+    if (result != null) {
+      copy.putAll(result);
+    }
+    copy.put("disclaimer", DeterminationDisclaimers.SHORT);
+    return copy;
   }
 
   private Map<String, Object> buildResultSummary(

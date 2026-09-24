@@ -32,11 +32,11 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   },
   "/evals": {
     title: "Eval Gates",
-    subtitle: "LLM-as-judge evaluation runs with faithfulness, safety refusal, and latency guardrails.",
+    subtitle: "Article 72 stand-in until 2 Sep 2027: eval drift. The Commission template is not included.",
   },
   "/contracts": {
     title: "Data Contracts",
-    subtitle: "Schema drift monitoring and data lineage across all AI system inputs.",
+    subtitle: "Article 72 stand-in until 2 Sep 2027: contract drift. The Commission template is not included.",
   },
   "/audit": {
     title: "Audit Ledger",
@@ -44,13 +44,19 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   },
   "/reg-monitor": {
     title: "Regulatory Change Monitor",
-    subtitle:
-      "Near-real-time polled assistive feed with UNCERTAIN impact hints. Not an official legal bulletin.",
+    subtitle: "Article 72 stand-in until 2 Sep 2027: reg-monitor diff. The Commission template is not included.",
+  },
+  "/corpus": {
+    title: "Law corpus",
+    subtitle: "English Formex provisions with force dates. Guidance is stored as interpretation, not as statute.",
+  },
+  "/proposals": {
+    title: "Proposal queue",
+    subtitle: "Tenant-scoped links a compliance officer or admin can accept or reject.",
   },
   "/readiness": {
-    title: "Certification Readiness",
-    subtitle:
-      "Weighted readiness score and gaps toward conformity documentation — not legal certification.",
+    title: "Readiness",
+    subtitle: "Evidence count for this system and this corpus version.",
   },
   "/public-claims": {
     title: "Public-claims teasers",
@@ -94,6 +100,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     contentSha256: string;
     systemName: string;
     filename?: string;
+    corpusVersion?: string;
   } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -129,6 +136,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         format: "JSON",
         contentSha256: pack.contentSha256,
         systemName: target.name,
+        corpusVersion: pack.corpusVersion,
       });
     } catch (err) {
       setExportError(err instanceof Error ? err.message : "JSON export failed");
@@ -213,6 +221,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               {sealModal?.contentSha256 || "(not returned)"}
             </code>
           </div>
+          {sealModal?.corpusVersion && (
+            <p className="text-xs text-muted-foreground">
+              corpus_version:{" "}
+              <span className="font-medium text-foreground break-all">{sealModal.corpusVersion}</span>
+            </p>
+          )}
           {sealModal?.filename && (
             <p className="text-xs text-muted-foreground">
               File: <span className="font-medium text-foreground">{sealModal.filename}</span>

@@ -1,0 +1,67 @@
+# Path-filtered pull request check. Scans known artifact files and uploads SARIF,
+# then calls the release-gate script. A README-only change does not start this workflow.
+
+name: Artifact scan
+
+on:
+  pull_request:
+    paths:
+      - "**/model_card.json"
+      - "**/approval.json"
+      - "**/deployment.json"
+      - "**/dataset_manifest.csv"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    name: Evgraph SARIF and release gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install evgraph
+        run: pip install evgraph
+
+      - name: Scan known artifact paths
+        env:
+          SARIF_OUT: evgraph-artifacts.sarif
+          DIFF_BASE: ${{ github.event.pull_request.base.sha }}
+          DIFF_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          case "$DIFF_BASE" in
+            *[!0-9a-fA-F]* | "") echo "refusing non-sha base" >&2; exit 1 ;;
+          esac
+          case "$DIFF_HEAD" in
+            *[!0-9a-fA-F]* | "") echo "refusing non-sha head" >&2; exit 1 ;;
+          esac
+          CHANGED_FILES="$(git diff --name-only "$DIFF_BASE" "$DIFF_HEAD")"
+          export CHANGED_FILES
+          bash scripts/ci-artifact-scan.sh
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: evgraph-artifacts.sarif
+
+      - name: Release gate
+        env:
+          ASSURANCE_API_BASE: ${{ secrets.ASSURANCE_API_BASE }}
+          API_KEY: ${{ secrets.ASSURANCE_API_KEY }}
+          SYSTEM_ID: ${{ secrets.SYSTEM_ID }}
+        run: |
+          chmod +x scripts/ci-release-gate.sh
+          set +e
+          ./scripts/ci-release-gate.sh
+          code=$?
+          set -e
+          echo "Release gate exit code: ${code}"
+          exit "${code}"

@@ -13,7 +13,11 @@ import type {
   EvalRunOperationsView,
   EvidenceDocument,
   EvidencePack,
+  Assessment,
+  CorpusView,
   EvidenceQueryResponse,
+  ProposalList,
+  MappingProposal,
   RegItem,
   RegMonitorFeed,
   ReleaseGateResponse,
@@ -87,6 +91,7 @@ export const api = {
       }),
     /** Primary sealed JSON evidence pack (authenticated proxy). */
     evidencePack: (id: string) => request<EvidencePack>(`/systems/${id}/evidence-pack`),
+    assessment: (id: string) => request<Assessment>(`/systems/${id}/assessment`),
     evgraphArtifacts: (id: string) =>
       request<Record<string, unknown>>(`/systems/${id}/evgraph-artifacts`),
     conformity: (id: string) => request<Record<string, unknown>>(`/systems/${id}/conformity`),
@@ -279,6 +284,38 @@ export const api = {
     get: (slug: string) => request<PublicClaimsTeaser>(`/public-claims/${slug}`),
     evgraph: (slug: string) =>
       request<PublicClaimsArtifacts>(`/public-claims/${slug}/evgraph`),
+  },
+  corpus: {
+    current: () => request<CorpusView>("/corpus"),
+  },
+  proposals: {
+    list: (systemId: string) => request<ProposalList>(`/systems/${systemId}/proposals`),
+    create: (
+      systemId: string,
+      payload: {
+        relation: string;
+        provisionKey?: string;
+        excerpt?: string;
+        corpusVersion?: string;
+      }
+    ) =>
+      request<MappingProposal>(`/systems/${systemId}/proposals`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    accept: (systemId: string, proposalId: string) =>
+      request<MappingProposal>(`/systems/${systemId}/proposals/${proposalId}/accept`, {
+        method: "POST",
+      }),
+    reject: (systemId: string, proposalId: string) =>
+      request<MappingProposal>(`/systems/${systemId}/proposals/${proposalId}/reject`, {
+        method: "POST",
+      }),
+    mapDocuments: (systemId: string, documents: { title: string; text: string }[]) =>
+      request<MappingProposal[]>(`/systems/${systemId}/proposals/map`, {
+        method: "POST",
+        body: JSON.stringify({ documents }),
+      }),
   },
   sectorPacks: {
     list: () => request<SectorPacksResponse>("/sector-packs"),

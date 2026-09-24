@@ -3,6 +3,9 @@ import { DecisionBadge } from "./decision-badge";
 import { normaliseDecision, cn } from "@/lib/utils";
 import type { AiSystem } from "@/lib/types";
 import { MOCK_WORKFLOWS } from "@/lib/mock-data";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { isLiveEntityId } from "@/lib/ids";
 
 interface ReleaseGateTableProps {
   systems: AiSystem[];
@@ -20,6 +23,7 @@ export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Eval</th>
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Contract</th>
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Decision</th>
+            <th className="text-left pb-3 text-xs font-medium text-muted-foreground pr-4">Control mode</th>
             <th className="text-left pb-3 text-xs font-medium text-muted-foreground">Workflow</th>
           </tr>
         </thead>
@@ -76,6 +80,9 @@ export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
                 <td className="py-3.5 pr-4">
                   <DecisionBadge decision={decision} />
                 </td>
+                <td className="py-3.5 pr-4">
+                  <ControlModeCell systemId={system.id} />
+                </td>
                 <td className="py-3.5">
                   {(() => {
                     const wfs = MOCK_WORKFLOWS[system.id] ?? [];
@@ -105,6 +112,38 @@ export function ReleaseGateTable({ systems }: ReleaseGateTableProps) {
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ControlModeCell({ systemId }: { systemId: string }) {
+  const live = isLiveEntityId(systemId);
+  const gate = useQuery({
+    queryKey: ["release-gate", systemId],
+    queryFn: () => api.systems.releaseGate(systemId),
+    enabled: live,
+  });
+  const controls = gate.data?.controls ?? [];
+  if (!live) {
+    return <span className="text-[10px] text-muted-foreground">—</span>;
+  }
+  if (gate.isLoading) {
+    return <span className="text-[10px] text-muted-foreground">…</span>;
+  }
+  if (controls.length === 0) {
+    return <span className="text-[10px] text-muted-foreground">No accepted link</span>;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      {controls.map((control) => (
+        <span
+          key={control.proposalId}
+          className="inline-flex w-fit items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium"
+        >
+          {control.mode}
+          {control.forceFrom ? ` · ${control.forceFrom}` : ""}
+        </span>
+      ))}
     </div>
   );
 }

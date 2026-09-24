@@ -160,6 +160,18 @@ export interface ReleaseGateResponse {
   systemId: string;
   decision: ReleaseDecision;
   blockers: string[];
+  controls?: GateControlMode[];
+}
+
+export type ControlMode = "INFORMATIONAL" | "WARNING" | "APPROVAL_REQUIRED" | "BLOCKING";
+
+export interface GateControlMode {
+  proposalId: string;
+  provisionKey: string | null;
+  forceStatus: string | null;
+  forceFrom: string | null;
+  mode: ControlMode;
+  signedOff: boolean;
 }
 
 /** Sealed evidence pack (JSON primary; PDF is Phase 6 export). */
@@ -181,6 +193,38 @@ export interface EvidencePack {
   contentSha256: string;
   generator: string;
   auditChainHead: string | null;
+  corpusVersion?: string;
+  acceptedLinks?: Record<string, unknown>[];
+  queue?: Record<string, unknown>[];
+  currentGaps?: Record<string, unknown>[];
+  acceptedArtifacts?: Record<string, unknown>;
+  evidenceCounts?: EvidenceCounts;
+  monitoringPlan?: Record<string, unknown>;
+}
+
+export interface EvidenceCounts {
+  satisfied: number;
+  insufficient: number;
+  missing: number;
+  needsHumanReview: number;
+  notApplicable: number;
+  acceptedException: number;
+}
+
+export interface AssessmentItem {
+  proposalId: string;
+  applicability: string;
+  forceStatus: string | null;
+  linkStatus: string;
+  relation: string;
+  derivedStatus: string | null;
+  reviewerId: string | null;
+}
+
+export interface Assessment {
+  corpusVersion: string;
+  counts: EvidenceCounts;
+  items: AssessmentItem[];
 }
 
 export type ObligationApplicability = "APPLICABLE" | "NOT_APPLICABLE" | "UNCERTAIN";
@@ -424,6 +468,65 @@ export interface ApprovalStage {
   actedAt: string | null;
   notificationSentAt: string | null;
   createdAt: string;
+}
+
+export interface CorpusInstrument {
+  seedCelex: string;
+  consolidationCelex: string | null;
+  title: string;
+  textHash: string;
+  consolidationDate: string | null;
+  applicationFrom: string | null;
+}
+
+export interface CorpusProvision {
+  provisionKey: string;
+  article: string | null;
+  paragraph: string | null;
+  point: string | null;
+  annex: string | null;
+  textExcerpt: string;
+  forceStatus: "IN_FORCE" | "FUTURE" | "OUT_OF_SCOPE";
+  forceFrom: string;
+  scopeNote: string | null;
+}
+
+export interface GuidanceDocument {
+  sourceKey: string;
+  title: string;
+  authorityRank: string;
+  body: string;
+  relation: string;
+  interpretsProvisionKey: string | null;
+}
+
+export interface CorpusView {
+  corpusVersion: string | null;
+  instruments: CorpusInstrument[];
+  provisions: CorpusProvision[];
+  guidance: GuidanceDocument[];
+  attribution: string;
+}
+
+export interface MappingProposal {
+  id: string;
+  systemId: string;
+  status: string;
+  relation: string;
+  displayState: string;
+  corpusVersion: string;
+  pinnedCorpusVersion: string;
+  currentCorpusVersion: string;
+  provisionKey: string | null;
+  excerpt: string | null;
+  adapterVersion: string | null;
+  forceStatus: string | null;
+  forceFrom: string | null;
+}
+
+export interface ProposalList {
+  currentCorpusVersion: string;
+  items: MappingProposal[];
 }
 
 export interface ApprovalWorkflow {
