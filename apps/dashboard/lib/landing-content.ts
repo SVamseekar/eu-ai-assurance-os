@@ -76,7 +76,7 @@ export const gateInputs = [
   },
   {
     title: "Promotion files",
-    body: "Evgraph checks approval-before-deploy and dataset license. Missing fields are not invented.",
+    body: "A pinned evgraph-cli 0.1.2 scan checks approval-before-deploy and dataset license. The evidence pack reports that same gap. Missing fields are not invented.",
   },
 ] as const;
 
@@ -342,9 +342,9 @@ export const capabilities: Capability[] = [
   },
   {
     icon: ScanSearch,
-    title: "Evgraph promotion & dataset gates",
+    title: "Pinned Evgraph scan",
     description:
-      "A separate library checks approval-before-deploy and dataset licenses. Missing timestamps or licenses fail closed. We do not invent the fields.",
+      "The pack runs evgraph-cli 0.1.2, the same library as the public Evidence Graph. Approval-before-deploy and dataset license are checked on the files you already have. Missing timestamps stay inconclusive. We do not invent them.",
   },
 ];
 
@@ -365,14 +365,14 @@ export const howItWorksSteps: HowItWorksStep[] = [
       "Record prohibited, high, limited, or minimal risk and why. Attach DPIAs, model cards, vendor docs, and the human-oversight record high-risk systems need.",
   },
   {
-    title: "Run Evgraph, evals, and contracts",
+    title: "Scan, eval, and check contracts",
     description:
-      "Evgraph checks promotion timestamps and dataset licenses. Eval scores and open data-contract breaches feed the same decision. Missing files do not pass.",
+      "A pinned Evgraph 0.1.2 scan, the eval score, and any open data-contract breach feed one decision. Corpus-backed mapping proposals stay in a queue until a person accepts them. Missing files do not pass.",
   },
   {
     title: "Get a release decision",
     description:
-      "Take PASS, REVIEW, or BLOCKED with the controls behind it. Export a sealed evidence pack (JSON + PDF hash) that includes the Evgraph artifacts.",
+      "Take PASS, REVIEW, or BLOCKED with the controls behind it. Export a sealed evidence pack (JSON + PDF hash) whose current gaps match the live Evgraph scan.",
   },
 ];
 
@@ -554,7 +554,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "What is Evgraph?",
     answer:
-      "A separate library that checks promotion files and dataset licenses beside the release gate. If an approval timestamp or dataset license is not in the files, the check does not pass. We do not invent missing fields.",
+      "A separate Python library. This product pins evgraph-cli 0.1.2 and runs it on the promotion files and dataset manifest. The pack and the scan must show the same current gap. If an approval timestamp or dataset license is missing, the finding stays inconclusive. We do not invent the field.",
   },
   {
     question: "What is an evidence pack?",

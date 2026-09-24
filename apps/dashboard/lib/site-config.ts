@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "EU AI Assurance OS",
   shortName: "Assurance OS",
   description:
-    "Fail-closed EU AI Act release gates. Register AI systems, classify risk, cite evidence, and only ship when evals, contracts, and promotion files pass. Article 50 is live. Not a notified body.",
+    "Fail-closed EU AI Act release gates. Register the system, map it to a pinned legal corpus, queue evidence proposals, and block release when cited evidence, evals, data contracts, or a pinned Evgraph scan do not pass. Article 50 is live. Not a notified body.",
   url:
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ??
     "https://euassuranceai.souravamseekar.com",

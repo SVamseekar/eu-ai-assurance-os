@@ -25,6 +25,8 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 - **Hash-chained** append-only audit ledger with verify endpoints
 - Sealed evidence packs (**JSON** primary + **PDF**)
 - CI release-gate contract for deploy pipelines
+- **Pinned legal corpus**, a human **proposal queue** for control mappings, and release-gate modes
+- **Pinned Evgraph scan** (`evgraph-cli` **0.1.2**): the evidence pack and the live scan share the same current gap. Missing approval timestamps stay inconclusive
 - **Assisted** obligation determination, certification **readiness** scoring, polled reg-monitor feed, and 3 sector packs (insurance · HR · finance)
 
 > This product assists governance and release readiness. It is **not** a notified body, does **not** issue legal certifications, and does **not** replace qualified legal counsel.
@@ -50,7 +52,7 @@ Customer postgres must keep `ASSURANCE_PUBLIC_CLAIMS=false`. Demo H2 may seed te
 | Layer | Technology |
 |---|---|
 | Dashboard + landing | **Next.js 16**, React 19, TypeScript, Tailwind CSS v4, TanStack Query, shadcn/ui |
-| API | **Spring Boot 3.3**, Java 17, Flyway **V1–V17** (+ postgres V4), Spring Data JPA |
+| API | **Spring Boot 4.1.1**, Java 17, **Tika 4.0.0**, Flyway **V1–V20** (+ postgres V4), Spring Data JPA |
 | Auth | Password JWT + refresh · API keys (`X-Api-Key`) · JWKS · Google/Microsoft OAuth **implemented** (prod smoke pending) |
 | Data | H2 (local default) or PostgreSQL (+ optional pgvector HNSW) |
 | Deploy | Dashboard on Vercel; API via Docker Compose or host (Flyway on boot); Terraform skeleton in `infra/terraform/` |
