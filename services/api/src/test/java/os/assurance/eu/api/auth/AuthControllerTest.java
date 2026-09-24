@@ -9,8 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -22,6 +23,7 @@ import os.assurance.eu.api.tenant.UserJpaRepository;
 import os.assurance.eu.api.tenant.UserRole;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestRestTemplate
 class AuthControllerTest {
 
     @LocalServerPort
@@ -75,7 +77,7 @@ class AuthControllerTest {
         seedUser("login-wrong@example.com", "correct-password");
 
         var response = rest.postForEntity(
-            "/auth/login", new LoginRequest("login-wrong@example.com", "wrong-password"), TokenResponse.class);
+            "/auth/login", new LoginRequest("login-wrong@example.com", "wrong-password"), String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -83,7 +85,7 @@ class AuthControllerTest {
     @Test
     void loginWithUnknownEmailIsRejectedWithTheSameStatusAsWrongPassword() {
         var response = rest.postForEntity(
-            "/auth/login", new LoginRequest("no-such-user@example.com", "anything"), TokenResponse.class);
+            "/auth/login", new LoginRequest("no-such-user@example.com", "anything"), String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -96,19 +98,19 @@ class AuthControllerTest {
         // path and compare medians — a bcrypt-skipping timing oracle would show as a
         // consistent multi-millisecond gap between the two, not noise-level variance.
         for (int i = 0; i < 3; i++) {
-            rest.postForEntity("/auth/login", new LoginRequest("timing-control@example.com", "wrong"), TokenResponse.class);
-            rest.postForEntity("/auth/login", new LoginRequest("nobody-" + i + "@example.com", "wrong"), TokenResponse.class);
+            rest.postForEntity("/auth/login", new LoginRequest("timing-control@example.com", "wrong"), String.class);
+            rest.postForEntity("/auth/login", new LoginRequest("nobody-" + i + "@example.com", "wrong"), String.class);
         }
 
         long[] wrongPasswordTimes = new long[7];
         long[] unknownEmailTimes = new long[7];
         for (int i = 0; i < 7; i++) {
             long start = System.nanoTime();
-            rest.postForEntity("/auth/login", new LoginRequest("timing-control@example.com", "wrong"), TokenResponse.class);
+            rest.postForEntity("/auth/login", new LoginRequest("timing-control@example.com", "wrong"), String.class);
             wrongPasswordTimes[i] = System.nanoTime() - start;
 
             start = System.nanoTime();
-            rest.postForEntity("/auth/login", new LoginRequest("nobody-sample-" + i + "@example.com", "wrong"), TokenResponse.class);
+            rest.postForEntity("/auth/login", new LoginRequest("nobody-sample-" + i + "@example.com", "wrong"), String.class);
             unknownEmailTimes[i] = System.nanoTime() - start;
         }
 
@@ -150,7 +152,7 @@ class AuthControllerTest {
 
         rest.postForEntity("/auth/logout", new RefreshRequest(login.getBody().refreshToken()), Void.class);
         var refreshAttempt = rest.postForEntity(
-            "/auth/refresh", new RefreshRequest(login.getBody().refreshToken()), TokenResponse.class);
+            "/auth/refresh", new RefreshRequest(login.getBody().refreshToken()), String.class);
 
         assertThat(refreshAttempt.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }

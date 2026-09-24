@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import os.assurance.eu.api.tenant.TenantEntity;
 import os.assurance.eu.api.tenant.TenantJpaRepository;
@@ -52,7 +52,7 @@ class OAuthServiceTest {
   @Autowired
   private JwtService jwtService;
 
-  @MockBean
+  @MockitoBean
   private OAuthTokenClient tokenClient;
 
   private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);

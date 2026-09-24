@@ -13,8 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -40,6 +41,7 @@ import os.assurance.eu.api.tenant.UserRole;
         "assurance.oauth.google.client-id=test-google-client",
         "assurance.oauth.google.client-secret=test-google-secret"
     })
+@AutoConfigureTestRestTemplate
 class OAuthControllerTest {
 
   @Autowired
@@ -54,7 +56,7 @@ class OAuthControllerTest {
   @Autowired
   private UserJpaRepository users;
 
-  @MockBean
+  @MockitoBean
   private OAuthTokenClient tokenClient;
 
   private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
