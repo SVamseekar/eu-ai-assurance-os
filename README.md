@@ -25,7 +25,7 @@ It helps teams validate AI releases against EU AI Act–oriented controls by com
 - **Hash-chained** append-only audit ledger with verify endpoints
 - Sealed evidence packs (**JSON** primary + **PDF**)
 - CI release-gate contract for deploy pipelines
-- **Pinned legal corpus**, a human **proposal queue** for control mappings, and release-gate modes
+- **Pinned legal corpus**, a human **proposal queue** for control mappings (a person accepts them; they are not auto-applied), and release-gate modes **INFORMATIONAL**, **WARNING**, **APPROVAL_REQUIRED**, and **BLOCKING**
 - **Pinned Evgraph scan** (`evgraph-cli` **0.1.2**): the evidence pack and the live scan share the same current gap. Missing approval timestamps stay inconclusive
 - **Assisted** obligation determination, certification **readiness** scoring, polled reg-monitor feed, and 3 sector packs (insurance · HR · finance)
 

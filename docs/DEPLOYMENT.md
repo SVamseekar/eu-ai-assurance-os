@@ -64,7 +64,7 @@ Helper: `scripts/compose-with-minio.sh`.
 
 ### Flyway on a fresh volume
 
-On first API boot against empty Postgres, Flyway applies `V1`–latest under `services/api/src/main/resources/db/migration` plus postgres-only scripts (pgvector index is best-effort if the extension is missing).
+On first API boot against empty Postgres, Flyway applies `V1`–`V20` under `services/api/src/main/resources/db/migration` plus postgres-only `V4` (pgvector index is best-effort if the extension is missing).
 
 Verify:
 

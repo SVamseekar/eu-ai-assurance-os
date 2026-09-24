@@ -82,7 +82,7 @@ Append-only **hash-chained** ledger in PostgreSQL/H2 (`prev_event_hash`, `event_
 
 ### Assisted expansions (Phase 7)
 
-- **Determination:** questionnaire + deterministic rules → obligation map; never auto-applies risk class.
+- **Determination:** questionnaire + deterministic rules → an obligation map that stays a proposal until a person accepts it; never auto-applies risk class or a control mapping. Risk class is read against a pinned legal corpus.
 - **Readiness:** weighted score 0–100 + gaps; never returns `certified: true`.
 - **Reg monitor:** polled sources + curated bootstrap; impact hints prefer `UNCERTAIN`.
 - **Sector packs:** insurance / HR / finance overlays + SPI stubs (not live vendor apps).
@@ -99,7 +99,7 @@ Append-only **hash-chained** ledger in PostgreSQL/H2 (`prev_event_hash`, `event_
 
 ## Release Gate Logic
 
-Implemented in `ReleaseGateService` → `ReleaseDecision` (`PASS` / `REVIEW` / `BLOCKED`):
+Implemented in `ReleaseGateService` → `ReleaseDecision` (`PASS` / `REVIEW` / `BLOCKED`). In-force controls then apply `ControlMode`: `INFORMATIONAL` leaves the decision unchanged, `WARNING` moves `PASS` to `REVIEW`, `APPROVAL_REQUIRED` moves an unsigned control to `REVIEW`, and `BLOCKING` sets `BLOCKED`.
 
 **Pass-oriented conditions:**
 

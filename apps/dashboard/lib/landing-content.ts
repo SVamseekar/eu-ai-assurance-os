@@ -7,6 +7,8 @@ import {
   ClipboardCheck,
   BadgeCheck,
   ScanSearch,
+  Library,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,17 +49,17 @@ export const releaseDecisionMeanings = [
   {
     decision: "PASS",
     meaning:
-      "Evidence, evals, contracts, and promotion checks all clear the configured bar. The sealed pack can be exported.",
+      "Cited evidence, the eval, and contracts clear the bar, and no in-force WARNING, APPROVAL_REQUIRED, or BLOCKING control holds the release. The sealed pack can be exported.",
   },
   {
     decision: "REVIEW",
     meaning:
-      "Something is incomplete or under the review threshold. Owner, compliance, or legal still have to act.",
+      "An in-force WARNING on an otherwise clear gate, or an unsigned APPROVAL_REQUIRED control, holds the release for a person. Owner, compliance, or legal still have to act.",
   },
   {
     decision: "BLOCKED",
     meaning:
-      "A hard stop: open contract breach, prohibited class, missing high-risk oversight, or a promotion file that does not pass.",
+      "A hard stop: an in-force BLOCKING control, an open contract BREACH, a prohibited class, or missing high-risk oversight. A missing approval timestamp stays inconclusive. The scan does not invent the field.",
   },
 ] as const;
 
@@ -109,7 +111,7 @@ export const methodSteps = [
   {
     title: "Run the same fail-closed checks",
     description:
-      "The same promotion and dataset checks used on customer systems. If a required field is missing, the check does not pass. We do not fill gaps.",
+      "The pinned evgraph-cli 0.1.2 scan used on a customer system. The evidence pack and the live scan report the same current gap. A missing approval timestamp stays inconclusive. We do not fill the field.",
   },
 ] as const;
 
@@ -308,7 +310,19 @@ export const capabilities: Capability[] = [
     icon: ShieldCheck,
     title: "Risk Classification",
     description:
-      "Record prohibited, high, limited, or minimal risk with rationale, affected users, sector, and decision impact. The tier sets which controls must be on file before release.",
+      "Record prohibited, high, limited, or minimal risk against a pinned legal corpus, with rationale, affected users, sector, and decision impact. The tier sets which controls must be on file before release.",
+  },
+  {
+    icon: Library,
+    title: "Pinned legal corpus",
+    description:
+      "Risk is classified against a pinned legal corpus. The pin is the text the classification reads. It is not a live scrape of the statute, and it is not a legal verdict.",
+  },
+  {
+    icon: ListChecks,
+    title: "Proposal queue",
+    description:
+      "Control mappings are proposals. A person accepts them. They are not auto-applied. Until that acceptance, the mapping stays in the queue.",
   },
   {
     icon: FileSearch,
@@ -362,7 +376,7 @@ export const howItWorksSteps: HowItWorksStep[] = [
   {
     title: "Classify risk & attach evidence",
     description:
-      "Record prohibited, high, limited, or minimal risk and why. Attach DPIAs, model cards, vendor docs, and the human-oversight record high-risk systems need.",
+      "Record prohibited, high, limited, or minimal risk against a pinned legal corpus, and why. Attach DPIAs, model cards, vendor docs, and the human-oversight record high-risk systems need.",
   },
   {
     title: "Scan, eval, and check contracts",
@@ -385,12 +399,12 @@ export const personas: Persona[] = [
   {
     role: "AI Engineering Lead",
     description:
-      "Ship model and prompt changes behind a gate wired to eval scores you set. A failed run is a REVIEW or BLOCKED, not a Slack thread.",
+      "Ship model and prompt changes behind a release gate. In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or BLOCKING. A failed eval is REVIEW or BLOCKED, not a Slack thread.",
   },
   {
     role: "Compliance Officer",
     description:
-      "See, per system, which EU AI Act-style obligations are on file, with citations you can hand to an auditor — without claiming a legal determination.",
+      "See which obligations a pinned legal corpus maps onto the system. Those mappings are proposals until a person accepts them. The citations are for an auditor. This is not a legal determination.",
   },
   {
     role: "Legal Counsel",
@@ -405,7 +419,7 @@ export const personas: Persona[] = [
   {
     role: "Product Owner",
     description:
-      "A single PASS, REVIEW, or BLOCKED before launch, with the reasons — so go-live is not a committee of inboxes.",
+      "A single PASS, REVIEW, or BLOCKED before launch. The sealed evidence pack and a live evgraph-cli 0.1.2 scan report the same current gap.",
   },
   {
     role: "Auditor",
@@ -452,7 +466,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceUrl:
       "https://www.hellogetsafe.com/en-de/press-releases/getsafe-relies-on-ai-instead-of-licenses",
     evgraphNote:
-      "Public pages do not publish an approval timestamp or dataset license, so the check does not pass.",
+      "Public pages do not publish an approval timestamp or dataset license, so that gap stays inconclusive. The scan does not invent the field.",
   },
   {
     slug: "auxmoney",
@@ -465,7 +479,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceUrl:
       "https://www.it-finanzmagazin.de/granular-statt-pauschal-kreditwuerdigkeit-im-detail-verstehen-237084/",
     evgraphNote:
-      "Public pages do not publish an approval timestamp or dataset license, so the check does not pass.",
+      "Public pages do not publish an approval timestamp or dataset license, so that gap stays inconclusive. The scan does not invent the field.",
   },
   {
     slug: "softgarden",
@@ -477,7 +491,7 @@ export const publicClaimsMarketing: PublicClaimsMarketing[] = [
     sourceTitle: "AI recruitment solutions — softgarden",
     sourceUrl: "https://softgarden.com/en/ai-recruitment/",
     evgraphNote:
-      "No public approval or deploy timestamp. Ranking applicants is employment-shaped — this is not a legal classification.",
+      "No public approval timestamp, so that field stays inconclusive. Ranking applicants is employment-shaped. This is not a legal classification.",
   },
   {
     slug: "retorio",
@@ -504,7 +518,7 @@ export const homeDestinations = [
     href: "/how-it-works",
     title: "How it works",
     description:
-      "Register, classify, run promotion and eval checks, then take PASS, REVIEW, or BLOCKED.",
+      "Register the system, classify risk against a pinned corpus, queue mapping proposals for a person to accept, then take PASS, REVIEW, or BLOCKED.",
   },
   {
     href: "/method",
@@ -539,7 +553,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "What is an EU AI Act risk classification?",
     answer:
-      "The tier assigned to a system — prohibited, high, limited, or minimal — from its intended use, sector, decision impact, and affected users. Annex III lists use cases presumed high-risk. The tier sets which controls and evidence this product requires before release.",
+      "The tier assigned to a system — prohibited, high, limited, or minimal — from its intended use, read against a pinned legal corpus. Annex III lists use cases presumed high-risk. The tier sets which controls and evidence this product requires before release.",
   },
   {
     question: "Does this certify my AI system or replace a notified body?",
@@ -549,7 +563,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "How is this different from a GRC platform?",
     answer:
-      "Most GRC tools inventory policies and collect evidence across many frameworks. This is a fail-closed release gate for AI systems: missing evidence, a failed eval, an open contract breach, or a missing promotion timestamp does not pass.",
+      "Most GRC tools inventory policies and collect evidence across many frameworks. This is a fail-closed release gate. In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or BLOCKING. Missing cited evidence, a failed eval, or an open contract BREACH does not pass. A missing approval timestamp stays inconclusive.",
   },
   {
     question: "What is Evgraph?",
@@ -569,7 +583,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "Who needs to approve a high-risk AI system release?",
     answer:
-      "High-risk systems route through owner, compliance, and legal approval, and require documented human-oversight evidence before the release gate can pass.",
+      "Control mappings are proposals a person accepts. They are not auto-applied. High-risk systems also route through owner, compliance, and legal approval, and require documented human-oversight evidence before the release gate can pass.",
   },
   {
     question: "What counts as a data-contract drift event?",
