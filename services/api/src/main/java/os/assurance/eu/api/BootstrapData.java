@@ -101,6 +101,8 @@ public class BootstrapData implements CommandLineRunner {
             "EU",
             now)));
     if (!seedDemoUsers) {
+      // Not demo data: backfills approval workflows for real systems in existing databases.
+      ensureApprovalWorkflows();
       return;
     }
     users.findById(TenantContext.DEFAULT_USER_ID)
