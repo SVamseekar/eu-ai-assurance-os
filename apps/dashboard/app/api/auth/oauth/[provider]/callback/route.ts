@@ -51,6 +51,9 @@ export async function GET(
   }
 
   if (!upstream.ok) {
+    if (upstream.status === 409) {
+      return loginRedirect(request, "email_unverified");
+    }
     if (upstream.status === 403) {
       return loginRedirect(request, "not_provisioned");
     }

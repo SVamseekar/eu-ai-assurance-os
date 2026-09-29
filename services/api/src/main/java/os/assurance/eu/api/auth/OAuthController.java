@@ -101,6 +101,7 @@ public class OAuthController {
       case "state" -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
       case "denied" -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
       case "unsupported_provider" -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+      case "email_unverified" -> new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
       default -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
     };
   }

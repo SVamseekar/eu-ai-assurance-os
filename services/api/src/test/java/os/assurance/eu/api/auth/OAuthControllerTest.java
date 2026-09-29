@@ -106,7 +106,8 @@ class OAuthControllerTest {
         .thenReturn(Map.of(
             "sub", "google-ctrl-happy",
             "email", "ctrl-happy@example.com",
-            "name", "Ctrl Happy"));
+            "name", "Ctrl Happy",
+            "email_verified", true));
 
     String state = stateService.issue("google");
     HttpHeaders headers = new HttpHeaders();
@@ -131,7 +132,8 @@ class OAuthControllerTest {
         .thenReturn(Map.of(
             "sub", "google-not-provisioned",
             "email", "never-seen@example.com",
-            "name", "Nobody"));
+            "name", "Nobody",
+            "email_verified", true));
 
     String state = stateService.issue("google");
     HttpHeaders headers = new HttpHeaders();

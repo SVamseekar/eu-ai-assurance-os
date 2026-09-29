@@ -81,7 +81,8 @@ class OAuthServiceTest {
         .thenReturn(Map.of(
             "sub", "google-subject-happy",
             "email", "oauth-happy@example.com",
-            "name", "OAuth Happy"));
+            "name", "OAuth Happy",
+            "email_verified", true));
 
     String state = stateService.issue("google");
     TokenResponse tokens = oauthService.completeAuthorization("google", "good-code", state);
@@ -129,7 +130,8 @@ class OAuthServiceTest {
         .thenReturn(Map.of(
             "sub", "google-unknown-subject",
             "email", "brand-new-oauth@example.com",
-            "name", "New User"));
+            "name", "New User",
+            "email_verified", true));
 
     String state = stateService.issue("google");
 
@@ -151,5 +153,47 @@ class OAuthServiceTest {
   void beginAuthorizationReturnsProviderUrl() {
     String url = oauthService.beginAuthorization("google");
     assertThat(url).contains("accounts.google.com");
+  }
+
+  @Test
+  void unverifiedEmailNeverLinksToExistingAccount() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    tenants.save(new TenantEntity(tenantId, "Victim Co", "starter", "EU", Instant.now()));
+    users.save(new UserEntity(userId, tenantId, "victim@victim.example", UserRole.ADMIN,
+        encoder.encode("victim-password"), Instant.now()));
+
+    when(tokenClient.exchangeCode(eq("microsoft"), eq("attacker-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("microsoft"), any()))
+        .thenReturn(Map.of("sub", "attacker-subject", "preferred_username", "victim@victim.example"));
+
+    String state = stateService.issue("microsoft");
+    assertThatThrownBy(() -> oauthService.completeAuthorization("microsoft", "attacker-code", state))
+        .isInstanceOf(OAuthService.OAuthLoginException.class)
+        .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
+        .isEqualTo("email_unverified");
+
+    UserEntity victim = users.findById(userId).orElseThrow();
+    assertThat(victim.oauthProvider()).isNull();
+    assertThat(victim.oauthSubject()).isNull();
+  }
+
+  @Test
+  void verifiedLinkingMatchesEmailCaseInsensitively() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    tenants.save(new TenantEntity(tenantId, "Case Co", "starter", "EU", Instant.now()));
+    users.save(new UserEntity(userId, tenantId, "Mixed.Case@Case.Example", UserRole.ADMIN,
+        encoder.encode("pw"), Instant.now()));
+
+    when(tokenClient.exchangeCode(eq("google"), eq("case-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of("sub", "case-subject", "email", "mixed.case@case.example", "email_verified", true));
+
+    String state = stateService.issue("google");
+    oauthService.completeAuthorization("google", "case-code", state);
+    assertThat(users.findById(userId).orElseThrow().oauthSubject()).isEqualTo("case-subject");
   }
 }

@@ -80,7 +80,14 @@ public class OAuthService {
       return byOauth;
     }
 
-    UserEntity byEmail = users.findByEmail(profile.email()).orElse(null);
+    if (!profile.emailVerified()) {
+      throw new OAuthLoginException(
+          "email_unverified",
+          "Your identity provider did not confirm this email address. Sign in with your password, "
+              + "then link this provider from Settings.");
+    }
+
+    UserEntity byEmail = users.findByEmailIgnoreCase(profile.email()).orElse(null);
     if (byEmail != null) {
       byEmail.linkOAuth(profile.provider(), profile.subject());
       return users.save(byEmail);

@@ -46,4 +46,35 @@ class OAuthProviderProfileTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("email");
   }
+
+  @Test
+  void googleBooleanEmailVerifiedIsVerified() {
+    OAuthProviderProfile p = OAuthProviderProfile.fromUserInfo("google",
+        java.util.Map.of("sub", "s1", "email", "a@corp.example", "email_verified", true));
+    org.assertj.core.api.Assertions.assertThat(p.emailVerified()).isTrue();
+  }
+
+  @Test
+  void googleStringEmailVerifiedIsVerified() {
+    OAuthProviderProfile p = OAuthProviderProfile.fromUserInfo("google",
+        java.util.Map.of("sub", "s1", "email", "a@corp.example", "email_verified", "true"));
+    org.assertj.core.api.Assertions.assertThat(p.emailVerified()).isTrue();
+  }
+
+  @Test
+  void googleMissingEmailVerifiedIsNotVerified() {
+    OAuthProviderProfile p = OAuthProviderProfile.fromUserInfo("google",
+        java.util.Map.of("sub", "s1", "email", "a@corp.example"));
+    org.assertj.core.api.Assertions.assertThat(p.emailVerified()).isFalse();
+  }
+
+  @Test
+  void microsoftVerifiedOnlyWithXmsEdov() {
+    OAuthProviderProfile unverified = OAuthProviderProfile.fromUserInfo("microsoft",
+        java.util.Map.of("sub", "s2", "preferred_username", "victim@corp.example"));
+    OAuthProviderProfile verified = OAuthProviderProfile.fromUserInfo("microsoft",
+        java.util.Map.of("sub", "s3", "email", "owner@corp.example", "xms_edov", true));
+    org.assertj.core.api.Assertions.assertThat(unverified.emailVerified()).isFalse();
+    org.assertj.core.api.Assertions.assertThat(verified.emailVerified()).isTrue();
+  }
 }
