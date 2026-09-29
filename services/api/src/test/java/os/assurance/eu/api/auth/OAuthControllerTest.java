@@ -44,6 +44,8 @@ import os.assurance.eu.api.tenant.UserRole;
 @AutoConfigureTestRestTemplate
 class OAuthControllerTest {
 
+  private static final String NONCE = "test-browser-nonce-0123456789";
+
   @Autowired
   private TestRestTemplate rest;
 
@@ -81,7 +83,7 @@ class OAuthControllerTest {
   @Test
   void startRedirectsToProvider() {
     var response = rest.exchange(
-        "/auth/oauth/google/start",
+        "/auth/oauth/google/start?nonce=" + NONCE,
         HttpMethod.GET,
         HttpEntity.EMPTY,
         Void.class);
@@ -109,13 +111,13 @@ class OAuthControllerTest {
             "name", "Ctrl Happy",
             "email_verified", true));
 
-    String state = stateService.issue("google");
+    String state = stateService.issue("google", NONCE);
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     var response = rest.exchange(
         "/auth/oauth/google/callback",
         HttpMethod.POST,
-        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("ctrl-code", state), headers),
+        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("ctrl-code", state, NONCE), headers),
         TokenResponse.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -135,13 +137,13 @@ class OAuthControllerTest {
             "name", "Nobody",
             "email_verified", true));
 
-    String state = stateService.issue("google");
+    String state = stateService.issue("google", NONCE);
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     var response = rest.exchange(
         "/auth/oauth/google/callback",
         HttpMethod.POST,
-        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("np-code", state), headers),
+        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("np-code", state, NONCE), headers),
         String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -154,7 +156,7 @@ class OAuthControllerTest {
     var response = rest.exchange(
         "/auth/oauth/google/callback",
         HttpMethod.POST,
-        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("code", "garbage-state"), headers),
+        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("code", "garbage-state", NONCE), headers),
         String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -163,7 +165,7 @@ class OAuthControllerTest {
   @Test
   void oauthStartIsReachableWithoutCredentials() {
     var response = rest.exchange(
-        "/auth/oauth/google/start",
+        "/auth/oauth/google/start?nonce=" + NONCE,
         HttpMethod.GET,
         HttpEntity.EMPTY,
         Void.class);
@@ -181,16 +183,15 @@ class OAuthControllerTest {
             "email", "unverified@example.com",
             "name", "Unverified"));
 
-    String state = stateService.issue("google");
+    String state = stateService.issue("google", NONCE);
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     var response = rest.exchange(
         "/auth/oauth/google/callback",
         HttpMethod.POST,
-        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("unverified-code", state), headers),
+        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("unverified-code", state, NONCE), headers),
         String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
   }
 }
-

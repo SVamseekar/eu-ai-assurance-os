@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import os.assurance.eu.api.observability.AssuranceMetrics;
@@ -38,9 +39,11 @@ public class OAuthController {
   }
 
   @GetMapping("/auth/oauth/{provider}/start")
-  public ResponseEntity<Void> start(@PathVariable String provider) {
+  public ResponseEntity<Void> start(
+      @PathVariable String provider,
+      @RequestParam(name = "nonce", required = false) String nonce) {
     try {
-      String authorizationUrl = oauthService.beginAuthorization(provider);
+      String authorizationUrl = oauthService.beginAuthorization(provider, nonce);
       return ResponseEntity.status(HttpStatus.FOUND)
           .location(URI.create(authorizationUrl))
           .build();
@@ -68,7 +71,8 @@ public class OAuthController {
       return oauthService.completeAuthorization(
           provider,
           request == null ? null : request.code(),
-          request == null ? null : request.state());
+          request == null ? null : request.state(),
+          request == null ? null : request.nonce());
     } catch (OAuthService.OAuthLoginException e) {
       assuranceMetrics.authLoginFailure("oauth_" + e.code());
       throw toStatus(e);
@@ -106,5 +110,5 @@ public class OAuthController {
     };
   }
 
-  public record OAuthCallbackRequest(String code, String state) {}
+  public record OAuthCallbackRequest(String code, String state, String nonce) {}
 }

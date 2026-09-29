@@ -25,6 +25,7 @@ import os.assurance.eu.api.tenant.UserJpaRepository;
     "assurance.oauth.google.client-secret=test-google-secret"
 })
 class OAuthAutoProvisionTest {
+  private static final String NONCE = "test-browser-nonce-0123456789";
 
   @Autowired
   private OAuthService oauthService;
@@ -57,8 +58,8 @@ class OAuthAutoProvisionTest {
 
   @Test
   void autoProvisionCreatesTenantAdminAndIssuesTokens() {
-    String state = stateService.issue("google");
-    TokenResponse tokens = oauthService.completeAuthorization("google", "auto-code", state);
+    String state = stateService.issue("google", NONCE);
+    TokenResponse tokens = oauthService.completeAuthorization("google", "auto-code", state, NONCE);
 
     assertThat(tokens.accessToken()).isNotBlank();
     var claims = jwtService.verifyAccessToken(tokens.accessToken()).orElseThrow();
@@ -75,8 +76,8 @@ class OAuthAutoProvisionTest {
         .thenReturn(Map.of("access_token", "at"));
     when(tokenClient.fetchUserInfo(eq("google"), any()))
         .thenReturn(Map.of("sub", "google-unverified", "email", "someone@unverified.example"));
-    String state = stateService.issue("google");
-    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "unverified-code", state))
+    String state = stateService.issue("google", NONCE);
+    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "unverified-code", state, NONCE))
         .isInstanceOf(OAuthService.OAuthLoginException.class)
         .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
         .isEqualTo("email_unverified");

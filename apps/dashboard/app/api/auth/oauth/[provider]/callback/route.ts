@@ -5,6 +5,7 @@ import { setSessionCookies } from "@/lib/session";
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
 const SUPPORTED = new Set(["google", "microsoft"]);
 const OAUTH_NEXT_COOKIE = "oauth_next";
+const OAUTH_NONCE_COOKIE = "oauth_nonce";
 
 function loginRedirect(request: NextRequest, authError: string): NextResponse {
   const url = new URL("/login", request.url);
@@ -38,12 +39,17 @@ export async function GET(
     return loginRedirect(request, "state");
   }
 
+  const nonce = request.cookies.get(OAUTH_NONCE_COOKIE)?.value;
+  if (!nonce) {
+    return loginRedirect(request, "state");
+  }
+
   let upstream: Response;
   try {
     upstream = await fetch(`${API_BASE}/auth/oauth/${normalized}/callback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, state }),
+      body: JSON.stringify({ code, state, nonce }),
       cache: "no-store",
     });
   } catch {
@@ -75,6 +81,13 @@ export async function GET(
   const response = NextResponse.redirect(new URL(destination, request.url));
   setSessionCookies(response, tokens.accessToken, tokens.refreshToken);
   response.cookies.set(OAUTH_NEXT_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  response.cookies.set(OAUTH_NONCE_COOKIE, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
