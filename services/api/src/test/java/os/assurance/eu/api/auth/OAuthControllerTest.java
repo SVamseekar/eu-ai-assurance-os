@@ -170,4 +170,27 @@ class OAuthControllerTest {
     // Not 401 from TenantContextFilter
     assertThat(response.getStatusCode().value()).isNotEqualTo(401);
   }
+
+  @Test
+  void callbackUnverifiedEmailReturnsConflict() {
+    when(tokenClient.exchangeCode(eq("google"), eq("unverified-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of(
+            "sub", "google-unverified",
+            "email", "unverified@example.com",
+            "name", "Unverified"));
+
+    String state = stateService.issue("google");
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    var response = rest.exchange(
+        "/auth/oauth/google/callback",
+        HttpMethod.POST,
+        new HttpEntity<>(new OAuthController.OAuthCallbackRequest("unverified-code", state), headers),
+        String.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+  }
 }
+
