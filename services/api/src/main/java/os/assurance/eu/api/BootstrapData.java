@@ -19,6 +19,7 @@ import os.assurance.eu.api.system.ReleaseGateService;
 import os.assurance.eu.api.system.RiskClass;
 import os.assurance.eu.api.tenant.ApiKeyEntity;
 import os.assurance.eu.api.tenant.ApiKeyJpaRepository;
+import os.assurance.eu.api.tenant.DemoCredentialGuard;
 import os.assurance.eu.api.tenant.TenantContext;
 import os.assurance.eu.api.tenant.TenantEntity;
 import os.assurance.eu.api.tenant.TenantJpaRepository;
@@ -48,6 +49,7 @@ public class BootstrapData implements CommandLineRunner {
   private final ApprovalWorkflowRepository approvalWorkflows;
   private final Environment environment;
   private final TenantContext tenantContext;
+  private final boolean seedDemoUsers;
   private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
   public BootstrapData(
@@ -61,7 +63,9 @@ public class BootstrapData implements CommandLineRunner {
       ApprovalWorkflowService approvalWorkflowService,
       ApprovalWorkflowRepository approvalWorkflows,
       Environment environment,
-      TenantContext tenantContext) {
+      TenantContext tenantContext,
+      @org.springframework.beans.factory.annotation.Value("${assurance.bootstrap.seed-demo-users:false}")
+      boolean seedDemoUsers) {
     this.tenants = tenants;
     this.users = users;
     this.apiKeyRepo = apiKeyRepo;
@@ -73,6 +77,7 @@ public class BootstrapData implements CommandLineRunner {
     this.approvalWorkflows = approvalWorkflows;
     this.environment = environment;
     this.tenantContext = tenantContext;
+    this.seedDemoUsers = seedDemoUsers;
   }
 
   @Override
@@ -95,13 +100,16 @@ public class BootstrapData implements CommandLineRunner {
             "starter",
             "EU",
             now)));
+    if (!seedDemoUsers) {
+      return;
+    }
     users.findById(TenantContext.DEFAULT_USER_ID)
         .orElseGet(() -> users.save(new UserEntity(
             TenantContext.DEFAULT_USER_ID,
             TenantContext.DEFAULT_TENANT_ID,
             "compliance@example.com",
             UserRole.COMPLIANCE_OFFICER,
-            passwordEncoder.encode("dev-local-password-only"),
+            passwordEncoder.encode(DemoCredentialGuard.DEV_PASSWORD),
             now)));
     seedUser("00000000-0000-0000-0000-000000000102",
         "engineering@example.com", UserRole.AI_ENGINEERING_LEAD, now);
@@ -195,7 +203,7 @@ public class BootstrapData implements CommandLineRunner {
             TenantContext.DEFAULT_TENANT_ID,
             email,
             role,
-            passwordEncoder.encode("dev-local-password-only"),
+            passwordEncoder.encode(DemoCredentialGuard.DEV_PASSWORD),
             now)));
   }
 

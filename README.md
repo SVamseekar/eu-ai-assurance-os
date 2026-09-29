@@ -96,7 +96,10 @@ npm run dev
 # → http://localhost:3000  (proxies /api/v1/* → localhost:8080)
 ```
 
-Local login uses seeded users such as `compliance@example.com` with the documented dev password in `BootstrapData` (**local only**).
+Local H2 runs seed demo users (`compliance@example.com`, `admin@example.com`, …) because
+`assurance.bootstrap.seed-demo-users=true` in the default profile. The `postgres` profile never seeds them and
+refuses to start if an old database still has them with the development password — run
+`scripts/disable-seeded-users.sql` once on such databases.
 
 ### Legacy prototype (optional, not production)
 
