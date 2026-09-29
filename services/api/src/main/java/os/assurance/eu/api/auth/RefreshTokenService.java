@@ -36,9 +36,10 @@ public class RefreshTokenService {
         return new IssuedRefreshToken(rawToken, id);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public RefreshResult rotate(String rawToken) {
         String presentedHash = hash(rawToken);
-        RefreshTokenEntity entity = repository.findByTokenHash(presentedHash).orElse(null);
+        RefreshTokenEntity entity = repository.findForUpdateByTokenHash(presentedHash).orElse(null);
         if (entity == null) {
             return new RefreshResult.Rejected("Unknown refresh token");
         }
@@ -55,6 +56,7 @@ public class RefreshTokenService {
         return new RefreshResult.Rotated(newToken, entity.userId(), entity.tenantId());
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void revoke(String rawToken) {
         repository.findByTokenHash(hash(rawToken)).ifPresent(entity -> {
             if (!entity.isRevoked()) {
