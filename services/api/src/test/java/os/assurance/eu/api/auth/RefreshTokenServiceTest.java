@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import os.assurance.eu.api.tenant.TenantContext;
 
-@SpringBootTest
+@SpringBootTest(properties = "assurance.auth.refresh-reuse-grace-seconds=0")
 @Transactional
 class RefreshTokenServiceTest {
 
@@ -63,5 +63,13 @@ class RefreshTokenServiceTest {
         var result = refreshTokenService.rotate(issued.rawToken());
 
         assertThat(result).isInstanceOf(RefreshTokenService.RefreshResult.Rejected.class);
+    }
+
+    @Test
+    void logoutRevokedTokenGetsNoGrace() {
+        var issued = refreshTokenService.issue(TenantContext.DEFAULT_USER_ID, TenantContext.DEFAULT_TENANT_ID);
+        refreshTokenService.revoke(issued.rawToken());
+        assertThat(refreshTokenService.rotate(issued.rawToken()))
+            .isInstanceOf(RefreshTokenService.RefreshResult.Rejected.class);
     }
 }

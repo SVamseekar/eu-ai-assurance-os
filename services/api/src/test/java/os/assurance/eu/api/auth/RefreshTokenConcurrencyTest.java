@@ -22,7 +22,7 @@ class RefreshTokenConcurrencyTest {
   @Autowired RefreshTokenService service;
 
   @Test
-  void onlyOneParallelRotationOfTheSameTokenSucceeds() throws Exception {
+  void parallelRotationsOfTheSameTokenAllKeepTheSessionAlive() throws Exception {
     var issued = service.issue(UUID.fromString("00000000-0000-0000-0000-000000000101"),
         UUID.fromString("00000000-0000-0000-0000-000000000001"));
     ExecutorService pool = Executors.newFixedThreadPool(4);
@@ -36,13 +36,16 @@ class RefreshTokenConcurrencyTest {
       results.add(pool.submit(call));
     }
     start.countDown();
-    long rotated = 0;
+    List<RefreshTokenService.RefreshResult.Rotated> rotated = new ArrayList<>();
     for (Future<RefreshTokenService.RefreshResult> f : results) {
-      if (f.get() instanceof RefreshTokenService.RefreshResult.Rotated) {
-        rotated++;
-      }
+      assertThat(f.get()).isInstanceOf(RefreshTokenService.RefreshResult.Rotated.class);
+      rotated.add((RefreshTokenService.RefreshResult.Rotated) f.get());
     }
     pool.shutdown();
-    assertThat(rotated).isEqualTo(1);
+    // Every token handed out must still work: no parallel request may revoke another's session.
+    for (RefreshTokenService.RefreshResult.Rotated r : rotated) {
+      assertThat(service.rotate(r.newToken().rawToken()))
+          .isInstanceOf(RefreshTokenService.RefreshResult.Rotated.class);
+    }
   }
 }
