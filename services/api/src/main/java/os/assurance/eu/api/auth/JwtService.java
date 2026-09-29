@@ -35,15 +35,23 @@ public class JwtService {
     private static final long ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 
     private final SigningKeyJpaRepository signingKeys;
+    private final String keyEncryptionSecret;
     private RSAKey activeSigningKey;
 
-    public JwtService(SigningKeyJpaRepository signingKeys) {
+    public JwtService(
+            SigningKeyJpaRepository signingKeys,
+            @org.springframework.beans.factory.annotation.Value("${assurance.auth.key-encryption-secret:}") String keyEncryptionSecret) {
         this.signingKeys = signingKeys;
+        this.keyEncryptionSecret = keyEncryptionSecret;
     }
 
     @PostConstruct
     void loadOrCreateActiveKey() {
         SigningKeyEntity entity = signingKeys.findByActiveTrue().orElseGet(this::generateAndPersistKey);
+        if (keyEncryptionSecret != null && !keyEncryptionSecret.isBlank() && !KeyEncryption.isEncrypted(entity.privateKeyPem())) {
+            entity.setPrivateKeyPem(KeyEncryption.encrypt(entity.privateKeyPem(), keyEncryptionSecret));
+            entity = signingKeys.save(entity);
+        }
         this.activeSigningKey = toRsaKey(entity);
     }
 
@@ -54,8 +62,11 @@ public class JwtService {
             KeyPair keyPair = generator.generateKeyPair();
             String publicPem = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
             String privatePem = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+            String storedPrivatePem = (keyEncryptionSecret == null || keyEncryptionSecret.isBlank())
+                ? privatePem
+                : KeyEncryption.encrypt(privatePem, keyEncryptionSecret);
             SigningKeyEntity entity = new SigningKeyEntity(
-                UUID.randomUUID(), "RS256", publicPem, privatePem, Instant.now(), true);
+                UUID.randomUUID(), "RS256", publicPem, storedPrivatePem, Instant.now(), true);
             return signingKeys.save(entity);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("RSA key generation not available", e);
@@ -67,8 +78,9 @@ public class JwtService {
             KeyFactory factory = KeyFactory.getInstance("RSA");
             RSAPublicKey publicKey = (RSAPublicKey) factory.generatePublic(
                 new X509EncodedKeySpec(Base64.getDecoder().decode(entity.publicKeyPem())));
+            String decryptedPem = KeyEncryption.decrypt(entity.privateKeyPem(), keyEncryptionSecret);
             RSAPrivateKey privateKey = (RSAPrivateKey) factory.generatePrivate(
-                new PKCS8EncodedKeySpec(Base64.getDecoder().decode(entity.privateKeyPem())));
+                new PKCS8EncodedKeySpec(Base64.getDecoder().decode(decryptedPem)));
             return new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .keyID(entity.kid().toString())

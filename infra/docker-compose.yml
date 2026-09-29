@@ -50,8 +50,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/eu_ai_assurance}
       DATABASE_USERNAME: ${DATABASE_USERNAME:-eu_ai_assurance}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-eu_ai_assurance}
-      EVAL_CALLBACK_SECRET: ${EVAL_CALLBACK_SECRET:-local-dev-eval-callback-secret-change-me}
-      AUDIT_CHAIN_SECRET: ${AUDIT_CHAIN_SECRET:-local-dev-audit-chain-secret-change-me}
+      EVAL_CALLBACK_SECRET: ${EVAL_CALLBACK_SECRET:-}
+      AUDIT_CHAIN_SECRET: ${AUDIT_CHAIN_SECRET:-}
+      JWT_KEY_ENCRYPTION_SECRET: ${JWT_KEY_ENCRYPTION_SECRET:-}
       EVIDENCE_EMBEDDING_PROVIDER: ${EVIDENCE_EMBEDDING_PROVIDER:-local-hash}
       ASSURANCE_STORAGE_ENABLED: ${ASSURANCE_STORAGE_ENABLED:-false}
       ASSURANCE_STORAGE_BUCKET: ${ASSURANCE_STORAGE_BUCKET:-eu-ai-assurance-evidence}

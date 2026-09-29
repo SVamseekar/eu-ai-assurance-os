@@ -32,6 +32,7 @@ public class SigningKeyEntity {
     public String algorithm() { return algorithm; }
     public String publicKeyPem() { return publicKeyPem; }
     public String privateKeyPem() { return privateKeyPem; }
+    public void setPrivateKeyPem(String privateKeyPem) { this.privateKeyPem = privateKeyPem; }
     public Instant createdAt() { return createdAt; }
     public boolean active() { return active; }
 }
