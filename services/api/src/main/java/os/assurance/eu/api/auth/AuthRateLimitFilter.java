@@ -17,8 +17,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(1)
 public class AuthRateLimitFilter extends OncePerRequestFilter {
   static final String CLIENT_IP_HEADER = "X-Client-IP";
+  // /auth/refresh is not IP-limited: it needs a 256-bit token, and all BFF traffic shares one IP.
   static final List<String> LIMITED_PREFIXES = List.of(
-      "/auth/login", "/auth/refresh", "/auth/accept-invite", "/auth/oauth/",
+      "/auth/login", "/auth/accept-invite", "/auth/oauth/",
       "/auth/signup", "/auth/password/", "/auth/verify-email", "/auth/demo");
 
   private final SlidingWindowRateLimiter perIp;

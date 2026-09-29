@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIpHeaders } from "@/lib/client-ip";
 import { setSessionCookies } from "@/lib/session";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
@@ -6,13 +7,9 @@ const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json();
 
-  const clientIp =
-    request.headers.get("cf-connecting-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "";
   const upstream = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(clientIp ? { "X-Client-IP": clientIp } : {}) },
+    headers: { "Content-Type": "application/json", ...clientIpHeaders(request) },
     body: JSON.stringify({ email, password }),
   });
 

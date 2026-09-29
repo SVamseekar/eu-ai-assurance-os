@@ -46,4 +46,15 @@ class AuthRateLimitApiTest {
     }
     login("198.51.100.7", "fresh@ip.example").andExpect(status().isTooManyRequests());
   }
+
+  @Test
+  void refreshIsNotLimitedPerIp() throws Exception {
+    for (int i = 0; i < 8; i++) {
+      mockMvc.perform(post("/auth/refresh")
+              .header("X-Client-IP", "192.0.2.50")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"refreshToken\":\"not-a-real-token-" + i + "\"}"))
+          .andExpect(status().isUnauthorized());
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIpHeaders } from "@/lib/client-ip";
 import { safeNextPath } from "@/lib/auth-redirect";
 import { setSessionCookies } from "@/lib/session";
 
@@ -48,7 +49,7 @@ export async function GET(
   try {
     upstream = await fetch(`${API_BASE}/auth/oauth/${normalized}/callback`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientIpHeaders(request) },
       body: JSON.stringify({ code, state, nonce }),
       cache: "no-store",
     });
@@ -57,6 +58,9 @@ export async function GET(
   }
 
   if (!upstream.ok) {
+    if (upstream.status === 429) {
+      return loginRedirect(request, "sign_in_failed");
+    }
     if (upstream.status === 409) {
       return loginRedirect(request, "email_unverified");
     }
