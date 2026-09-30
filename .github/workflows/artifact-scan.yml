@@ -48,7 +48,7 @@ jobs:
           bash scripts/ci-artifact-scan.sh
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: evgraph-artifacts.sarif
 
