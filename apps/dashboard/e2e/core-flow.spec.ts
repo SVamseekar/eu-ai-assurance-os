@@ -18,14 +18,14 @@ test("register a system, upload evidence, see the gate, export the pack", async 
   await page.getByRole("button", { name: /next/i }).click();
   await page.getByRole("button", { name: /next/i }).click();
   await page.getByRole("button", { name: /register system/i }).click();
-  await expect(page.getByText(name)).toBeVisible();
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText(name)).toBeVisible();
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 
   await page.goto("/evidence");
-  await page.getByRole("combobox").first().click();
-  await page.getByRole("option", { name }).click();
+  await page.locator("label", { hasText: /^System$/ }).locator("..").getByRole("combobox").click();
+  await page.getByRole("option", { name, exact: true }).click();
   await page.locator('input[type="file"]').setInputFiles(
     path.resolve(__dirname, "../../../services/api/src/test/resources/fixtures/evidence/oversight-sop.txt"),
   );

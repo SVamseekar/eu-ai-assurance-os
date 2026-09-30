@@ -245,7 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      EVAL_CALLBACK_SECRET: ""
+      EVAL_CALLBACK_SECRET: ci-eval-callback-secret
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
