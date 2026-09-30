@@ -2,6 +2,8 @@ package os.assurance.eu.api.corpus;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,8 @@ public class CorpusQueryService {
   private final ProvisionJpaRepository provisions;
   private final GuidanceDocJpaRepository guidanceDocs;
   private final CorpusRelationshipJpaRepository relationships;
+  private record Cached(String versionHash, CorpusView view, Map<String, ProvisionView> byKey) {}
+  private volatile Cached cached;
 
   public CorpusQueryService(
       CorpusVersionJpaRepository versions,
@@ -29,9 +33,33 @@ public class CorpusQueryService {
 
   @Transactional(readOnly = true)
   public CorpusView current() {
-    return versions.findFirstByOrderByBuiltAtDesc()
+    return cachedCurrent().view();
+  }
+
+  @Transactional(readOnly = true)
+  public Optional<ProvisionView> provision(String provisionKey) {
+    if (provisionKey == null || provisionKey.isBlank()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(cachedCurrent().byKey().get(provisionKey));
+  }
+
+  private Cached cachedCurrent() {
+    String hash = currentVersionHash();
+    Cached snapshot = cached;
+    if (snapshot != null && snapshot.versionHash().equals(hash)) {
+      return snapshot;
+    }
+    CorpusView view = versions.findFirstByOrderByBuiltAtDesc()
         .map(this::view)
         .orElseGet(() -> new CorpusView(null, List.of(), List.of(), List.of(), CorpusIngestService.ATTRIBUTION));
+    Map<String, ProvisionView> byKey = new java.util.HashMap<>();
+    for (ProvisionView p : view.provisions()) {
+      byKey.put(p.provisionKey(), p);
+    }
+    Cached fresh = new Cached(hash, view, Map.copyOf(byKey));
+    cached = fresh;
+    return fresh;
   }
 
   @Transactional(readOnly = true)
@@ -41,18 +69,7 @@ public class CorpusQueryService {
 
   @Transactional(readOnly = true)
   public boolean currentCorpusContains(String provisionKey) {
-    if (provisionKey == null || provisionKey.isBlank()) {
-      return false;
-    }
-    CorpusVersionEntity version = versions.findFirstByOrderByBuiltAtDesc().orElse(null);
-    if (version == null) {
-      return false;
-    }
-    List<UUID> instrumentIds = instruments.findAllByCorpusVersionIdOrderBySeedCelexAsc(version.id()).stream()
-        .map(InstrumentEntity::id)
-        .toList();
-    return provisions.findAllByInstrumentIdInOrderByProvisionKeyAsc(instrumentIds).stream()
-        .anyMatch(row -> provisionKey.equals(row.provisionKey()));
+    return provision(provisionKey).isPresent();
   }
 
   private CorpusView view(CorpusVersionEntity version) {

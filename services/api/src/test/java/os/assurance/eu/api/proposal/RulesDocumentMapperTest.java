@@ -111,4 +111,18 @@ class RulesDocumentMapperTest {
     assertThat(draft.relation()).isEqualTo("abstain");
     assertThat(draft.provisionKey()).isNull();
   }
+
+  @Test
+  void stableKeyDropsConsolidationDate() {
+    assertThat(RulesDocumentMapper.stableKey("02024R1689-20260727#annexIII::")).isEqualTo("02024R1689#annexIII::");
+    assertThat(RulesDocumentMapper.stableKey("02016R0679#5:1:")).isEqualTo("02016R0679#5:1:");
+  }
+
+  @Test
+  void matchesProvisionAfterCorpusIsRepinnedToANewConsolidation() {
+    var index = List.of(new LawProvision("02024R1689-20271201#annexIII::", "Annex III", "FUTURE",
+        java.time.LocalDate.parse("2027-12-02")));
+    MappingDraft draft = new RulesDocumentMapper().map("Credit scoring model", "high-risk credit scoring", index);
+    assertThat(draft.provisionKey()).isEqualTo("02024R1689-20271201#annexIII::");
+  }
 }

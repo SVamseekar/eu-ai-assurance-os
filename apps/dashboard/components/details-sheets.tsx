@@ -209,7 +209,9 @@ export function SystemDetailsSheet({ system, isOpen, onClose, auditEvents }: Sys
         <div className="bg-muted/30 border border-border rounded-xl p-3.5">
           <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Evidence Coverage</p>
           <p className="text-2xl font-bold mt-1 text-primary">{system.evidenceCoverage}%</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Target: 80% coverage</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Computed from indexed evidence: DPIA, model card, policy, control map, vendor docs (by risk class)
+          </p>
         </div>
       </div>
 

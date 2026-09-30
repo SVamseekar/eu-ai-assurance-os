@@ -133,6 +133,45 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  api-postgres:
+    name: API on Postgres (Flyway + smoke)
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: eu_ai_assurance
+          POSTGRES_USER: eu_ai_assurance
+          POSTGRES_PASSWORD: eu_ai_assurance
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U eu_ai_assurance -d eu_ai_assurance"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    defaults:
+      run:
+        working-directory: services/api
+    env:
+      RUN_POSTGRES_SMOKE: "true"
+      DATABASE_URL: jdbc:postgresql://localhost:5432/eu_ai_assurance
+      DATABASE_USERNAME: eu_ai_assurance
+      DATABASE_PASSWORD: eu_ai_assurance
+      EVAL_CALLBACK_SECRET: ci-eval-callback-secret-0123456789abcdef0123
+      AUDIT_CHAIN_SECRET: ci-audit-chain-secret-0123456789abcdef012345
+      OAUTH_STATE_SECRET: ci-oauth-state-secret-0123456789abcdef0123456
+      JWT_KEY_ENCRYPTION_SECRET: ci-jwt-key-encryption-secret-0123456789abcd
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: services/api/pom.xml
+      - name: Postgres smoke (Flyway V1–V22 + bootstrap + guards)
+        run: mvn -B test -Dtest=PostgresProfileSmokeTest
+
   acceptance:
     name: Acceptance (Claims Triage)
     needs: changes

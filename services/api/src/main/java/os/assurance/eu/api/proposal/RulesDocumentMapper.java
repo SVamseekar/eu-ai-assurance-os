@@ -39,12 +39,17 @@ public class RulesDocumentMapper {
         excerpt);
   }
 
+  static String stableKey(String provisionKey) {
+    return provisionKey == null ? null : provisionKey.replaceFirst("-\\d{8}#", "#");
+  }
+
   private static LawProvision find(List<LawProvision> lawIndex, String provisionKey) {
     if (lawIndex == null) {
       return null;
     }
+    String wanted = stableKey(provisionKey);
     for (LawProvision provision : lawIndex) {
-      if (provisionKey.equals(provision.provisionKey())) {
+      if (wanted.equals(stableKey(provision.provisionKey()))) {
         return provision;
       }
     }

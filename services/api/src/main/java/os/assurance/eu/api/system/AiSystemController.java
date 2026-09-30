@@ -41,6 +41,7 @@ public class AiSystemController {
   private final AssuranceMetrics assuranceMetrics;
   private final EvidencePackService evidencePackService;
   private final LinkedControlReopenService linkedControlReopenService;
+  private final GateInputService gateInputs;
 
   public AiSystemController(
       AiSystemRepository repository,
@@ -52,7 +53,8 @@ public class AiSystemController {
       NfrMetrics nfrMetrics,
       AssuranceMetrics assuranceMetrics,
       EvidencePackService evidencePackService,
-      LinkedControlReopenService linkedControlReopenService) {
+      LinkedControlReopenService linkedControlReopenService,
+      GateInputService gateInputs) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
@@ -63,6 +65,7 @@ public class AiSystemController {
     this.assuranceMetrics = assuranceMetrics;
     this.evidencePackService = evidencePackService;
     this.linkedControlReopenService = linkedControlReopenService;
+    this.gateInputs = gateInputs;
   }
 
   @GetMapping
@@ -81,7 +84,18 @@ public class AiSystemController {
   public CreateAiSystemResponse createSystem(@Valid @RequestBody CreateAiSystemRequest request) {
     authorizationService.requireAnyRole(
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
+    rejectComputedGateFields(request.evidenceCoverage(), request.evalScore(), request.dataContractStatus());
     Instant now = Instant.now();
+    int coverage = request.evidenceCoverage() == null ? 0 : request.evidenceCoverage();
+    int evalScore = request.evalScore() == null ? 0 : request.evalScore();
+    DataContractStatus contract = request.dataContractStatus() == null
+        ? DataContractStatus.WARNING
+        : request.dataContractStatus();
+    if (!gateInputs.manualInputs()) {
+      coverage = 0;
+      evalScore = 0;
+      contract = request.riskClass() == RiskClass.HIGH ? DataContractStatus.WARNING : DataContractStatus.HEALTHY;
+    }
     AiSystem draft = new AiSystem(
         UUID.randomUUID(),
         request.name(),
@@ -90,9 +104,9 @@ public class AiSystemController {
         request.riskClass(),
         request.riskBasis(),
         request.deploymentRegion(),
-        request.evidenceCoverage() == null ? 0 : request.evidenceCoverage(),
-        request.evalScore() == null ? 0 : request.evalScore(),
-        request.dataContractStatus() == null ? DataContractStatus.WARNING : request.dataContractStatus(),
+        coverage,
+        evalScore,
+        contract,
         ReleaseDecision.REVIEW,
         request.openGaps() == null ? List.of() : new ArrayList<>(request.openGaps()),
         request.vendorName(),
@@ -104,6 +118,9 @@ public class AiSystemController {
         request.affectedUsers() == null ? List.of() : new ArrayList<>(request.affectedUsers()),
         now,
         now);
+    if (!gateInputs.manualInputs()) {
+      draft = gateInputs.recompute(draft);
+    }
     AiSystem saved = saveWithCalculatedDecision(draft);
     controlService.attachApplicableControls(saved);
     // recompute after control attach so CONTROL:* blockers apply
@@ -128,7 +145,19 @@ public class AiSystemController {
       @Valid @RequestBody UpdateAiSystemRequest request) {
     authorizationService.requireAnyRole(
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
+    rejectComputedGateFields(request.evidenceCoverage(), request.evalScore(), request.dataContractStatus());
     AiSystem existing = getSystem(systemId);
+    List<String> removedGapsForAudit = List.of();
+    if (!gateInputs.manualInputs() && request.openGaps() != null) {
+      List<String> removed = existing.openGaps().stream().filter(g -> !request.openGaps().contains(g)).toList();
+      if (!removed.isEmpty()) {
+        UserRole role = authorizationService.currentRole();
+        if (role != UserRole.ADMIN && role != UserRole.COMPLIANCE_OFFICER) {
+          throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins and compliance officers can close gaps");
+        }
+        removedGapsForAudit = removed;
+      }
+    }
     AiSystem draft = new AiSystem(
         existing.id(),
         request.name() == null ? existing.name() : request.name(),
@@ -158,13 +187,16 @@ public class AiSystemController {
       controlService.attachApplicableControls(draft);
     }
     linkedControlReopenService.reopenIfSensitiveChange(existing, request);
+    if (!gateInputs.manualInputs()) {
+      draft = gateInputs.recompute(draft);
+    }
     AiSystem saved = saveWithCalculatedDecision(draft);
     auditService.append(
         saved.id(),
         "ai_system.updated",
         "ai_system",
         saved.id().toString(),
-        Map.of("releaseDecision", saved.releaseDecision()));
+        Map.of("releaseDecision", saved.releaseDecision(), "gapsClosed", removedGapsForAudit));
     return saved;
   }
 
@@ -204,6 +236,9 @@ public class AiSystemController {
         request.affectedUsers() == null ? existing.affectedUsers() : new ArrayList<>(request.affectedUsers()),
         existing.createdAt(),
         Instant.now());
+    if (!gateInputs.manualInputs()) {
+      draft = gateInputs.recompute(draft);
+    }
     controlService.attachApplicableControls(draft);
     AiSystem saved = saveWithCalculatedDecision(draft);
     auditService.append(
@@ -279,6 +314,7 @@ public class AiSystemController {
       return ResponseEntity.ok()
           .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
           .header("X-Content-Sha256", pack.contentSha256())
+          .header("X-Evidence-Signature", pack.signature())
           .contentType(MediaType.APPLICATION_PDF)
           .body(pdf);
     } catch (IllegalArgumentException ex) {
@@ -293,6 +329,15 @@ public class AiSystemController {
         UserRole.COMPLIANCE_OFFICER,
         UserRole.LEGAL_COUNSEL,
         UserRole.AUDITOR);
+  }
+
+  private void rejectComputedGateFields(
+      Integer evidenceCoverage, Integer evalScore, DataContractStatus dataContractStatus) {
+    if (!gateInputs.manualInputs()
+        && (evidenceCoverage != null || evalScore != null || dataContractStatus != null)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+          "evidenceCoverage, evalScore, and dataContractStatus are computed from evidence, eval runs, and data contracts");
+    }
   }
 
   private AiSystem saveWithCalculatedDecision(AiSystem draft) {

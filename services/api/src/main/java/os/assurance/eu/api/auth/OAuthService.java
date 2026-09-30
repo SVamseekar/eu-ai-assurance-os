@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import os.assurance.eu.api.audit.AuditChainHeads;
 import os.assurance.eu.api.tenant.TenantEntity;
 import os.assurance.eu.api.tenant.TenantJpaRepository;
 import os.assurance.eu.api.tenant.UserEntity;
@@ -25,6 +26,7 @@ public class OAuthService {
   private final OAuthTokenClient tokenClient;
   private final UserJpaRepository users;
   private final TenantJpaRepository tenants;
+  private final AuditChainHeads auditChainHeads;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
 
@@ -34,6 +36,7 @@ public class OAuthService {
       OAuthTokenClient tokenClient,
       UserJpaRepository users,
       TenantJpaRepository tenants,
+      AuditChainHeads auditChainHeads,
       JwtService jwtService,
       RefreshTokenService refreshTokenService) {
     this.properties = properties;
@@ -41,6 +44,7 @@ public class OAuthService {
     this.tokenClient = tokenClient;
     this.users = users;
     this.tenants = tenants;
+    this.auditChainHeads = auditChainHeads;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
   }
@@ -115,6 +119,7 @@ public class OAuthService {
         : profile.email();
     String tenantName = domain + " (OAuth)";
     tenants.save(new TenantEntity(tenantId, tenantName, "starter", "EU", now));
+    auditChainHeads.attachToNewTenant(tenantId);
 
     UserEntity user = new UserEntity(
         UUID.randomUUID(),

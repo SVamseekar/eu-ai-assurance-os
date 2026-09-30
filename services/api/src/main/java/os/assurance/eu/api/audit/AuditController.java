@@ -54,11 +54,13 @@ public class AuditController {
     if (request.systemId() != null && systems.findById(request.systemId()).isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found");
     }
+    String requested = request.eventType() == null ? "" : request.eventType().trim().toLowerCase(java.util.Locale.ROOT);
+    if (!requested.matches("^[a-z0-9_.-]{3,64}$")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "eventType must match ^[a-z0-9_.-]{3,64}$");
+    }
+    String eventType = requested.startsWith("manual.") ? requested : "manual." + requested;
     return auditService.append(
-        request.systemId(),
-        request.eventType(),
-        request.resourceType(),
-        request.resourceId(),
-        request.payload() == null ? Map.of() : request.payload());
+        request.systemId(), eventType, request.resourceType(), request.resourceId(),
+        request.payload() == null ? Map.of() : request.payload(), "manual");
   }
 }

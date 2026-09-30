@@ -43,6 +43,9 @@ public class AuditEventEntity {
   private String eventHash;
   private Instant retainUntil;
 
+  @Column(nullable = false)
+  private String source = "system";
+
   protected AuditEventEntity() {
   }
 
@@ -85,10 +88,15 @@ public class AuditEventEntity {
   public String prevEventHash() { return prevEventHash; }
   public String eventHash() { return eventHash; }
   public Instant retainUntil() { return retainUntil; }
+  public String source() { return source; }
+
+  public void markSource(String source) {
+    this.source = source;
+  }
 
   public AuditEvent toDomain() {
     return new AuditEvent(
         id, systemId, actorId, eventType, resourceType, resourceId, payload, createdAt,
-        prevEventHash, eventHash, retainUntil);
+        prevEventHash, eventHash, retainUntil, source);
   }
 }

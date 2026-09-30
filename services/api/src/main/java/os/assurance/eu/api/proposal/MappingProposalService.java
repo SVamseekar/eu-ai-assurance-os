@@ -54,6 +54,10 @@ public class MappingProposalService {
   @Transactional
   public ProposalView create(UUID systemId, CreateMappingProposalRequest request) {
     requireSystem(systemId);
+    if (request.provisionKey() != null && !request.provisionKey().isBlank()
+        && !corpus.currentCorpusContains(request.provisionKey())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "provisionKey is not in the pinned corpus");
+    }
     String current = corpus.currentVersionHash();
     String pinned = request.corpusVersion() == null || request.corpusVersion().isBlank()
         ? current
@@ -69,6 +73,9 @@ public class MappingProposalService {
         blankToNull(request.provisionKey()),
         blankToNull(request.excerpt()),
         Instant.now()));
+    audit(saved, "mapping_proposal.created", Map.of(
+        "relation", saved.relation(),
+        "provisionKey", String.valueOf(saved.provisionKey())));
     return toView(saved, current);
   }
 
@@ -91,6 +98,9 @@ public class MappingProposalService {
           draft.provisionKey(),
           draft.excerpt(),
           Instant.now()));
+      audit(saved, "mapping_proposal.mapped", Map.of(
+          "documentTitle", document.title(),
+          "relation", draft.relation()));
       created.add(toView(saved, current));
     }
     return created;
@@ -165,8 +175,12 @@ public class MappingProposalService {
     if ("FUTURE".equals(force)) {
       normalized = "INFORMATIONAL";
     }
+    String previous = proposal.controlMode();
     proposal.assignMode(normalized);
     proposals.save(proposal);
+    audit(proposal, "mapping_proposal.mode_changed", Map.of(
+        "from", String.valueOf(previous),
+        "to", normalized));
     return toView(proposal, corpus.currentVersionHash());
   }
 
@@ -178,6 +192,7 @@ public class MappingProposalService {
       if ("ACCEPTED".equals(row.status()) && !"abstain".equals(row.relation())) {
         row.reopen(now);
         proposals.save(row);
+        audit(row, "mapping_proposal.reopened", Map.of("reason", "system_change_scope"));
       }
     }
   }
@@ -232,16 +247,15 @@ public class MappingProposalService {
     return match == null ? null : match.forceFrom();
   }
 
+  private void audit(MappingProposalEntity proposal, String eventType, Map<String, Object> details) {
+    Map<String, Object> payload = new LinkedHashMap<>(details);
+    payload.put("proposalId", proposal.id().toString());
+    payload.put("corpusVersion", proposal.corpusVersion());
+    auditService.append(proposal.systemId(), eventType, "mapping_proposal", proposal.id().toString(), payload);
+  }
+
   private CorpusQueryService.ProvisionView provision(String provisionKey) {
-    if (provisionKey == null || provisionKey.isBlank()) {
-      return null;
-    }
-    for (CorpusQueryService.ProvisionView row : corpus.current().provisions()) {
-      if (provisionKey.equals(row.provisionKey())) {
-        return row;
-      }
-    }
-    return null;
+    return corpus.provision(provisionKey).orElse(null);
   }
 
   static String displayState(MappingProposalEntity row, String current) {

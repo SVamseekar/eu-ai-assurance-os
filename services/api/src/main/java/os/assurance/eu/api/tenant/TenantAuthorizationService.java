@@ -15,6 +15,12 @@ public class TenantAuthorizationService {
     this.users = users;
   }
 
+  public UserRole currentRole() {
+    return users.findByIdAndTenantId(tenantContext.actorId(), tenantContext.tenantId())
+        .map(UserEntity::role)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unknown actor for tenant"));
+  }
+
   public void requireAnyRole(UserRole... allowedRoles) {
     UserRole actorRole = users.findByIdAndTenantId(tenantContext.actorId(), tenantContext.tenantId())
         .map(UserEntity::role)

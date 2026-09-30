@@ -15,5 +15,6 @@ public record AuditEvent(
     Instant createdAt,
     String prevEventHash,
     String eventHash,
-    Instant retainUntil) {
+    Instant retainUntil,
+    String source) {
 }

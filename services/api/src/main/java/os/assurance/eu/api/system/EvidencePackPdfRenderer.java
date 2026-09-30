@@ -168,6 +168,10 @@ public final class EvidencePackPdfRenderer {
 
       addHeading(document, headingFont, "12. Seal");
       addLine(document, bodyFont, "contentSha256", pack.contentSha256());
+      String signature = pack.signature() == null ? "" : pack.signature();
+      String preview = signature.length() <= 64 ? signature : signature.substring(0, 64) + "…";
+      addLine(document, bodyFont, "Signature",
+          "Signature (RS256, verify with /.well-known/jwks.json): " + preview);
       if (pack.auditChainHead() != null && !pack.auditChainHead().isBlank()) {
         addLine(document, bodyFont, "auditChainHead", pack.auditChainHead());
       }

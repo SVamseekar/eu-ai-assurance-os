@@ -35,5 +35,6 @@ public record EvidencePackResponse(
     List<Map<String, Object>> currentGaps,
     Map<String, Object> acceptedArtifacts,
     Map<String, Integer> evidenceCounts,
-    Map<String, Object> monitoringPlan) {
+    Map<String, Object> monitoringPlan,
+    String signature) {
 }

@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import os.assurance.eu.api.audit.AuditService;
 import os.assurance.eu.api.corpus.CorpusQueryService;
 import os.assurance.eu.api.evidence.EvidenceRepository;
 import os.assurance.eu.api.proposal.MappingProposalEntity;
@@ -32,6 +33,7 @@ public class AssessmentService {
   private final CorpusQueryService corpus;
   private final UserJpaRepository users;
   private final TenantContext tenantContext;
+  private final AuditService auditService;
   private final CertificationReadinessProperties readiness;
   private final Clock clock;
 
@@ -44,6 +46,7 @@ public class AssessmentService {
       CorpusQueryService corpus,
       UserJpaRepository users,
       TenantContext tenantContext,
+      AuditService auditService,
       CertificationReadinessProperties readiness,
       Clock clock) {
     this.proposals = proposals;
@@ -54,6 +57,7 @@ public class AssessmentService {
     this.corpus = corpus;
     this.users = users;
     this.tenantContext = tenantContext;
+    this.auditService = auditService;
     this.readiness = readiness;
     this.clock = clock;
   }
@@ -78,29 +82,35 @@ public class AssessmentService {
   }
 
   @Transactional
-  public AssessmentItem setApplicability(UUID systemId, UUID proposalId, String applicabilityValue, UUID reviewerId) {
+  public AssessmentItem setApplicability(UUID systemId, UUID proposalId, String applicabilityValue) {
     requireSystem(systemId);
     MappingProposalEntity proposal = requireProposal(systemId, proposalId);
     String normalized = applicabilityValue == null ? "" : applicabilityValue.trim().toUpperCase();
     if (!List.of("APPLICABLE", "UNCERTAIN", "NOT_APPLICABLE").contains(normalized)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown applicability");
     }
-    if ("NOT_APPLICABLE".equals(normalized)) {
-      if (reviewerId == null || users.findByIdAndTenantId(reviewerId, tenantContext.tenantId()).isEmpty()) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not applicable needs a named reviewer");
-      }
-    }
-    AssessmentApplicabilityEntity row = applicability
+    UUID reviewer = "NOT_APPLICABLE".equals(normalized) ? tenantContext.actorId() : null;
+    AssessmentApplicabilityEntity existing = applicability
         .findByTenantIdAndSystemIdAndProposalId(tenantContext.tenantId(), systemId, proposalId)
-        .orElseGet(() -> new AssessmentApplicabilityEntity(
+        .orElse(null);
+    String previous = existing == null ? "APPLICABLE" : existing.applicability();
+    AssessmentApplicabilityEntity row = existing == null
+        ? new AssessmentApplicabilityEntity(
             UUID.randomUUID(),
             tenantContext.tenantId(),
             systemId,
             proposalId,
             normalized,
-            reviewerId));
-    row.update(normalized, reviewerId);
+            reviewer)
+        : existing;
+    row.update(normalized, reviewer);
     applicability.save(row);
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("from", previous);
+    payload.put("to", normalized);
+    payload.put("reviewerId", reviewer == null ? "" : reviewer.toString());
+    payload.put("proposalId", proposalId.toString());
+    auditService.append(systemId, "assessment.applicability_set", "assessment", proposalId.toString(), payload);
     return itemFor(systemId, proposal);
   }
 
@@ -111,6 +121,9 @@ public class AssessmentService {
     if (rationale == null || rationale.isBlank() || expiresOn == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exception needs a rationale and an expiry");
     }
+    if (expiresOn.isAfter(LocalDate.now(clock).plusYears(1))) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exceptions may last at most one year");
+    }
     exceptions.save(new EvidenceExceptionEntity(
         UUID.randomUUID(),
         tenantContext.tenantId(),
@@ -120,6 +133,10 @@ public class AssessmentService {
         expiresOn,
         tenantContext.actorId(),
         Instant.now(clock)));
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("expiresOn", expiresOn.toString());
+    payload.put("proposalId", proposalId.toString());
+    auditService.append(systemId, "assessment.exception_recorded", "assessment", proposalId.toString(), payload);
     return itemFor(systemId, requireProposal(systemId, proposalId));
   }
 
@@ -223,15 +240,7 @@ public class AssessmentService {
   }
 
   private CorpusQueryService.ProvisionView provision(String provisionKey) {
-    if (provisionKey == null || provisionKey.isBlank()) {
-      return null;
-    }
-    for (CorpusQueryService.ProvisionView row : corpus.current().provisions()) {
-      if (provisionKey.equals(row.provisionKey())) {
-        return row;
-      }
-    }
-    return null;
+    return corpus.provision(provisionKey).orElse(null);
   }
 
   private AiSystem requireSystem(UUID systemId) {

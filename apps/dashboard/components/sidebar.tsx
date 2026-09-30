@@ -22,10 +22,11 @@ import {
   ListChecks,
 } from "lucide-react";
 
+const showPublicClaims = process.env.NEXT_PUBLIC_SHOW_PUBLIC_CLAIMS === "true";
 const NAV_ITEMS = [
   { href: "/command", label: "Dashboard", icon: LayoutDashboard },
   { href: "/systems", label: "AI Systems", icon: Server },
-  { href: "/public-claims", label: "Public claims", icon: Landmark },
+  ...(showPublicClaims ? [{ href: "/public-claims", label: "Public claims", icon: Landmark }] : []),
   { href: "/readiness", label: "Readiness", icon: BadgeCheck },
   { href: "/reg-monitor", label: "Reg Monitor", icon: Newspaper },
   { href: "/corpus", label: "Law corpus", icon: BookOpen },

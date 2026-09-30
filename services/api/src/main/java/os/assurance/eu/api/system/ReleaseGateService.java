@@ -38,6 +38,7 @@ public class ReleaseGateService {
   private final ConformityService conformityService;
   private final CorpusForceLookup corpusForceLookup;
   private final GateControlSource gateControls;
+  private final boolean evidenceDriven;
 
   @Autowired
   public ReleaseGateService(
@@ -48,7 +49,8 @@ public class ReleaseGateService {
       DeterminationObligationJpaRepository determinationObligations,
       ConformityService conformityService,
       CorpusForceLookup corpusForceLookup,
-      GateControlSource gateControls) {
+      GateControlSource gateControls,
+      @org.springframework.beans.factory.annotation.Value("${assurance.gate.manual-inputs:true}") boolean manualInputs) {
     this.systemControls = systemControls;
     this.controls = controls;
     this.tenantContext = tenantContext;
@@ -57,6 +59,7 @@ public class ReleaseGateService {
     this.conformityService = conformityService;
     this.corpusForceLookup = corpusForceLookup;
     this.gateControls = gateControls;
+    this.evidenceDriven = !manualInputs;
   }
 
   public ReleaseGateService(
@@ -75,7 +78,8 @@ public class ReleaseGateService {
         determinationObligations,
         conformityService,
         corpusForceLookup,
-        null);
+        null,
+        true);
   }
 
   /** Test/local constructor without control lookup. */
@@ -88,6 +92,7 @@ public class ReleaseGateService {
     this.conformityService = null;
     this.corpusForceLookup = null;
     this.gateControls = null;
+    this.evidenceDriven = false;
   }
 
   public ReleaseGateResponse calculate(AiSystem system) {
@@ -106,7 +111,10 @@ public class ReleaseGateService {
     if (system.riskClass() == RiskClass.HIGH && hasOversightGap(system.openGaps())) {
       blockers.add("High-risk system is missing required human oversight evidence");
     }
-    if (system.evalScore() < EVAL_HARD_BLOCK_THRESHOLD) {
+    boolean noEvalYet = evidenceDriven && system.evalScore() == 0;
+    if (noEvalYet && system.riskClass() == RiskClass.HIGH) {
+      blockers.add("No completed eval run for a high-risk system");
+    } else if (!noEvalYet && system.evalScore() < EVAL_HARD_BLOCK_THRESHOLD) {
       blockers.add("Eval score is below hard release threshold");
     }
     if (system.dataContractStatus() == DataContractStatus.BREACH) {

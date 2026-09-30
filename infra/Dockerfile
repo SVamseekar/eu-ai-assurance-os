@@ -23,10 +23,17 @@ RUN mvn -B -DskipTests package \
 FROM eclipse-temurin:17-jre-jammy AS runtime
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends curl \
+  && apt-get install -y --no-install-recommends curl python3 python3-venv \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --system app \
   && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
+
+COPY infra/evgraph-requirements.txt /tmp/evgraph-requirements.txt
+RUN python3 -m venv /opt/evgraph \
+  && /opt/evgraph/bin/pip install --no-cache-dir --require-hashes -r /tmp/evgraph-requirements.txt \
+  && /opt/evgraph/bin/evgraph --help > /dev/null \
+  && rm /tmp/evgraph-requirements.txt
+ENV EVGRAPH_BIN=/opt/evgraph/bin/evgraph
 
 WORKDIR /app
 
