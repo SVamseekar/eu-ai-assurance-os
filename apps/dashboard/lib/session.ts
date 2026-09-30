@@ -1,4 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server";
+import { fetchUpstream } from "./upstream";
 
 const ACCESS_COOKIE = "session_access";
 const REFRESH_COOKIE = "session_refresh";
@@ -51,12 +52,12 @@ const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
 export async function refreshAccessToken(
   refreshToken: string,
 ): Promise<{ accessToken: string; refreshToken: string } | null> {
-  const upstream = await fetch(`${API_BASE}/auth/refresh`, {
+  const upstream = await fetchUpstream(`${API_BASE}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
   });
-  if (!upstream.ok) {
+  if (!upstream || !upstream.ok) {
     return null;
   }
   const tokens = await upstream.json();
