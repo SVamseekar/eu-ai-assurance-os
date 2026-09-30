@@ -429,7 +429,7 @@ export function ContractDetailsSheet({ contract, isOpen, onClose, driftEvents, s
                   )}>{event.severity}</span>
                 </div>
                 <p className="text-muted-foreground leading-normal text-[11px]">{event.description}</p>
-                
+
                 {/* Action buttons */}
                 <div className="flex justify-end gap-2 pt-1">
                   {event.status === "OPEN" && (

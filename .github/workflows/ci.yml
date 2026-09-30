@@ -157,10 +157,10 @@ jobs:
       DATABASE_URL: jdbc:postgresql://localhost:5432/eu_ai_assurance
       DATABASE_USERNAME: eu_ai_assurance
       DATABASE_PASSWORD: eu_ai_assurance
-      EVAL_CALLBACK_SECRET: ci-eval-callback-secret-0123456789abcdef0123
-      AUDIT_CHAIN_SECRET: ci-audit-chain-secret-0123456789abcdef012345
-      OAUTH_STATE_SECRET: ci-oauth-state-secret-0123456789abcdef0123456
-      JWT_KEY_ENCRYPTION_SECRET: ci-jwt-key-encryption-secret-0123456789abcd
+      EVAL_CALLBACK_SECRET: ci-eval-callback-secret-for-postgres-smoke-only
+      AUDIT_CHAIN_SECRET: ci-audit-chain-secret-for-postgres-smoke-only
+      OAUTH_STATE_SECRET: ci-oauth-state-secret-for-postgres-smoke-only
+      JWT_KEY_ENCRYPTION_SECRET: ci-jwt-key-encryption-secret-for-postgres-smoke
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
