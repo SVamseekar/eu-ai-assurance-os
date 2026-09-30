@@ -5,7 +5,15 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.apache.tika.metadata.TikaCoreProperties;
+import os.assurance.eu.api.tenant.TenantContext;
 import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -17,6 +25,13 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
+import org.apache.tika.parser.microsoft.ooxml.OOXMLParser;
+import org.apache.tika.parser.pdf.PDFParser;
+import org.apache.tika.parser.txt.TXTParser;
+import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -38,14 +53,99 @@ import org.springframework.web.server.ResponseStatusException;
 public class TextExtractionService {
     private static final Logger log = LoggerFactory.getLogger(TextExtractionService.class);
     private static final int MAX_FETCH_CHARS = 20 * 1024 * 1024;
+    private static final Duration PARSE_TIMEOUT = Duration.ofSeconds(30);
     private final Tika tika = new Tika();
     private final FileStorageService fileStorage;
     private final FileStorageProperties storageProps;
+    private final TenantContext tenantContext;
+    private final ExecutorService parser = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "tika-upload");
+        t.setDaemon(true);
+        t.setContextClassLoader(Thread.currentThread().getContextClassLoader());
+        return t;
+    });
 
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    public TextExtractionService(FileStorageService fileStorage, FileStorageProperties storageProps) {
+    public TextExtractionService(
+            FileStorageService fileStorage,
+            FileStorageProperties storageProps,
+            TenantContext tenantContext) {
         this.fileStorage = fileStorage;
         this.storageProps = storageProps;
+        this.tenantContext = tenantContext;
+    }
+
+    /** Extract text from an uploaded file's bytes. Never falls back to a metadata stub. */
+    public String extractFromUpload(InputStream content, String filename, int maxChars) {
+        ClassLoader appLoader = TextExtractionService.class.getClassLoader();
+        Future<String> job = parser.submit(() -> {
+            ClassLoader previous = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(appLoader);
+            try {
+                Metadata metadata = new Metadata();
+                metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
+                return readWithTika(content, metadata, filename, maxChars);
+            } finally {
+                Thread.currentThread().setContextClassLoader(previous);
+            }
+        });
+        String text;
+        try {
+            text = job.get(PARSE_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            job.cancel(true);
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                "The file took too long to read. Upload a smaller or text-based file.");
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                "The file could not be read. Upload a PDF, DOCX, TXT, MD, or JSON file.");
+        }
+        if (text == null || text.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                "No text could be extracted. Scanned images are not supported; upload a text-based file.");
+        }
+        return text.strip();
+    }
+
+    /**
+     * Tika 4's zip detector throws ArchiveException on non-archives. Fall back to the
+     * format parser named by the file extension when that happens.
+     */
+    private String readWithTika(InputStream content, Metadata metadata, String filename, int maxChars) throws Exception {
+        byte[] bytes = content.readAllBytes();
+        try {
+            return tika.parseToString(new java.io.ByteArrayInputStream(bytes), metadata, maxChars);
+        } catch (Exception e) {
+            if (!isArchiveDetectMiss(e)) {
+                throw e;
+            }
+            BodyContentHandler handler = new BodyContentHandler(maxChars);
+            try (var in = org.apache.tika.io.TikaInputStream.get(bytes)) {
+                parserFor(filename).parse(in, handler, metadata, new ParseContext());
+            }
+            return handler.toString();
+        }
+    }
+
+    private static boolean isArchiveDetectMiss(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            if (current instanceof org.apache.commons.compress.archivers.ArchiveException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static Parser parserFor(String filename) {
+        String lower = filename == null ? "" : filename.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".pdf")) {
+            return new PDFParser();
+        }
+        if (lower.endsWith(".docx") || lower.endsWith(".xlsx") || lower.endsWith(".pptx")) {
+            return new OOXMLParser();
+        }
+        return new TXTParser();
     }
 
     public String extract(CreateEvidenceDocumentRequest request) {
@@ -122,9 +222,18 @@ public class TextExtractionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "S3 URI references a bucket that is not configured for this deployment");
         }
+        if (tenantContext != null) {
+            String expectedPrefix = "evidence/" + tenantContext.tenantId() + "/";
+            if (!key.startsWith(expectedPrefix)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "S3 URI is outside this workspace's evidence folder");
+            }
+        }
         try (InputStream body = fileStorage.download(bucket, key)) {
             String extracted = tika.parseToString(body, new Metadata(), MAX_FETCH_CHARS);
             return (extracted != null && !extracted.isBlank()) ? extracted.strip() : null;
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("S3 extraction failed for {}: {}", request.sourceUri(), e.getMessage());
             return null;

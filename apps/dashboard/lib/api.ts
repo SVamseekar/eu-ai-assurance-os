@@ -10,6 +10,7 @@ import type {
   DeterminationRun,
   DriftEvent,
   EvalRun,
+  EvalDataset,
   EvalRunOperationsView,
   EvidenceDocument,
   EvidencePack,
@@ -50,20 +51,32 @@ function redirectToLoginOnUnauthorized() {
   window.location.assign(href);
 }
 
+export class ApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  if (init?.body !== undefined && !headers.has("Content-Type")) {
+  const isForm = typeof FormData !== "undefined" && init?.body instanceof FormData;
+  if (init?.body !== undefined && !isForm && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers,
-  });
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (res.status === 401) {
     redirectToLoginOnUnauthorized();
   }
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let message = `${res.status} ${res.statusText}`;
+    try {
+      const body = await res.json();
+      message = body.message ?? body.error ?? body.detail ?? message;
+    } catch {
+      // keep status text
+    }
+    throw new ApiError(res.status, message);
+  }
   return res.status === 204 ? (null as T) : res.json();
 }
 
@@ -78,10 +91,40 @@ function triggerBrowserDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+export interface CreateSystemPayload {
+  name: string;
+  owner: string;
+  purpose: string;
+  riskClass: "MINIMAL" | "LIMITED" | "HIGH" | "PROHIBITED";
+  riskBasis: string;
+  deploymentRegion: string;
+  sector?: string;
+  decisionImpact?: string;
+}
+
+export interface ClassifyPayload {
+  riskClass: "MINIMAL" | "LIMITED" | "HIGH" | "PROHIBITED";
+  basis: string;
+  humanOversightRequired: boolean;
+  sector?: string;
+  decisionImpact?: string;
+  affectedUsers?: string[];
+}
+
 export const api = {
   systems: {
     list: () => request<AiSystem[]>("/systems"),
     get: (id: string) => request<AiSystem>(`/systems/${id}`),
+    create: (payload: CreateSystemPayload) =>
+      request<{ id: string; releaseDecision: string; createdAt: string }>("/systems", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    classify: (id: string, payload: ClassifyPayload) =>
+      request<unknown>(`/systems/${id}/risk-classification`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     releaseGate: (id: string) => request<ReleaseGateResponse>(`/systems/${id}/release-gate`),
     controls: (id: string) => request<SystemControl[]>(`/systems/${id}/controls`),
     updateControl: (systemId: string, controlId: string, status: ControlStatus, notes?: string) =>
@@ -195,9 +238,20 @@ export const api = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    upload: ({ systemId, type, title, file }: { systemId: string; type: string; title: string; file: File }) => {
+      const form = new FormData();
+      form.set("systemId", systemId);
+      form.set("type", type);
+      form.set("title", title);
+      form.set("file", file);
+      return request<EvidenceDocument>("/evidence/documents/upload", { method: "POST", body: form });
+    },
   },
   evals: {
     operations: () => request<EvalRunOperationsView>("/eval-runs/operations"),
+    datasets: () => request<EvalDataset[]>("/eval-datasets"),
+    createDataset: (payload: { name: string; version: string; sampleCount: number; golden: boolean }) =>
+      request<EvalDataset>("/eval-datasets", { method: "POST", body: JSON.stringify(payload) }),
     get: (id: string) => request<EvalRun>(`/eval-runs/${id}`),
     create: (payload: {
       systemId: string;
@@ -221,6 +275,11 @@ export const api = {
     get: (id: string) => request<DataContract>(`/data-contracts/${id}`),
     driftEvents: (id: string) =>
       request<DriftEvent[]>(`/data-contracts/${id}/drift-events`),
+    updateDriftEvent: (contractId: string, eventId: string, status: "ACKNOWLEDGED" | "RESOLVED") =>
+      request<DriftEvent>(`/data-contracts/${contractId}/drift-events/${eventId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
   },
   audit: {
     list: (systemId?: string) =>

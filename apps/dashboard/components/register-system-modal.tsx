@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "./ui/modal";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { RiskBadge } from "./risk-badge";
 import { SectorPackBadge } from "./sector-pack-badge";
 import { CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
-import type { AiSystem, RiskClass } from "@/lib/types";
+import { api, ApiError } from "@/lib/api";
+import { suggestRiskClass, toApiRiskClass } from "@/lib/risk-class";
 import { SECTOR_PACK_OPTIONS, resolveSectorPackId } from "@/lib/sector-packs";
 
 interface RegisterSystemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRegister: (system: AiSystem) => void;
+  onRegistered?: (id: string) => void;
 }
 
 const QUESTIONNAIRE = [
@@ -39,15 +41,16 @@ const QUESTIONNAIRE = [
   }
 ];
 
-export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSystemModalProps) {
+export function RegisterSystemModal({ isOpen, onClose, onRegistered }: RegisterSystemModalProps) {
+  const qc = useQueryClient();
   const [step, setStep] = useState(1);
-  const [name, setName] = useState("Underwriting Risk Assistant");
-  const [owner, setOwner] = useState("Finance Risk");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [owner, setOwner] = useState("");
   const [sector, setSector] = useState("insurance");
-  const [purpose, setPurpose] = useState(
-    "Automate risk scoring for commercial insurance policy applicants based on public company financial parameters"
-  );
-  
+  const [purpose, setPurpose] = useState("");
+
   const [answers, setAnswers] = useState<Record<string, boolean>>({
     q_biometrics: false,
     q_essential: false,
@@ -69,16 +72,18 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
     }
   }
 
-  // Risk determination logic
-  let riskClass: RiskClass = "minimal";
-  let riskBasis = "Minimal-risk under the EU AI Act (Art. 52 exemptions apply). No specific binding obligations.";
-  
-  if (answers.q_biometrics || answers.q_essential || answers.q_hr) {
-    riskClass = "high";
+  const riskClass = suggestRiskClass({
+    q_biometrics: answers.q_biometrics,
+    q_essential: answers.q_essential,
+    q_hr: answers.q_hr,
+    q_interaction: answers.q_interaction,
+  });
+  let riskBasis = "No specific EU AI Act obligations suggested by these answers. Article 4 AI literacy and general law still apply.";
+
+  if (riskClass === "high") {
     riskBasis = "Art. 6(2) Annex III — System falls under high-risk critical infrastructure, essential services, or HR hiring evaluation categories.";
-  } else if (answers.q_interaction) {
-    riskClass = "limited";
-    riskBasis = "Art. 52 transparency requirements apply — AI system interacts directly with natural persons.";
+  } else if (riskClass === "limited") {
+    riskBasis = "Article 50 transparency duties may apply — the system interacts with natural persons or generates content.";
   }
 
   const packId = resolveSectorPackId(sector);
@@ -105,14 +110,14 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
     ? [
         "Index Technical Documentation (Art. 11) & Model Cards",
         "Establish Human Oversight SOP (Art. 14) with manual override route",
-        "Configure automated logging checks (Art. 12) to append to Audit Ledger",
+        "Keep automatic event logs (Art. 12)",
         "Run continuous evaluation runs (faithfulness, bias) and pass 85% threshold gate",
         "Monitor data-contract drift on schema inputs",
         ...packObligations,
       ]
     : riskClass === "limited"
     ? [
-        "Display user chatbot disclosures (Art. 52(1) transparency warning banner)",
+        "Disclose AI interaction and label AI-generated content (Article 50)",
         "Identify content generation origins explicitly",
         ...packObligations,
       ]
@@ -121,35 +126,35 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
         "Maintain baseline privacy data policies"
       ];
 
-  function handleSubmit() {
-    const id = `sys-${Math.floor(Math.random() * 900) + 100}`;
-    const newSystem: AiSystem = {
-      id,
-      name,
-      owner,
-      purpose,
-      riskClass,
-      riskBasis,
-      deploymentRegion: "EU",
-      evidenceCoverage: 0,
-      evalScore: 0,
-      dataContractStatus: "HEALTHY",
-      releaseDecision: riskClass === "high" ? "blocked" : "pass",
-      openGaps: riskClass === "high" ? ["Technical documentation missing (Art. 11)", "Human oversight SOP override missing (Art. 14)"] : [],
-      vendorName: null,
-      modelName: null,
-      modelVersion: null,
-      dataSources: [],
-      sector: sector || null,
-      decisionImpact: riskClass === "high" ? "access to essential private services" : null,
-      affectedUsers: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    onRegister(newSystem);
-    // Reset steps
-    setStep(1);
-    onClose();
+  async function handleSubmit() {
+    setSaving(true);
+    setError(null);
+    try {
+      const apiRisk = toApiRiskClass(riskClass);
+      const created = await api.systems.create({
+        name: name.trim(),
+        owner: owner.trim(),
+        purpose: purpose.trim(),
+        riskClass: apiRisk,
+        riskBasis,
+        deploymentRegion: "EU",
+        sector: sector || undefined,
+      });
+      await api.systems.classify(created.id, {
+        riskClass: apiRisk,
+        basis: riskBasis,
+        humanOversightRequired: riskClass === "high",
+        sector: sector || undefined,
+      });
+      await qc.invalidateQueries({ queryKey: ["systems"] });
+      onRegistered?.(created.id);
+      setStep(1);
+      onClose();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not register the system. Try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -165,8 +170,9 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
         {step === 1 && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">System Name</label>
+              <label htmlFor="system-name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">System Name</label>
               <input
+                id="system-name"
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -174,8 +180,9 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Owner / Department</label>
+              <label htmlFor="system-owner" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Owner</label>
               <input
+                id="system-owner"
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
                 value={owner}
                 onChange={(e) => setOwner(e.target.value)}
@@ -209,8 +216,9 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">System Purpose</label>
+              <label htmlFor="system-purpose" className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Purpose</label>
               <Textarea
+                id="system-purpose"
                 rows={4}
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
@@ -228,7 +236,7 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
         {step === 2 && (
           <div className="space-y-4">
             <p className="text-xs text-muted-foreground leading-normal">
-              Answer these questions based on the EU AI Act classification standards (Articles 6, 52).
+              Answer these questions based on the EU AI Act classification standards (Articles 6 and 50).
             </p>
             <div className="space-y-3.5 divide-y divide-border/60">
               {QUESTIONNAIRE.map((q) => (
@@ -305,6 +313,7 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
                   </div>
                 ))}
               </div>
+              <p className="text-[10px] text-muted-foreground">Suggestion only, not legal advice. You confirm the class; the basis is recorded in the audit ledger.</p>
             </div>
 
             {/* Warning info */}
@@ -317,12 +326,16 @@ export function RegisterSystemModal({ isOpen, onClose, onRegister }: RegisterSys
               </div>
             )}
 
+            {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
             <div className="flex justify-between pt-4 border-t border-border">
               <Button variant="outline" onClick={() => setStep(2)}>
                 Back
               </Button>
-              <Button onClick={handleSubmit}>
-                Save & Register System
+              <Button
+                onClick={handleSubmit}
+                disabled={saving || !name.trim() || !owner.trim() || !purpose.trim()}
+              >
+                {saving ? "Registering…" : "Register system"}
               </Button>
             </div>
           </div>

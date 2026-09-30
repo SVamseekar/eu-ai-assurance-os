@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useSystems } from "@/hooks/use-systems";
 import { useEvalOperations } from "@/hooks/use-eval-runs";
-import { api } from "@/lib/api";
-import { MOCK_SYSTEMS } from "@/lib/mock-data";
+import { useEvalDatasets } from "@/hooks/use-eval-datasets";
+import { api, ApiError } from "@/lib/api";
+import { toApiThreshold } from "@/lib/eval-threshold";
 import type { EvalRun } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/context/dashboard-context";
@@ -19,29 +20,39 @@ import { Plus } from "lucide-react";
 export default function EvalsPage() {
   const { allSystems: systems } = useDashboard();
   const { data: operations } = useEvalOperations();
-  const { evalDatasets, registerDataset } = useDashboard();
+  const { data: datasetRows = [] } = useEvalDatasets();
+  const evalDatasets = datasetRows.map((d) => d.name);
+  const qc = useQueryClient();
 
   const [selectedSystemId, setSelectedSystemId] = useState(systems[0]?.id ?? "");
-  const [dataset, setDataset] = useState(evalDatasets[0] || "golden-eu-claims-v4");
+  const [dataset, setDataset] = useState("");
+  const activeDataset = dataset || evalDatasets[0] || "";
   const [threshold, setThreshold] = useState(85);
   const [consoleLines, setConsoleLines] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
 
-  // Dataset modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newDsName, setNewDsName] = useState("");
   const [newDsDesc, setNewDsDesc] = useState("");
+  const [newDsVersion, setNewDsVersion] = useState("v1");
+  const [newDsSamples, setNewDsSamples] = useState(100);
+  const [datasetError, setDatasetError] = useState<string | null>(null);
 
   async function handleRun(e: React.SyntheticEvent) {
     e.preventDefault();
     setRunning(true);
     const system = systems.find((s) => s.id === selectedSystemId) ?? systems[0];
+    if (!system) {
+      setConsoleLines(["> Create an eval dataset first"]);
+      setRunning(false);
+      return;
+    }
     setConsoleLines([`> queued eval run for ${system.name}`, "> submitting to API…"]);
     try {
       const { runId } = await api.evals.create({
-        systemId: selectedSystemId, dataset,
+        systemId: selectedSystemId, dataset: activeDataset,
         modelVersion: `${system.name.toLowerCase().replace(/\s/g, "-")}-2026-06`,
-        promptVersion: "v1", threshold,
+        promptVersion: "v1", threshold: toApiThreshold(threshold),
       });
       setConsoleLines((p) => [...p, `> run ${runId} created, executing…`]);
       const result: EvalRun = await api.evals.execute(runId);
@@ -56,34 +67,30 @@ export default function EvalsPage() {
         `> cost:               $${m.costUsd ?? "—"}`,
         `> decision:           ${result.releaseDecision}`,
       ]);
-    } catch {
-      const jitter = Math.round(Math.random() * 10 - 4);
-      const score = Math.max(55, Math.min(96, system.evalScore + jitter));
-      const decision = score >= threshold ? "PASS" : score < threshold - 7 ? "BLOCKED" : "REVIEW";
+    } catch (err) {
       setConsoleLines([
-        `> queued eval run for ${system.name} (demo)`,
-        `> loaded dataset:     ${dataset}`,
-        "> loaded judge rubric",
-        `> faithfulness:       ${score}%`,
-        `> safety refusal:     ${Math.max(70, score - 3)}%`,
-        "> latency guard:      pass",
-        `> data contract:      ${system.dataContractStatus}`,
-        `> decision:           ${decision}`,
+        `> eval run for ${system.name} failed`,
+        `> ${err instanceof ApiError ? err.message : "The eval service did not respond."}`,
       ]);
     } finally {
       setRunning(false);
     }
   }
 
-  function handleCreateDataset(e: React.SyntheticEvent) {
+  async function handleCreateDataset(e: React.SyntheticEvent) {
     e.preventDefault();
-    if (newDsName) {
-      const formatted = newDsName.toLowerCase().replace(/\s+/g, "-");
-      registerDataset(formatted);
-      setDataset(formatted);
+    setDatasetError(null);
+    const name = newDsName.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!name) return;
+    try {
+      await api.evals.createDataset({ name, version: newDsVersion.trim() || "v1", sampleCount: newDsSamples, golden: false });
+      await qc.invalidateQueries({ queryKey: ["eval-datasets"] });
+      setDataset(name);
       setIsModalOpen(false);
       setNewDsName("");
       setNewDsDesc("");
+    } catch (err) {
+      setDatasetError(err instanceof ApiError ? err.message : "Could not create the dataset.");
     }
   }
 
@@ -123,12 +130,15 @@ export default function EvalsPage() {
                     Register Dataset
                   </button>
                 </div>
-                <Select value={dataset} onValueChange={(v) => v && setDataset(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={activeDataset} onValueChange={(v) => v && setDataset(v)}>
+                  <SelectTrigger><SelectValue placeholder="Create an eval dataset first" /></SelectTrigger>
                   <SelectContent>
                     {evalDatasets.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {evalDatasets.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground">Create an eval dataset first</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -212,6 +222,25 @@ export default function EvalsPage() {
               placeholder="e.g. 500 gold standard claims classification checks"
             />
           </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Version</label>
+            <input
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
+              value={newDsVersion}
+              onChange={(e) => setNewDsVersion(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sample count</label>
+            <input
+              type="number"
+              min={1}
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/50"
+              value={newDsSamples}
+              onChange={(e) => setNewDsSamples(Number(e.target.value))}
+            />
+          </div>
+          {datasetError && <p role="alert" className="text-xs text-destructive">{datasetError}</p>}
           <div className="flex justify-end gap-2.5">
             <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
               Cancel
