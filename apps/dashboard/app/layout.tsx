@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import { IBM_Plex_Sans, IBM_Plex_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { siteConfig } from "@/lib/site-config";
-
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "";
 
 const plexSans = IBM_Plex_Sans({
   variable: "--font-sans",
@@ -97,8 +94,12 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
-        {GA_MEASUREMENT_ID && process.env.NODE_ENV === "production" ? (
-          <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+        {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: process.env.NEXT_PUBLIC_CF_BEACON_TOKEN })}
+          />
         ) : null}
       </body>
     </html>

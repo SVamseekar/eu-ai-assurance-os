@@ -13,7 +13,7 @@ import Link from "next/link";
 import { isPublicClaimsSystem } from "@/lib/public-claims";
 
 export default function SystemsPage() {
-  const { allSystems, registerSystem } = useDashboard();
+  const { allSystems } = useDashboard();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [obligationSystemId, setObligationSystemId] = useState<string | null>(null);
 
@@ -95,7 +95,7 @@ export default function SystemsPage() {
       <RegisterSystemModal
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
-        onRegister={registerSystem}
+        onRegistered={(id) => setObligationSystemId(id)}
       />
 
       {obligationSystem && (

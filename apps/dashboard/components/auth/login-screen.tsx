@@ -117,6 +117,19 @@ export function LoginScreen({
 
     setSubmitting(false);
     if (!response.ok) {
+      if (response.status === 503) {
+        setError("Assurance OS is temporarily unavailable. Try again shortly.");
+        return;
+      }
+      if (response.status === 429) {
+        const body = await response.json().catch(() => null);
+        const message =
+          body && typeof body.error === "string"
+            ? body.error
+            : "Too many sign-in attempts. Try again in 15 minutes.";
+        setError(message);
+        return;
+      }
       setError("Invalid email or password");
       return;
     }

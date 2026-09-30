@@ -72,5 +72,5 @@ export const appRoutes = [
 ] as const;
 
 export function isAnalyticsConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim());
+  return Boolean(process.env.NEXT_PUBLIC_CF_BEACON_TOKEN?.trim());
 }

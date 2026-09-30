@@ -6,6 +6,7 @@ import {
   refreshAccessToken,
   setSessionCookies,
 } from "@/lib/session";
+import { fetchUpstream, serviceUnavailable } from "@/lib/upstream";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
 
@@ -13,7 +14,7 @@ async function forward(
   request: NextRequest,
   path: string[],
   accessToken: string,
-): Promise<Response> {
+): Promise<Response | null> {
   const targetUrl = `${API_BASE}/api/v1/${path.join("/")}${request.nextUrl.search}`;
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
   const headers: Record<string, string> = {
@@ -25,7 +26,7 @@ async function forward(
   } else if (body && body.byteLength > 0) {
     headers["Content-Type"] = "application/json";
   }
-  return fetch(targetUrl, {
+  return fetchUpstream(targetUrl, {
     method: request.method,
     headers,
     body: body && body.byteLength > 0 ? body : undefined,
@@ -64,6 +65,7 @@ async function handle(request: NextRequest, path: string[]): Promise<NextRespons
   }
 
   let upstream = await forward(request, path, accessToken);
+  if (!upstream) return serviceUnavailable();
 
   if (upstream.status === 401) {
     const refreshToken = readRefreshToken(request);
@@ -74,6 +76,7 @@ async function handle(request: NextRequest, path: string[]): Promise<NextRespons
       return failed;
     }
     upstream = await forward(request, path, rotated.accessToken);
+    if (!upstream) return serviceUnavailable();
     sessionCookies = rotated;
   }
 

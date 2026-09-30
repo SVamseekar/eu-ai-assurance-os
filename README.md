@@ -119,7 +119,6 @@ Full template: [`.env.example`](./.env.example). Deploy matrix: [`docs/DEPLOYMEN
 | `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` | API | Postgres profile |
 | `ASSURANCE_API_BASE_URL` | Dashboard | Upstream API base (default `http://localhost:8080`) |
 | `NEXT_PUBLIC_SITE_URL` | Dashboard | Canonical site URL for SEO/metadata |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Dashboard | Optional GA4 measurement id |
 | `DISCORD_WEBHOOK_URL` / `DISCORD_DEMO_WEBHOOK_URL` | Dashboard | Server-only: demo form → Discord |
 | `ASSURANCE_STORAGE_*` | API | Optional S3/MinIO object store for evidence uploads |
 | `EVIDENCE_EMBEDDING_PROVIDER` | API | `local-hash` (H2) or `djl-sentence` (postgres default) |

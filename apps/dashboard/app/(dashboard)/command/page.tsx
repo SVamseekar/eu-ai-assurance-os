@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -9,6 +10,8 @@ import { RiskTopology } from "@/components/risk-topology";
 import { useContracts } from "@/hooks/use-contracts";
 import { useOpenWorkflows } from "@/hooks/use-open-workflows";
 import { useSystems } from "@/hooks/use-systems";
+import { api, ApiError } from "@/lib/api";
+import { firstPendingStage } from "@/lib/workflow-helpers";
 import { MOCK_CONTRACTS } from "@/lib/mock-data";
 import { normaliseDecision, cn, formatDate } from "@/lib/utils";
 import {
@@ -50,8 +53,11 @@ function toTitle(s: string) {
 }
 
 export default function CommandPage() {
-  const { allSystems: systems, openSystemDetails, allAudits: auditEvents, overrideGate } =
+  const { allSystems: systems, openSystemDetails, allAudits: auditEvents } =
     useDashboard();
+  const qc = useQueryClient();
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+  const [overriding, setOverriding] = useState(false);
   const { data: contracts = MOCK_CONTRACTS } = useContracts();
   const { data: openWorkflows = [] } = useOpenWorkflows();
   const { isError: systemsError, isSuccess: systemsSuccess, data: systemsData } = useSystems();
@@ -69,6 +75,30 @@ export default function CommandPage() {
   const [overrideSystemId, setOverrideSystemId] = useState<string | null>(null);
   const [overrideSystemName, setOverrideSystemName] = useState("");
   const [justification, setJustification] = useState("");
+
+  async function confirmOverride(systemId: string, rationale: string) {
+    setOverriding(true);
+    setOverrideError(null);
+    try {
+      const workflow = await api.workflows.active(systemId);
+      const stage = workflow ? firstPendingStage(workflow) : null;
+      if (!workflow || !stage) {
+        setOverrideError("There is no open approval stage to override for this system.");
+        return;
+      }
+      await api.workflows.override(systemId, workflow.id, stage.id, rationale);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["systems"] }),
+        qc.invalidateQueries({ queryKey: ["audit-events"] }),
+      ]);
+      setOverrideSystemId(null);
+      setJustification("");
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : "Override failed.");
+    } finally {
+      setOverriding(false);
+    }
+  }
 
   const blocked   = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Blocked");
   const review    = systems.filter((s) => normaliseDecision(s.releaseDecision) === "Review");
@@ -336,7 +366,7 @@ export default function CommandPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-foreground leading-none mb-1">{s.name}</p>
                       <p className="text-[10px] text-muted-foreground truncate leading-normal">
-                        {s.openGaps[0] || "Evaluation threshold breach"} 
+                        {s.openGaps[0] || "Evaluation threshold breach"}
                         {s.openGaps.length > 1 && ` (+${s.openGaps.length - 1} more)`}
                       </p>
                     </div>
@@ -451,7 +481,7 @@ export default function CommandPage() {
         isOpen={overrideSystemId !== null}
         onClose={() => setOverrideSystemId(null)}
         title={`Authorize Override — ${overrideSystemName}`}
-        description="Enter compliance justification. An immutable audit record will log this override signature."
+        description="Only admins can override. The override, your name, and this justification are written to the hash-chained audit ledger."
       >
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -463,22 +493,21 @@ export default function CommandPage() {
               placeholder="e.g. Reviewed manual safety fallback protocol. Biweekly bias audits scheduled; manual routing fallback verified under Art. 14 guidelines."
             />
           </div>
+          {overrideError && <p role="alert" className="text-xs text-destructive">{overrideError}</p>}
           <div className="flex justify-end gap-2.5">
             <Button variant="outline" size="sm" onClick={() => setOverrideSystemId(null)}>
               Cancel
             </Button>
             <Button
               size="sm"
-              disabled={!justification}
+              disabled={overriding || justification.trim().length < 20}
               onClick={() => {
                 if (overrideSystemId) {
-                  overrideGate(overrideSystemId, justification);
-                  setOverrideSystemId(null);
-                  setJustification("");
+                  void confirmOverride(overrideSystemId, justification);
                 }
               }}
             >
-              Confirm Override Signature
+              {overriding ? "Overriding…" : "Confirm Override Signature"}
             </Button>
           </div>
         </div>

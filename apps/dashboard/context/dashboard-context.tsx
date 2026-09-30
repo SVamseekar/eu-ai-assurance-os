@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import type { AiSystem, DataContract, DriftEvent, AuditEvent, DataContractStatus, ReleaseDecision } from "@/lib/types";
+import { api } from "@/lib/api";
 import { allowMockFallback } from "@/lib/live-mode";
 import { MOCK_SYSTEMS, MOCK_CONTRACTS, MOCK_DRIFT_EVENTS, MOCK_AUDIT_EVENTS } from "@/lib/mock-data";
 import { useSystems } from "@/hooks/use-systems";
@@ -23,24 +25,14 @@ interface DashboardContextType {
   selectedContract: DataContract | null;
   setSelectedContract: (c: DataContract | null) => void;
 
-  // Custom systems registry
-  customSystems: AiSystem[];
-  registerSystem: (sys: AiSystem) => void;
   allSystems: AiSystem[];
 
   // Drift Events
   driftEvents: DriftEvent[];
   allAudits: AuditEvent[];
-  acknowledgeDrift: (id: string) => void;
-  resolveDrift: (id: string) => void;
+  acknowledgeDrift: (id: string) => Promise<void>;
+  resolveDrift: (id: string) => Promise<void>;
   contractsList: DataContract[];
-
-  // Manual release gate overrides
-  overrideGate: (systemId: string, justification: string) => void;
-
-  // Custom datasets
-  evalDatasets: string[];
-  registerDataset: (name: string) => void;
 
   openSystemDetails: (id: string) => void;
   openContractDetails: (id: string) => void;
@@ -48,13 +40,12 @@ interface DashboardContextType {
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
-const INITIAL_DATASETS = ["golden-eu-claims-v4", "hr-candidate-screening-v2", "customer-support-rag-v8"];
-
 export function DashboardProvider({ children }: { children: ReactNode }) {
   // Shared roles & headers
   const [activeTenant, setActiveTenant] = useState("tenant-premium");
   const [activeRole, setActiveRole] = useState("actor-priya");
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const pollAudits = pathname === "/audit" || pathname.startsWith("/audit/");
 
   // Selected drawers
@@ -94,12 +85,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       ? apiAudits
       : null;
 
-  // Dynamic entities lists
-  const [customSystems, setCustomSystems] = useState<AiSystem[]>([]);
   const [localDriftEvents, setLocalDriftEvents] = useState<DriftEvent[]>(MOCK_DRIFT_EVENTS);
-  const [evalDatasets, setEvalDatasets] = useState<string[]>(INITIAL_DATASETS);
-  const [overriddenSystems, setOverriddenSystems] = useState<Record<string, string>>({}); // systemId -> justification
-  const [customAudits, setCustomAudits] = useState<AuditEvent[]>([]);
 
   // Set headers in localStorage on change
   useEffect(() => {
@@ -107,41 +93,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("eu-ai-actor-id", activeRole);
   }, [activeTenant, activeRole]);
 
-  function registerSystem(sys: AiSystem) {
-    setCustomSystems((p) => [...p, sys]);
-  }
-
-  function registerDataset(name: string) {
-    setEvalDatasets((p) => [...p, name]);
-  }
-
-  function acknowledgeDrift(eventId: string) {
+  async function setDriftStatus(eventId: string, status: "ACKNOWLEDGED" | "RESOLVED") {
+    if (liveContracts) {
+      const event = (queryClient.getQueriesData<DriftEvent[]>({ queryKey: ["drift-events"] })
+        .flatMap(([, data]) => data ?? []))
+        .find((e) => e.id === eventId);
+      if (!event) return;
+      await api.contracts.updateDriftEvent(event.contractId, eventId, status);
+      await queryClient.invalidateQueries({ queryKey: ["drift-events", event.contractId] });
+      await queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      await queryClient.invalidateQueries({ queryKey: ["systems"] });
+      return;
+    }
     setLocalDriftEvents((p) =>
-      p.map((e) => (e.id === eventId ? { ...e, status: "ACKNOWLEDGED", updatedAt: new Date().toISOString() } : e))
+      p.map((e) => (e.id === eventId ? { ...e, status, updatedAt: new Date().toISOString() } : e)),
     );
   }
 
-  function resolveDrift(eventId: string) {
-    setLocalDriftEvents((p) =>
-      p.map((e) => (e.id === eventId ? { ...e, status: "RESOLVED", updatedAt: new Date().toISOString() } : e))
-    );
-  }
-
-  function overrideGate(systemId: string, justification: string) {
-    setOverriddenSystems((p) => ({ ...p, [systemId]: justification }));
-
-    const newEvent: AuditEvent = {
-      id: `audit-${Math.floor(Math.random() * 9000) + 1000}`,
-      systemId,
-      actorId: activeRole,
-      eventType: "RELEASE_GATE_CALCULATED",
-      resourceType: "ai_system",
-      resourceId: systemId,
-      payload: { decision: "PASS", reason: `Manual override: ${justification}` },
-      createdAt: new Date().toISOString(),
-    };
-    setCustomAudits((p) => [newEvent, ...p]); // Prepended so it shows at the top
-  }
+  const acknowledgeDrift = (id: string) => setDriftStatus(id, "ACKNOWLEDGED");
+  const resolveDrift = (id: string) => setDriftStatus(id, "RESOLVED");
 
   const baseSystems = liveSystems ?? (allowMockFallback() ? MOCK_SYSTEMS : (apiSystems ?? []));
   const baseContracts = liveContracts ?? (allowMockFallback() ? MOCK_CONTRACTS : (apiContracts ?? []));
@@ -149,8 +119,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const driftEvents = liveContracts ? [] : localDriftEvents;
 
   const allAudits = useMemo(
-    () => [...customAudits, ...(liveAudits ?? (allowMockFallback() ? MOCK_AUDIT_EVENTS : []))],
-    [customAudits, liveAudits],
+    () => liveAudits ?? (allowMockFallback() ? MOCK_AUDIT_EVENTS : []),
+    [liveAudits],
   );
 
   // Recalculate contract status dynamically based on resolved drift events (demo path)
@@ -170,18 +140,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   // Recalculate system release decision based on contract status and manual overrides
   const allSystems = useMemo(() => {
-    return [...baseSystems, ...customSystems].map((sys) => {
-      // If manually overridden
-      if (overriddenSystems[sys.id]) {
-        return {
-          ...sys,
-          dataContractStatus: "HEALTHY" as const,
-          releaseDecision: "pass" as const,
-          openGaps: [],
-        };
-      }
-
-      // Live API already carries gate fields — only recompute for demo/mock + overrides.
+    return baseSystems.map((sys) => {
+      // Live API already carries gate fields — only recompute for demo/mock.
       if (liveSystems && isLiveEntityId(sys.id)) {
         return sys;
       }
@@ -218,7 +178,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         openGaps,
       };
     });
-  }, [baseSystems, customSystems, calculatedContracts, overriddenSystems, liveSystems]);
+  }, [baseSystems, calculatedContracts, liveSystems]);
 
   // Update selected drawers with recalculated values
   const updatedSelectedSystem = selectedSystem
@@ -256,16 +216,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         setSelectedSystem,
         selectedContract: updatedSelectedContract,
         setSelectedContract,
-        customSystems,
-        registerSystem,
         allSystems,
         driftEvents,
         acknowledgeDrift,
         resolveDrift,
         contractsList: calculatedContracts,
-        overrideGate,
-        evalDatasets,
-        registerDataset,
         openSystemDetails,
         openContractDetails,
         allAudits,

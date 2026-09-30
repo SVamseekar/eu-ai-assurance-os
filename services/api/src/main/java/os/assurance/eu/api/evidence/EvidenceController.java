@@ -8,6 +8,7 @@ import os.assurance.eu.api.observability.NfrMetrics;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
 import os.assurance.eu.api.tenant.TenantAuthorizationService;
+import os.assurance.eu.api.tenant.TenantContext;
 import os.assurance.eu.api.tenant.UserRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,18 +31,27 @@ public class EvidenceController {
   private final FileStorageService fileStorage;
   private final TenantAuthorizationService authorizationService;
   private final NfrMetrics nfrMetrics;
+  private final TextExtractionService textExtraction;
+  private final TenantContext tenantContext;
+  private final EvidenceProperties properties;
 
   public EvidenceController(
       AiSystemRepository systems,
       EvidenceService evidenceService,
       FileStorageService fileStorage,
       TenantAuthorizationService authorizationService,
-      NfrMetrics nfrMetrics) {
+      NfrMetrics nfrMetrics,
+      TextExtractionService textExtraction,
+      TenantContext tenantContext,
+      EvidenceProperties properties) {
     this.systems = systems;
     this.evidenceService = evidenceService;
     this.fileStorage = fileStorage;
     this.authorizationService = authorizationService;
     this.nfrMetrics = nfrMetrics;
+    this.textExtraction = textExtraction;
+    this.tenantContext = tenantContext;
+    this.properties = properties;
   }
 
   @PostMapping("/documents")
@@ -66,13 +76,29 @@ public class EvidenceController {
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(systemId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    if (file.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded file is empty");
+    }
+    if (file.getSize() > 25L * 1024 * 1024) {
+      throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE, "Files up to 25 MB are supported.");
+    }
     String filename = StringUtils.hasText(file.getOriginalFilename())
-        ? StringUtils.cleanPath(file.getOriginalFilename())
+        ? StringUtils.cleanPath(file.getOriginalFilename()).replaceAll("[^A-Za-z0-9._-]", "_")
         : "upload";
-    String key = "evidence/" + systemId + "/" + UUID.randomUUID() + "/" + filename;
-    String uri = fileStorage.upload(key, file.getInputStream(), file.getSize(), file.getContentType());
-    var req = new CreateEvidenceDocumentRequest(
-        systemId, type, title, uri, null, checksum, null);
+    String text;
+    try (var in = file.getInputStream()) {
+      text = textExtraction.extractFromUpload(in, filename, properties.maxContentCharacters());
+    }
+    String key = "evidence/" + tenantContext.tenantId() + "/" + systemId + "/" + UUID.randomUUID() + "/" + filename;
+    String uri;
+    try (var in = file.getInputStream()) {
+      uri = fileStorage.upload(key, in, file.getSize(), file.getContentType());
+    }
+    String digest = checksum != null && !checksum.isBlank()
+        ? checksum
+        : "sha256-" + java.util.HexFormat.of().formatHex(
+            java.security.MessageDigest.getInstance("SHA-256").digest(file.getBytes()));
+    var req = new CreateEvidenceDocumentRequest(systemId, type, title, uri, text, digest, null);
     return evidenceService.ingest(req);
   }
 
