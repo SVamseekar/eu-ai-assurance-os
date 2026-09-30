@@ -180,8 +180,7 @@ jobs:
         working-directory: apps/dashboard
     env:
       NEXT_PUBLIC_SITE_URL: https://euassuranceai.souravamseekar.com
-      # Build must not require a live API or GA id
-      NEXT_PUBLIC_GA_MEASUREMENT_ID: ""
+      # Build must not require a live API
       ASSURANCE_API_BASE_URL: http://localhost:8080
     steps:
       - uses: actions/checkout@v7
@@ -204,6 +203,10 @@ jobs:
       - name: Typecheck
         if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
         run: npx tsc --noEmit
+
+      - name: Unit tests
+        if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
+        run: npm test
 
       - name: Production build
         if: needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
@@ -234,3 +237,55 @@ jobs:
           terraform fmt -check -recursive
           terraform init -backend=false -input=false
           terraform validate
+
+  e2e:
+    name: E2E (login → register → evidence)
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.dashboard == 'true' || github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EVAL_CALLBACK_SECRET: ""
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: services/api/pom.xml
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/dashboard/package-lock.json
+      - name: Start API (H2, seeded demo users)
+        working-directory: services/api
+        run: |
+          mvn -B -q -DskipTests package
+          nohup java -jar target/api-*.jar > api.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS http://localhost:8080/actuator/health && break; sleep 3; done
+      - name: Build and start dashboard
+        working-directory: apps/dashboard
+        env:
+          ASSURANCE_API_BASE_URL: http://localhost:8080
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          nohup npm start > web.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://localhost:3000/login > /dev/null && break; sleep 3; done
+      - name: Run E2E
+        working-directory: apps/dashboard
+        run: npm run e2e
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-logs
+          path: |
+            services/api/api.log
+            apps/dashboard/web.log
+            apps/dashboard/test-results/
+
