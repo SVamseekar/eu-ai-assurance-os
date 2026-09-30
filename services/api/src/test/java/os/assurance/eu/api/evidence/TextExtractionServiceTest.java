@@ -9,9 +9,18 @@ import org.springframework.web.server.ResponseStatusException;
 
 class TextExtractionServiceTest {
 
-    private final TextExtractionService service = new TextExtractionService(null, null);
+    private final TextExtractionService service = new TextExtractionService(null, null, null);
     private final TextExtractionService.SsrfSafeDnsResolver resolver =
         new TextExtractionService.SsrfSafeDnsResolver();
+
+    @Test
+    void extractsPlainTextUpload() throws Exception {
+        var text = service.extractFromUpload(
+            new java.io.ByteArrayInputStream("Reviewers can override routing.".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+            "note.txt",
+            1000);
+        assertThat(text).contains("override");
+    }
 
     @Test
     void rejectsLoopbackHost() {
