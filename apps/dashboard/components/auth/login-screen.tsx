@@ -28,6 +28,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
     "Social sign-in is temporarily unavailable. Use email and password, or try again later.",
   not_configured:
     "Social sign-in is not configured in this environment. Use email and password, or request a demo.",
+  email_unverified:
+    "Your identity provider did not confirm this email address. Sign in with your password, then link Google or Microsoft from Settings.",
 };
 
 const TRUST_POINTS = [

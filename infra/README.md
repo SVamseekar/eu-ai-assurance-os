@@ -23,7 +23,7 @@ Health:
 curl -fsS http://localhost:8080/actuator/health
 ```
 
-Copy `.env.example` → `.env` and change `EVAL_CALLBACK_SECRET` / `AUDIT_CHAIN_SECRET` before any shared use.
+Local compose users must copy `.env.example` → `.env` and fill values (specifically required random secrets of at least 32 characters for `EVAL_CALLBACK_SECRET`, `AUDIT_CHAIN_SECRET`, `JWT_KEY_ENCRYPTION_SECRET`, and `OAUTH_STATE_SECRET`).
 
 ### Optional profiles
 

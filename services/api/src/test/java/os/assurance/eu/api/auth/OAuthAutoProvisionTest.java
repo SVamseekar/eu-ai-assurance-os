@@ -1,6 +1,7 @@
 package os.assurance.eu.api.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -24,6 +25,7 @@ import os.assurance.eu.api.tenant.UserJpaRepository;
     "assurance.oauth.google.client-secret=test-google-secret"
 })
 class OAuthAutoProvisionTest {
+  private static final String NONCE = "test-browser-nonce-0123456789";
 
   @Autowired
   private OAuthService oauthService;
@@ -50,13 +52,14 @@ class OAuthAutoProvisionTest {
         .thenReturn(Map.of(
             "sub", "google-auto-subject",
             "email", "auto-provisioned@newcorp.example",
-            "name", "Auto User"));
+            "name", "Auto User",
+            "email_verified", true));
   }
 
   @Test
   void autoProvisionCreatesTenantAdminAndIssuesTokens() {
-    String state = stateService.issue("google");
-    TokenResponse tokens = oauthService.completeAuthorization("google", "auto-code", state);
+    String state = stateService.issue("google", NONCE);
+    TokenResponse tokens = oauthService.completeAuthorization("google", "auto-code", state, NONCE);
 
     assertThat(tokens.accessToken()).isNotBlank();
     var claims = jwtService.verifyAccessToken(tokens.accessToken()).orElseThrow();
@@ -65,5 +68,18 @@ class OAuthAutoProvisionTest {
     assertThat(user.oauthProvider()).isEqualTo("google");
     assertThat(user.oauthSubject()).isEqualTo("google-auto-subject");
     assertThat(user.passwordHash()).isNull();
+  }
+
+  @Test
+  void autoProvisionRefusesUnverifiedEmail() {
+    when(tokenClient.exchangeCode(eq("google"), eq("unverified-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of("sub", "google-unverified", "email", "someone@unverified.example"));
+    String state = stateService.issue("google", NONCE);
+    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "unverified-code", state, NONCE))
+        .isInstanceOf(OAuthService.OAuthLoginException.class)
+        .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
+        .isEqualTo("email_unverified");
   }
 }

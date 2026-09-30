@@ -7,9 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +34,7 @@ import os.assurance.eu.api.tenant.UserRole;
     "assurance.oauth.microsoft.client-secret=test-ms-secret"
 })
 class OAuthServiceTest {
+  private static final String NONCE = "test-browser-nonce-0123456789";
 
   @Autowired
   private OAuthService oauthService;
@@ -81,10 +80,11 @@ class OAuthServiceTest {
         .thenReturn(Map.of(
             "sub", "google-subject-happy",
             "email", "oauth-happy@example.com",
-            "name", "OAuth Happy"));
+            "name", "OAuth Happy",
+            "email_verified", true));
 
-    String state = stateService.issue("google");
-    TokenResponse tokens = oauthService.completeAuthorization("google", "good-code", state);
+    String state = stateService.issue("google", NONCE);
+    TokenResponse tokens = oauthService.completeAuthorization("google", "good-code", state, NONCE);
 
     assertThat(tokens.accessToken()).isNotBlank();
     assertThat(tokens.refreshToken()).isNotBlank();
@@ -112,8 +112,8 @@ class OAuthServiceTest {
             "email", "oauth-bound@example.com",
             "name", "Bound User"));
 
-    String state = stateService.issue("google");
-    TokenResponse tokens = oauthService.completeAuthorization("google", "bound-code", state);
+    String state = stateService.issue("google", NONCE);
+    TokenResponse tokens = oauthService.completeAuthorization("google", "bound-code", state, NONCE);
 
     assertThat(tokens.accessToken()).isNotBlank();
     var claims = jwtService.verifyAccessToken(tokens.accessToken()).orElseThrow();
@@ -129,11 +129,12 @@ class OAuthServiceTest {
         .thenReturn(Map.of(
             "sub", "google-unknown-subject",
             "email", "brand-new-oauth@example.com",
-            "name", "New User"));
+            "name", "New User",
+            "email_verified", true));
 
-    String state = stateService.issue("google");
+    String state = stateService.issue("google", NONCE);
 
-    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "new-code", state))
+    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "new-code", state, NONCE))
         .isInstanceOf(OAuthService.OAuthLoginException.class)
         .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
         .isEqualTo("not_provisioned");
@@ -141,7 +142,7 @@ class OAuthServiceTest {
 
   @Test
   void badStateIsRejectedWithoutCallingProvider() {
-    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "any-code", "not-a-valid-state"))
+    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "any-code", "not-a-valid-state", NONCE))
         .isInstanceOf(OAuthService.OAuthLoginException.class)
         .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
         .isEqualTo("state");
@@ -149,7 +150,49 @@ class OAuthServiceTest {
 
   @Test
   void beginAuthorizationReturnsProviderUrl() {
-    String url = oauthService.beginAuthorization("google");
+    String url = oauthService.beginAuthorization("google", NONCE);
     assertThat(url).contains("accounts.google.com");
+  }
+
+  @Test
+  void unverifiedEmailNeverLinksToExistingAccount() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    tenants.save(new TenantEntity(tenantId, "Victim Co", "starter", "EU", Instant.now()));
+    users.save(new UserEntity(userId, tenantId, "victim@victim.example", UserRole.ADMIN,
+        encoder.encode("victim-password"), Instant.now()));
+
+    when(tokenClient.exchangeCode(eq("microsoft"), eq("attacker-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("microsoft"), any()))
+        .thenReturn(Map.of("sub", "attacker-subject", "preferred_username", "victim@victim.example"));
+
+    String state = stateService.issue("microsoft", NONCE);
+    assertThatThrownBy(() -> oauthService.completeAuthorization("microsoft", "attacker-code", state, NONCE))
+        .isInstanceOf(OAuthService.OAuthLoginException.class)
+        .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
+        .isEqualTo("email_unverified");
+
+    UserEntity victim = users.findById(userId).orElseThrow();
+    assertThat(victim.oauthProvider()).isNull();
+    assertThat(victim.oauthSubject()).isNull();
+  }
+
+  @Test
+  void verifiedLinkingMatchesEmailCaseInsensitively() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    tenants.save(new TenantEntity(tenantId, "Case Co", "starter", "EU", Instant.now()));
+    users.save(new UserEntity(userId, tenantId, "Mixed.Case@Case.Example", UserRole.ADMIN,
+        encoder.encode("pw"), Instant.now()));
+
+    when(tokenClient.exchangeCode(eq("google"), eq("case-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of("sub", "case-subject", "email", "mixed.case@case.example", "email_verified", true));
+
+    String state = stateService.issue("google", NONCE);
+    oauthService.completeAuthorization("google", "case-code", state, NONCE);
+    assertThat(users.findById(userId).orElseThrow().oauthSubject()).isEqualTo("case-subject");
   }
 }

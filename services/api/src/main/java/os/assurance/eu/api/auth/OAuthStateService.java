@@ -2,10 +2,10 @@ package os.assurance.eu.api.auth;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.stereotype.Service;
@@ -19,27 +19,32 @@ public class OAuthStateService {
   private static final long STATE_TTL_SECONDS = 600;
   private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
   private static final Base64.Decoder URL_DECODER = Base64.getUrlDecoder();
+  private static final Pattern NONCE_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{22,128}$");
 
   private final OAuthProperties properties;
   private final Clock clock;
-  private final SecureRandom random = new SecureRandom();
 
   public OAuthStateService(OAuthProperties properties, Clock clock) {
     this.properties = properties;
     this.clock = clock;
   }
 
-  public String issue(String provider) {
-    String nonce = randomNonce();
+  public String issue(String provider, String browserNonce) {
+    if (browserNonce == null || !NONCE_PATTERN.matcher(browserNonce).matches()) {
+      throw new IllegalArgumentException("A browser nonce of 22–128 URL-safe characters is required");
+    }
     long exp = Instant.now(clock).getEpochSecond() + STATE_TTL_SECONDS;
-    String payload = provider + "|" + nonce + "|" + exp;
+    String payload = provider + "|" + browserNonce + "|" + exp;
     String signature = sign(payload);
     return URL_ENCODER.encodeToString((payload + "|" + signature).getBytes(StandardCharsets.UTF_8));
   }
 
-  public ValidationResult validate(String state, String expectedProvider) {
+  public ValidationResult validate(String state, String expectedProvider, String browserNonce) {
     if (state == null || state.isBlank()) {
       return ValidationResult.invalid("missing_state");
+    }
+    if (browserNonce == null || browserNonce.isBlank()) {
+      return ValidationResult.invalid("missing_browser_nonce");
     }
     try {
       String decoded = new String(URL_DECODER.decode(state), StandardCharsets.UTF_8);
@@ -61,16 +66,13 @@ public class OAuthStateService {
       if (!provider.equalsIgnoreCase(expectedProvider)) {
         return ValidationResult.invalid("provider_mismatch");
       }
+      if (!constantTimeEquals(nonce, browserNonce)) {
+        return ValidationResult.invalid("browser_mismatch");
+      }
       return ValidationResult.valid(provider);
     } catch (Exception e) {
       return ValidationResult.invalid("malformed_state");
     }
-  }
-
-  private String randomNonce() {
-    byte[] bytes = new byte[16];
-    random.nextBytes(bytes);
-    return URL_ENCODER.encodeToString(bytes);
   }
 
   private String sign(String payload) {

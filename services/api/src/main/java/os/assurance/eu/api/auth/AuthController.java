@@ -26,6 +26,8 @@ public class AuthController {
     private final TenantAdminService tenantAdminService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
+    private final SlidingWindowRateLimiter perEmail;
+
     // Constant-time defense against email-enumeration via login latency: bcrypt verification
     // always runs against a real hash (this dummy one when no user/password exists), so a
     // nonexistent email and a wrong password take statistically indistinguishable time.
@@ -37,17 +39,24 @@ public class AuthController {
             JwtService jwtService,
             RefreshTokenService refreshTokenService,
             AssuranceMetrics assuranceMetrics,
-            TenantAdminService tenantAdminService) {
+            TenantAdminService tenantAdminService,
+            @org.springframework.beans.factory.annotation.Value("${assurance.security.auth-rate.per-email-per-15m:10}") int perEmailLimit,
+            java.time.Clock clock) {
         this.users = users;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.assuranceMetrics = assuranceMetrics;
         this.tenantAdminService = tenantAdminService;
+        this.perEmail = new SlidingWindowRateLimiter(perEmailLimit, java.time.Duration.ofMinutes(15), clock);
     }
 
     @PostMapping("/auth/login")
     public TokenResponse login(@RequestBody LoginRequest request) {
-        UserEntity user = users.findByEmail(request.email()).orElse(null);
+        String emailKey = request.email() == null ? "" : request.email().trim().toLowerCase(java.util.Locale.ROOT);
+        if (!perEmail.tryAcquire(emailKey)) {
+            throw new TooManyAttemptsException();
+        }
+        UserEntity user = users.findByEmailIgnoreCase(emailKey).orElse(null);
         String hashToVerifyAgainst = (user != null && user.passwordHash() != null)
             ? user.passwordHash()
             : dummyHashForTimingParity;

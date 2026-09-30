@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIpHeaders } from "@/lib/client-ip";
 import { setSessionCookies } from "@/lib/session";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
@@ -7,7 +8,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const upstream = await fetch(`${API_BASE}/auth/accept-invite`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...clientIpHeaders(request) },
     body: JSON.stringify(body),
   });
   if (!upstream.ok) {

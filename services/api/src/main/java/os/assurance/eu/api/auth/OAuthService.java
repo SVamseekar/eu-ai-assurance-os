@@ -45,17 +45,22 @@ public class OAuthService {
     this.refreshTokenService = refreshTokenService;
   }
 
-  public String beginAuthorization(String provider) {
+  public String beginAuthorization(String provider, String browserNonce) {
     String normalized = normalizeProvider(provider);
-    String state = stateService.issue(normalized);
+    String state;
+    try {
+      state = stateService.issue(normalized, browserNonce);
+    } catch (IllegalArgumentException e) {
+      throw new OAuthLoginException("state", e.getMessage());
+    }
     String redirectUri = tokenClient.callbackRedirectUri(normalized);
     return tokenClient.buildAuthorizationUrl(normalized, state, redirectUri);
   }
 
   @Transactional
-  public TokenResponse completeAuthorization(String provider, String code, String state) {
+  public TokenResponse completeAuthorization(String provider, String code, String state, String browserNonce) {
     String normalized = normalizeProvider(provider);
-    OAuthStateService.ValidationResult stateResult = stateService.validate(state, normalized);
+    OAuthStateService.ValidationResult stateResult = stateService.validate(state, normalized, browserNonce);
     if (!stateResult.isValid()) {
       throw new OAuthLoginException("state", "Invalid or expired OAuth state");
     }
@@ -80,7 +85,14 @@ public class OAuthService {
       return byOauth;
     }
 
-    UserEntity byEmail = users.findByEmail(profile.email()).orElse(null);
+    if (!profile.emailVerified()) {
+      throw new OAuthLoginException(
+          "email_unverified",
+          "Your identity provider did not confirm this email address. Sign in with your password, "
+              + "then link this provider from Settings.");
+    }
+
+    UserEntity byEmail = users.findByEmailIgnoreCase(profile.email()).orElse(null);
     if (byEmail != null) {
       byEmail.linkOAuth(profile.provider(), profile.subject());
       return users.save(byEmail);

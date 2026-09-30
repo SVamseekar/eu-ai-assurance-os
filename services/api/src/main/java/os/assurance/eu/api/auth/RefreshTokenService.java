@@ -15,9 +15,14 @@ public class RefreshTokenService {
     private static final long REFRESH_TOKEN_TTL_DAYS = 30;
     private final SecureRandom random = new SecureRandom();
     private final RefreshTokenJpaRepository repository;
+    private final java.time.Duration reuseGrace;
 
-    public RefreshTokenService(RefreshTokenJpaRepository repository) {
+    public RefreshTokenService(
+            RefreshTokenJpaRepository repository,
+            @org.springframework.beans.factory.annotation.Value("${assurance.auth.refresh-reuse-grace-seconds:30}")
+            long reuseGraceSeconds) {
         this.repository = repository;
+        this.reuseGrace = java.time.Duration.ofSeconds(reuseGraceSeconds);
     }
 
     public record IssuedRefreshToken(String rawToken, UUID id) {}
@@ -36,13 +41,18 @@ public class RefreshTokenService {
         return new IssuedRefreshToken(rawToken, id);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public RefreshResult rotate(String rawToken) {
         String presentedHash = hash(rawToken);
-        RefreshTokenEntity entity = repository.findByTokenHash(presentedHash).orElse(null);
+        RefreshTokenEntity entity = repository.findForUpdateByTokenHash(presentedHash).orElse(null);
         if (entity == null) {
             return new RefreshResult.Rejected("Unknown refresh token");
         }
         if (entity.isRevoked()) {
+            if (withinConcurrentRefreshGrace(entity)) {
+                IssuedRefreshToken sibling = issue(entity.userId(), entity.tenantId());
+                return new RefreshResult.Rotated(sibling, entity.userId(), entity.tenantId());
+            }
             revokeChainFrom(entity);
             return new RefreshResult.Rejected("Refresh token reuse detected — chain revoked");
         }
@@ -55,6 +65,20 @@ public class RefreshTokenService {
         return new RefreshResult.Rotated(newToken, entity.userId(), entity.tenantId());
     }
 
+    /** A parallel request raced a rotation that just happened; the successor is still live. Not theft. */
+    private boolean withinConcurrentRefreshGrace(RefreshTokenEntity entity) {
+        if (reuseGrace.isZero() || entity.replacedByTokenHash() == null || entity.isExpired()) {
+            return false;
+        }
+        if (entity.revokedAt().isBefore(Instant.now().minus(reuseGrace))) {
+            return false;
+        }
+        return repository.findByTokenHash(entity.replacedByTokenHash())
+            .filter(successor -> !successor.isRevoked())
+            .isPresent();
+    }
+
+    @org.springframework.transaction.annotation.Transactional
     public void revoke(String rawToken) {
         repository.findByTokenHash(hash(rawToken)).ifPresent(entity -> {
             if (!entity.isRevoked()) {

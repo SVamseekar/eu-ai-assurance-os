@@ -1,0 +1,8 @@
+# Extends the default rules. The allowlist covers one test fixture that the
+# generic-api-key rule flags. The value is not a credential.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "JwtKeyAtRestTest encryption fixture"
+regexes = ['''test-key-encryption-secret-at-least-32-chars-long''']

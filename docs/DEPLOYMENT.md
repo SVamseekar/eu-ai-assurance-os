@@ -70,9 +70,10 @@ Verify:
 
 ```bash
 curl -fsS http://localhost:8080/actuator/health
-# Login with bootstrap user (local only):
-#   email: compliance@example.com
-#   password: dev-local-password-only
+# Local H2 runs seed demo users (`compliance@example.com`, `admin@example.com`, …) because
+# `assurance.bootstrap.seed-demo-users=true` in the default profile. The `postgres` profile never seeds them and
+# refuses to start if an old database still has them with the development password — run
+# `scripts/disable-seeded-users.sql` once on such databases.
 ```
 
 ### Resource notes
