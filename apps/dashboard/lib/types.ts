@@ -89,6 +89,15 @@ export interface EvalRunMetrics {
   costUsd?: number;
 }
 
+export interface EvalDataset {
+  id: string;
+  name: string;
+  version: string;
+  sampleCount: number;
+  golden: boolean;
+  createdAt: string;
+}
+
 export interface EvalRun {
   runId: string;
   systemId: string;

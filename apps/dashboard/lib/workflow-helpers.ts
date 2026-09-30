@@ -1,4 +1,4 @@
-import type { ApprovalStage } from "./types";
+import type { ApprovalStage, ApprovalWorkflow } from "./types";
 
 export const STAGE_LABELS: Record<string, string> = {
   ENG_LEAD_REVIEW: "Engineering Lead Review",
@@ -12,6 +12,14 @@ export const ROLE_TO_STAGE: Record<string, string> = {
   "actor-leo": "LEGAL_COUNSEL",
   "actor-sofia": "COMPLIANCE_OFFICER",
 };
+
+export function firstPendingStage(workflow: ApprovalWorkflow) {
+  const done = new Set(["APPROVED", "OVERRIDDEN"]);
+  const stages = [...(workflow.stages ?? [])].sort(
+    (a, b) => (a.stageOrder ?? 0) - (b.stageOrder ?? 0),
+  );
+  return stages.find((s) => !done.has(String(s.status).toUpperCase())) ?? null;
+}
 
 export function isActionableStage(stage: ApprovalStage, stages: ApprovalStage[], activeRole: string): boolean {
   if (stage.status !== "PENDING") return false;
