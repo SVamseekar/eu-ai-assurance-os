@@ -168,7 +168,7 @@ class PackAndScanApiTest {
 
   private List<String> cliGaps(String command, String... args) throws Exception {
     List<String> cmd = new ArrayList<>();
-    cmd.add(EvgraphCli.resolveCommand("evgraph"));
+    cmd.add(EvgraphCli.resolveCommand("evgraph", true));
     cmd.add(command);
     cmd.addAll(List.of(args));
     cmd.add("--format");

@@ -14,6 +14,7 @@ import os.assurance.eu.api.audit.AuditService;
 import os.assurance.eu.api.evidence.EvidenceChunker.ChunkDraft;
 import os.assurance.eu.api.evidence.PromptInjectionGuard.SanitizedText;
 import os.assurance.eu.api.system.AiSystem;
+import os.assurance.eu.api.system.GateRecalculator;
 import os.assurance.eu.api.tenant.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class EvidenceService {
   private final AuditService auditService;
   private final TenantContext tenantContext;
   private final EvidenceProperties properties;
+  private final GateRecalculator gateRecalculator;
 
   public EvidenceService(
       EvidenceRepository repository,
@@ -41,7 +43,8 @@ public class EvidenceService {
       EvidenceEmbeddingService embeddingService,
       AuditService auditService,
       TenantContext tenantContext,
-      EvidenceProperties properties) {
+      EvidenceProperties properties,
+      GateRecalculator gateRecalculator) {
     this.repository = repository;
     this.queries = queries;
     this.textExtractionService = textExtractionService;
@@ -52,6 +55,7 @@ public class EvidenceService {
     this.auditService = auditService;
     this.tenantContext = tenantContext;
     this.properties = properties;
+    this.gateRecalculator = gateRecalculator;
   }
 
   @Transactional
@@ -88,6 +92,7 @@ public class EvidenceService {
             "chunkCount", saved.chunkCount(),
             "embeddingProvider", embeddingService.providerName(),
             "removedPromptInjectionLines", sanitized.removedLines().size()));
+    gateRecalculator.recalculate(saved.systemId());
     return saved.toResponse();
   }
 

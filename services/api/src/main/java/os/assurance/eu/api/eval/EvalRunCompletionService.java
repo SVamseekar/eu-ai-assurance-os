@@ -8,6 +8,7 @@ import java.util.UUID;
 import os.assurance.eu.api.audit.AuditService;
 import os.assurance.eu.api.system.AiSystem;
 import os.assurance.eu.api.system.AiSystemRepository;
+import os.assurance.eu.api.system.GateRecalculator;
 import os.assurance.eu.api.system.ReleaseDecision;
 import os.assurance.eu.api.system.ReleaseGateService;
 import os.assurance.eu.api.workflow.ApprovalWorkflowService;
@@ -28,6 +29,7 @@ public class EvalRunCompletionService {
   private final AuditService auditService;
   private final EvalRunMetrics evalRunMetrics;
   private final ApprovalWorkflowService approvalWorkflowService;
+  private final GateRecalculator gateRecalculator;
 
   public EvalRunCompletionService(
       AiSystemRepository systems,
@@ -35,13 +37,15 @@ public class EvalRunCompletionService {
       ReleaseGateService releaseGateService,
       AuditService auditService,
       EvalRunMetrics evalRunMetrics,
-      ApprovalWorkflowService approvalWorkflowService) {
+      ApprovalWorkflowService approvalWorkflowService,
+      GateRecalculator gateRecalculator) {
     this.systems = systems;
     this.evalRuns = evalRuns;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
     this.evalRunMetrics = evalRunMetrics;
     this.approvalWorkflowService = approvalWorkflowService;
+    this.gateRecalculator = gateRecalculator;
   }
 
   @Transactional
@@ -83,6 +87,8 @@ public class EvalRunCompletionService {
         existing.maxAttempts(),
         null));
     AiSystem updated = saveSystemWithEvalScore(system, evalScore);
+    gateRecalculator.recalculate(system.id());
+    updated = systems.findById(system.id()).orElse(updated);
     auditService.append(
         system.id(),
         "eval_run.completed",

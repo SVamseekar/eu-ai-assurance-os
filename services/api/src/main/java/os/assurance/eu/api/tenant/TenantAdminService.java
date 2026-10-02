@@ -10,6 +10,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import os.assurance.eu.api.audit.AuditChainHeads;
 import os.assurance.eu.api.audit.AuditService;
 import os.assurance.eu.api.auth.JwtService;
 import os.assurance.eu.api.auth.RefreshTokenService;
@@ -32,6 +33,7 @@ public class TenantAdminService {
   private final TenantAuthorizationService authorization;
   private final PlatformProperties platformProperties;
   private final AuditService auditService;
+  private final AuditChainHeads auditChainHeads;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
   private final Clock clock;
@@ -45,6 +47,7 @@ public class TenantAdminService {
       TenantAuthorizationService authorization,
       PlatformProperties platformProperties,
       AuditService auditService,
+      AuditChainHeads auditChainHeads,
       JwtService jwtService,
       RefreshTokenService refreshTokenService,
       Clock clock) {
@@ -55,6 +58,7 @@ public class TenantAdminService {
     this.authorization = authorization;
     this.platformProperties = platformProperties;
     this.auditService = auditService;
+    this.auditChainHeads = auditChainHeads;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
     this.clock = clock;
@@ -72,6 +76,7 @@ public class TenantAdminService {
     String plan = blankTo(request.plan(), "design-partner");
     String region = blankTo(request.dataRegion(), "EU");
     TenantEntity tenant = tenants.save(new TenantEntity(tenantId, request.name().trim(), plan, region, now));
+    auditChainHeads.attachToNewTenant(tenantId);
     UUID adminId = UUID.randomUUID();
     UserEntity admin = users.save(new UserEntity(
         adminId,

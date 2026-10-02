@@ -42,6 +42,10 @@ public class MappingProposalEntity {
   private String controlMode;
   private Instant reopenedAt;
 
+  @jakarta.persistence.Version
+  @jakarta.persistence.Column(nullable = false)
+  private long version;
+
   protected MappingProposalEntity() {
   }
 

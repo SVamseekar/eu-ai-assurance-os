@@ -42,7 +42,8 @@ class EvidencePackPdfRendererTest {
         List.of(),
         Map.of(),
         Map.of(),
-        MonitoringPlan.standIn());
+        MonitoringPlan.standIn(),
+        "test-signature");
 
     byte[] pdf = EvidencePackPdfRenderer.render(pack, "Claims Triage AI");
 

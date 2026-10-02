@@ -133,6 +133,45 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  api-postgres:
+    name: API on Postgres (Flyway + smoke)
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: eu_ai_assurance
+          POSTGRES_USER: eu_ai_assurance
+          POSTGRES_PASSWORD: eu_ai_assurance
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U eu_ai_assurance -d eu_ai_assurance"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    defaults:
+      run:
+        working-directory: services/api
+    env:
+      RUN_POSTGRES_SMOKE: "true"
+      DATABASE_URL: jdbc:postgresql://localhost:5432/eu_ai_assurance
+      DATABASE_USERNAME: eu_ai_assurance
+      DATABASE_PASSWORD: eu_ai_assurance
+      EVAL_CALLBACK_SECRET: ci-eval-callback-secret-for-postgres-smoke-only
+      AUDIT_CHAIN_SECRET: ci-audit-chain-secret-for-postgres-smoke-only
+      OAUTH_STATE_SECRET: ci-oauth-state-secret-for-postgres-smoke-only
+      JWT_KEY_ENCRYPTION_SECRET: ci-jwt-key-encryption-secret-for-postgres-smoke
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: services/api/pom.xml
+      - name: Postgres smoke (Flyway V1–V22 + bootstrap + guards)
+        run: mvn -B test -Dtest=PostgresProfileSmokeTest
+
   acceptance:
     name: Acceptance (Claims Triage)
     needs: changes
@@ -259,12 +298,22 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: apps/dashboard/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install pinned evgraph CLI (same hashes as the production image)
+        run: |
+          python -m venv "$RUNNER_TEMP/evgraph"
+          "$RUNNER_TEMP/evgraph/bin/pip" install --require-hashes -r infra/evgraph-requirements.txt
+          "$RUNNER_TEMP/evgraph/bin/evgraph" --help > /dev/null
+          echo "EVGRAPH_BIN=$RUNNER_TEMP/evgraph/bin/evgraph" >> "$GITHUB_ENV"
       - name: Start API (H2, seeded demo users)
         working-directory: services/api
         run: |
           mvn -B -q -DskipTests package
           nohup java -jar target/api-*.jar > api.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS http://localhost:8080/actuator/health && break; sleep 3; done
+          curl -fsS http://localhost:8080/actuator/health > /dev/null || { tail -50 api.log; exit 1; }
       - name: Build and start dashboard
         working-directory: apps/dashboard
         env:

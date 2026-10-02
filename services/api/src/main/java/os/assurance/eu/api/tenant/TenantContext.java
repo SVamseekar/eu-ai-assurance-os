@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 public class TenantContext {
   public static final UUID DEFAULT_TENANT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
   public static final UUID DEFAULT_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000101");
+  /** Actor for startup and scheduled jobs. Has no password, so it cannot sign in. */
+  public static final UUID SYSTEM_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000100");
+  public static final String SYSTEM_USER_EMAIL = "system@assurance.invalid";
   private final ThreadLocal<UUID> tenantOverride = new ThreadLocal<>();
   private final ThreadLocal<UUID> actorOverride = new ThreadLocal<>();
 

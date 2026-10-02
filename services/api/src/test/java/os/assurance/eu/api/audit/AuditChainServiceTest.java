@@ -18,6 +18,9 @@ import org.mockito.ArgumentCaptor;
 
 class AuditChainServiceTest {
   private AuditEventJpaRepository repository;
+  private AuditChainHeadJpaRepository heads;
+  private AuditChainHeads headInit;
+  private AuditChainHeadEntity head;
   private TenantContext tenantContext;
   private AuditChainHasher hasher;
   private AuditService service;
@@ -32,7 +35,11 @@ class AuditChainServiceTest {
     when(tenantContext.tenantId()).thenReturn(TENANT);
     when(tenantContext.actorId()).thenReturn(ACTOR);
     hasher = new AuditChainHasher("test-audit-chain-secret");
-    service = new AuditService(repository, tenantContext, hasher, mock(AssuranceMetrics.class), 7);
+    heads = mock(AuditChainHeadJpaRepository.class);
+    headInit = mock(AuditChainHeads.class);
+    head = new AuditChainHeadEntity(TENANT, null, Instant.now());
+    when(heads.findForUpdate(TENANT)).thenReturn(Optional.of(head));
+    service = new AuditService(repository, heads, headInit, tenantContext, hasher, mock(AssuranceMetrics.class), 7);
   }
 
   @Test
@@ -46,7 +53,6 @@ class AuditChainServiceTest {
     assertThat(first.eventHash()).isNotBlank();
     assertThat(first.retainUntil()).isAfter(Instant.now().plusSeconds(3600L * 24 * 365 * 6));
 
-    when(repository.findLatestByTenantId(TENANT)).thenReturn(Optional.of(captor.getValue()));
     AuditEvent second = service.append(null, "test.b", "x", "2", Map.of("k", "v2"));
     assertThat(second.prevEventHash()).isEqualTo(first.eventHash());
     assertThat(second.eventHash()).isNotEqualTo(first.eventHash());
@@ -74,5 +80,36 @@ class AuditChainServiceTest {
     AuditChainVerifyResponse result = service.verifyChain();
     assertThat(result.valid()).isFalse();
     assertThat(result.firstBreakId()).isEqualTo(id2);
+  }
+
+  @Test
+  void firstAppendAfterMigrationLinksToLatestLegacyEvent() {
+    AuditEventEntity legacy = new AuditEventEntity(
+        UUID.randomUUID(), TENANT, null, ACTOR, "legacy", "r", "1", Map.of(), Instant.parse("2026-01-01T00:00:00Z"),
+        null, "a".repeat(64), Instant.parse("2033-01-01T00:00:00Z"));
+    when(repository.findLatestByTenantId(TENANT)).thenReturn(Optional.of(legacy));
+    when(repository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(i -> i.getArgument(0));
+    AuditEvent next = service.append(null, "x.y", "r", "2", Map.of());
+    assertThat(next.prevEventHash()).isEqualTo("a".repeat(64));
+    assertThat(head.headHash()).isEqualTo(next.eventHash());
+  }
+
+  @Test
+  void verifyReportsForkWhenTwoEventsShareAPredecessor() {
+    AuditChainHasher local = new AuditChainHasher("test-audit-chain-secret");
+    Instant t = Instant.parse("2026-01-01T00:00:00Z");
+    UUID g = UUID.randomUUID();
+    String hg = local.hash(TENANT, g, null, ACTOR, "a", "r", "1", Map.of(), t);
+    UUID b1 = UUID.randomUUID();
+    String h1 = local.hash(TENANT, b1, hg, ACTOR, "b", "r", "2", Map.of(), t.plusSeconds(1));
+    UUID b2 = UUID.randomUUID();
+    String h2 = local.hash(TENANT, b2, hg, ACTOR, "c", "r", "3", Map.of(), t.plusSeconds(1));
+    Instant keep = t.plusSeconds(3600L * 24 * 365 * 7);
+    when(repository.findAllByTenantIdOrderByCreatedAtAsc(TENANT)).thenReturn(List.of(
+        new AuditEventEntity(g, TENANT, null, ACTOR, "a", "r", "1", Map.of(), t, null, hg, keep),
+        new AuditEventEntity(b1, TENANT, null, ACTOR, "b", "r", "2", Map.of(), t.plusSeconds(1), hg, h1, keep),
+        new AuditEventEntity(b2, TENANT, null, ACTOR, "c", "r", "3", Map.of(), t.plusSeconds(1), hg, h2, keep)));
+    AuditChainVerifyResponse result = service.verifyChain();
+    assertThat(result.valid()).isFalse();
   }
 }

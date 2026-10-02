@@ -63,7 +63,7 @@ public class PublicClaimsSeeder implements CommandLineRunner {
     if (!properties.isPublicClaims()) {
       return;
     }
-    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.DEFAULT_USER_ID);
+    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.SYSTEM_USER_ID);
     try {
       int created = 0;
       for (PublicClaimsSystemSpec spec : publicClaims.catalog().systems()) {

@@ -9,6 +9,7 @@ import java.util.UUID;
 import os.assurance.eu.api.assessment.AssessmentService;
 import os.assurance.eu.api.audit.AuditEvent;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.auth.JwtService;
 import os.assurance.eu.api.corpus.CorpusQueryService;
 import os.assurance.eu.api.contract.DataContract;
 import os.assurance.eu.api.contract.DataContractService;
@@ -41,6 +42,7 @@ public class EvidencePackService {
   private final EvgraphCli evgraphCli;
   private final AssessmentService assessment;
   private final Clock clock;
+  private final JwtService jwtService;
   private final String generator;
 
   public EvidencePackService(
@@ -56,6 +58,7 @@ public class EvidencePackService {
       EvgraphCli evgraphCli,
       AssessmentService assessment,
       Clock clock,
+      JwtService jwtService,
       @Value("${assurance.evidence-pack.generator:eu-ai-assurance-api/0.1.0}") String generator) {
     this.repository = repository;
     this.releaseGateService = releaseGateService;
@@ -69,6 +72,7 @@ public class EvidencePackService {
     this.evgraphCli = evgraphCli;
     this.assessment = assessment;
     this.clock = clock;
+    this.jwtService = jwtService;
     this.generator = generator;
   }
 
@@ -135,10 +139,17 @@ public class EvidencePackService {
         evidenceCounts,
         monitoringPlan);
     String contentSha256 = EvidencePackSealer.contentSha256(sealPayload);
+    String signature = jwtService.signEvidence(Map.of(
+        "contentSha256", contentSha256,
+        "systemId", system.id().toString(),
+        "generatedAt", generatedAt.toString(),
+        "evidencePackVersion", PACK_VERSION,
+        "auditChainHead", auditChainHead == null ? "" : auditChainHead));
 
     Map<String, Object> auditPayload = new LinkedHashMap<>();
     auditPayload.put("decision", releaseGate.decision().name());
     auditPayload.put("contentSha256", contentSha256);
+    auditPayload.put("signature", signature);
     auditPayload.put("format", exportFormat == null ? "json" : exportFormat);
     auditPayload.put("evidencePackVersion", PACK_VERSION);
     auditService.append(
@@ -171,7 +182,8 @@ public class EvidencePackService {
         currentGaps,
         acceptedArtifacts,
         evidenceCounts,
-        monitoringPlan);
+        monitoringPlan,
+        signature);
   }
 
   public Map<String, Object> evgraphArtifactFiles(UUID systemId) {

@@ -1,8 +1,10 @@
 package os.assurance.eu.api.assessment;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.UUID;
 import os.assurance.eu.api.tenant.TenantAuthorizationService;
@@ -40,7 +42,7 @@ public class AssessmentController {
       @PathVariable UUID proposalId,
       @Valid @RequestBody ApplicabilityRequest request) {
     requireWriter();
-    return assessment.setApplicability(systemId, proposalId, request.applicability(), request.reviewerId());
+    return assessment.setApplicability(systemId, proposalId, request.applicability());
   }
 
   @PostMapping("/exceptions")
@@ -73,12 +75,12 @@ public class AssessmentController {
     authorizationService.requireAnyRole(UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER);
   }
 
-  public record ApplicabilityRequest(@NotBlank String applicability, UUID reviewerId) {
+  public record ApplicabilityRequest(@NotBlank String applicability) {
   }
 
   public record ExceptionRequest(
       @NotNull UUID proposalId,
-      @NotBlank String rationale,
-      @NotNull LocalDate expiresOn) {
+      @NotBlank @Size(max = 2048) String rationale,
+      @NotNull @Future LocalDate expiresOn) {
   }
 }

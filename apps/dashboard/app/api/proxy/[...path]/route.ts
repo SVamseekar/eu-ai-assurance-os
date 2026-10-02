@@ -41,8 +41,10 @@ function passthroughHeaders(upstream: Response): Headers {
   if (disposition) headers.set("Content-Disposition", disposition);
   const contentSha = upstream.headers.get("X-Content-Sha256");
   if (contentSha) headers.set("X-Content-Sha256", contentSha);
+  const evidenceSignature = upstream.headers.get("X-Evidence-Signature");
+  if (evidenceSignature) headers.set("X-Evidence-Signature", evidenceSignature);
   // Expose custom header to browser JS for PDF export seal display
-  headers.set("Access-Control-Expose-Headers", "X-Content-Sha256, Content-Disposition");
+  headers.set("Access-Control-Expose-Headers", "X-Content-Sha256, X-Evidence-Signature, Content-Disposition");
   return headers;
 }
 

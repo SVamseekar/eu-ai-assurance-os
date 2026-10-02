@@ -6,35 +6,53 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
  * Runs the evgraph CLI on accepted artifact files. The library stays outside the JVM.
- * When no local binary is present, the scan installs the pinned PyPI release into
- * {@code target/evgraph-0.1.2} and runs that CLI. It does not invent gap rows.
+ * Production images bake the pinned CLI and set {@code EVGRAPH_BIN}. Runtime install is
+ * only for tests and local H2 when {@code assurance.evgraph.allow-runtime-install=true}.
  */
 @Component
 public class EvgraphCli {
   static final String PINNED_VERSION = "0.1.2";
+  static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
   private static final String PINNED_PACKAGE = "evgraph-cli==" + PINNED_VERSION;
+  private static final int MAX_CAPTURE_BYTES = 2 * 1024 * 1024;
+
   private final ObjectMapper objectMapper;
   private final String command;
+  private final Duration timeout;
 
+  @Autowired
   public EvgraphCli(
       ObjectMapper objectMapper,
-      @Value("${assurance.evgraph.command:evgraph}") String command) {
+      @Value("${assurance.evgraph.command:evgraph}") String command,
+      @Value("${assurance.evgraph.allow-runtime-install:false}") boolean allowRuntimeInstall) {
+    this(objectMapper, resolveCommand(command, allowRuntimeInstall), allowRuntimeInstall, DEFAULT_TIMEOUT);
+  }
+
+  EvgraphCli(ObjectMapper objectMapper, String resolvedCommand, boolean allowRuntimeInstall, Duration timeout) {
     this.objectMapper = objectMapper;
-    this.command = resolveCommand(command);
+    this.command = resolvedCommand;
+    this.timeout = timeout;
   }
 
   public List<Map<String, Object>> currentGaps(Map<String, Object> artifacts) {
+    Path dir = null;
     try {
-      Path dir = Files.createTempDirectory("evgraph-pack");
+      dir = Files.createTempDirectory("evgraph-pack");
       Path modelCard = dir.resolve("model_card.json");
       Path approval = dir.resolve("approval.json");
       Path deployment = dir.resolve("deployment.json");
@@ -47,30 +65,28 @@ public class EvgraphCli {
       gaps.addAll(gapsFrom(command, "scan", modelCard.toString(), approval.toString(), deployment.toString()));
       gaps.addAll(gapsFrom(command, "scan-dataset-manifest", dataset.toString()));
       return gaps;
+    } catch (IllegalStateException e) {
+      throw e;
     } catch (Exception e) {
       throw new IllegalStateException("evgraph scan failed", e);
+    } finally {
+      deleteRecursively(dir);
     }
   }
 
-  static String resolveCommand(String configured) {
+  static String resolveCommand(String configured, boolean allowRuntimeInstall) {
     String override = System.getenv("EVGRAPH_BIN");
     if (executable(override)) {
       return override;
-    }
-    Path sibling = Path.of(System.getProperty("user.dir", "."))
-        .resolve("../../../evgraph/.venv/bin/evgraph")
-        .normalize();
-    if (Files.isExecutable(sibling)) {
-      return sibling.toString();
     }
     String fallback = configured == null || configured.isBlank() ? "evgraph" : configured;
     if (onPath(fallback)) {
       return fallback;
     }
-    if (!"evgraph".equals(fallback)) {
-      return fallback;
+    if (allowRuntimeInstall && "evgraph".equals(fallback)) {
+      return pinnedCli().toString();
     }
-    return pinnedCli().toString();
+    throw new IllegalStateException("evgraph CLI not found. Set EVGRAPH_BIN or install evgraph-cli==" + PINNED_VERSION);
   }
 
   static Path installPinned(Path root) throws IOException, InterruptedException {
@@ -137,28 +153,62 @@ public class EvgraphCli {
     argv.addAll(List.of(paths));
     argv.add("--format");
     argv.add("json");
-    Process process = new ProcessBuilder(argv).start();
-    String stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-    String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
-    int code = process.waitFor();
-    if (code != 0) {
-      throw new IllegalStateException(stderr.isBlank() ? "evgraph exit " + code : stderr);
-    }
-    JsonNode findings = objectMapper.readTree(stdout).get("findings");
-    List<Map<String, Object>> gaps = new ArrayList<>();
-    if (findings == null || !findings.isArray()) {
-      return gaps;
-    }
-    for (JsonNode finding : findings) {
-      String outcome = finding.path("outcome").asText();
-      if ("EXPECTATION_MET".equals(outcome)) {
-        continue;
+    ProcessBuilder builder = new ProcessBuilder(argv);
+    Path errFile = Files.createTempFile("evgraph-stderr", ".log");
+    builder.redirectError(errFile.toFile());
+    Process process = builder.start();
+    CompletableFuture<byte[]> stdoutFuture = CompletableFuture.supplyAsync(() -> {
+      try (var in = process.getInputStream()) {
+        return in.readNBytes(MAX_CAPTURE_BYTES);
+      } catch (IOException e) {
+        return new byte[0];
       }
-      Map<String, Object> gap = new LinkedHashMap<>();
-      gap.put("rule_id", finding.path("rule_id").asText());
-      gap.put("outcome", outcome);
-      gaps.add(gap);
+    });
+    try {
+      if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+        process.destroyForcibly();
+        throw new IllegalStateException("evgraph " + subcommand + " timed out after " + timeout.toSeconds() + "s");
+      }
+      String stdout = new String(stdoutFuture.get(5, TimeUnit.SECONDS), StandardCharsets.UTF_8);
+      if (process.exitValue() != 0) {
+        String stderr = Files.readString(errFile).lines().limit(20).collect(Collectors.joining("\n"));
+        throw new IllegalStateException(stderr.isBlank() ? "evgraph exit " + process.exitValue() : stderr);
+      }
+      JsonNode findings = objectMapper.readTree(stdout).get("findings");
+      List<Map<String, Object>> gaps = new ArrayList<>();
+      if (findings == null || !findings.isArray()) {
+        return gaps;
+      }
+      for (JsonNode finding : findings) {
+        String outcome = finding.path("outcome").asText();
+        if ("EXPECTATION_MET".equals(outcome)) {
+          continue;
+        }
+        Map<String, Object> gap = new LinkedHashMap<>();
+        gap.put("rule_id", finding.path("rule_id").asText());
+        gap.put("outcome", outcome);
+        gaps.add(gap);
+      }
+      return gaps;
+    } finally {
+      Files.deleteIfExists(errFile);
     }
-    return gaps;
+  }
+
+  private static void deleteRecursively(Path dir) {
+    if (dir == null) {
+      return;
+    }
+    try (var paths = Files.walk(dir)) {
+      paths.sorted(Comparator.reverseOrder()).forEach(p -> {
+        try {
+          Files.deleteIfExists(p);
+        } catch (IOException ignored) {
+          // best effort
+        }
+      });
+    } catch (IOException ignored) {
+      // best effort
+    }
   }
 }

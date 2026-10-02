@@ -46,8 +46,8 @@ class AssessmentApiTest {
     String gdpr = proposal(systemId, "supports", "02016R0679-20160504#5:1:");
     accept(systemId, gdpr);
     String abstain = proposal(systemId, "abstain", null);
-    String pending = proposal(systemId, "supports", "02016R0679-20160504#6:1:");
-    String rejected = proposal(systemId, "supports", "02022R2554-20221227#5:1:");
+    String pending = proposal(systemId, "supports", "02016R0679-20160504#5:1:");
+    String rejected = proposal(systemId, "supports", "02016R0679-20160504#5:1:");
     reject(systemId, rejected);
 
     JsonNode assessment = assessment(systemId);
@@ -113,14 +113,13 @@ class AssessmentApiTest {
             .with(officer())
             .contentType(MediaType.APPLICATION_JSON)
             .content(exceptionBody(id, yesterday)))
-        .andExpect(status().isCreated());
-    assertThat(statusOf(assessment(systemId), id)).isEqualTo("MISSING");
+        .andExpect(status().isBadRequest());
 
-    String openId = proposal(systemId, "supports", "02016R0679-20160504#6:1:");
+    String openId = proposal(systemId, "supports", "02016R0679-20160504#5:1:");
     mockMvc.perform(post("/api/v1/systems/{id}/assessment/exceptions", systemId)
             .with(officer())
             .contentType(MediaType.APPLICATION_JSON)
-            .content(exceptionBody(openId, LocalDate.now(ZoneOffset.UTC))))
+            .content(exceptionBody(openId, LocalDate.now(ZoneOffset.UTC).plusDays(1))))
         .andExpect(status().isCreated());
     assertThat(statusOf(assessment(systemId), openId)).isEqualTo("ACCEPTED_EXCEPTION");
   }

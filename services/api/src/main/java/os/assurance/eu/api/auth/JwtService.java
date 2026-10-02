@@ -3,8 +3,11 @@ package os.assurance.eu.api.auth;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -24,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -137,7 +141,27 @@ public class JwtService {
         }
     }
 
+    public String signEvidence(Map<String, Object> claims) {
+        try {
+            JWSObject jws = new JWSObject(
+                new JWSHeader.Builder(JWSAlgorithm.RS256)
+                    .keyID(activeSigningKey.getKeyID())
+                    .type(new com.nimbusds.jose.JOSEObjectType("aos-evidence+jws"))
+                    .build(),
+                new Payload(claims));
+            jws.sign(new RSASSASigner(activeSigningKey));
+            return jws.serialize();
+        } catch (JOSEException e) {
+            throw new IllegalStateException("Failed to sign evidence pack", e);
+        }
+    }
+
     public JWKSet currentPublicJwks() {
-        return new JWKSet(List.of(activeSigningKey.toPublicJWK()));
+        List<JWK> keys = signingKeys.findAll().stream()
+            .map(this::toRsaKey)
+            .map(RSAKey::toPublicJWK)
+            .map(k -> (JWK) k)
+            .toList();
+        return new JWKSet(keys.isEmpty() ? List.of(activeSigningKey.toPublicJWK()) : keys);
     }
 }

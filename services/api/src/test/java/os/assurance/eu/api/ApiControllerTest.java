@@ -1108,7 +1108,8 @@ class ApiControllerTest {
         .andExpect(jsonPath("$.id", not(blankOrNullString())))
         .andExpect(jsonPath("$.systemId").value(systemId))
         .andExpect(jsonPath("$.actorId").value(DEFAULT_ACTOR_ID))
-        .andExpect(jsonPath("$.eventType").value("approval.override_requested"))
+        .andExpect(jsonPath("$.eventType").value("manual.approval.override_requested"))
+        .andExpect(jsonPath("$.source").value("manual"))
         .andExpect(jsonPath("$.payload.reason").value("Manual compliance review required"))
         .andReturn();
     String auditEventId = read(result).get("id").asText();
