@@ -298,12 +298,22 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: apps/dashboard/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install pinned evgraph CLI (same hashes as the production image)
+        run: |
+          python -m venv "$RUNNER_TEMP/evgraph"
+          "$RUNNER_TEMP/evgraph/bin/pip" install --require-hashes -r infra/evgraph-requirements.txt
+          "$RUNNER_TEMP/evgraph/bin/evgraph" --help > /dev/null
+          echo "EVGRAPH_BIN=$RUNNER_TEMP/evgraph/bin/evgraph" >> "$GITHUB_ENV"
       - name: Start API (H2, seeded demo users)
         working-directory: services/api
         run: |
           mvn -B -q -DskipTests package
           nohup java -jar target/api-*.jar > api.log 2>&1 &
           for i in $(seq 1 60); do curl -fsS http://localhost:8080/actuator/health && break; sleep 3; done
+          curl -fsS http://localhost:8080/actuator/health > /dev/null || { tail -50 api.log; exit 1; }
       - name: Build and start dashboard
         working-directory: apps/dashboard
         env:
