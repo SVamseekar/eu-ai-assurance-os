@@ -24,6 +24,11 @@ class BootstrapSeedingDisabledTest {
     assertThat(tenants.findById(TenantContext.DEFAULT_TENANT_ID)).isPresent();
     assertThat(users.findByEmail("admin@example.com")).isEmpty();
     assertThat(users.findByEmail("compliance@example.com")).isEmpty();
-    assertThat(users.count()).isZero();
+    assertThat(users.findAll())
+        .singleElement()
+        .satisfies(user -> {
+          assertThat(user.id()).isEqualTo(TenantContext.SYSTEM_USER_ID);
+          assertThat(user.passwordHash()).isNull();
+        });
   }
 }

@@ -27,7 +27,7 @@ public class RegMonitorPoller {
   @Scheduled(fixedDelayString = "${assurance.reg-monitor.poll-interval-ms:60000}")
   public void poll() {
     // Audit append requires tenant context; use bootstrap MVP tenant for global feed events.
-    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.DEFAULT_USER_ID);
+    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.SYSTEM_USER_ID);
     try {
       int n = ingestionService.pollDueSources();
       if (n > 0) {

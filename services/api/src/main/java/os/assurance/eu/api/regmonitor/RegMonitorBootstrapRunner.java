@@ -42,7 +42,7 @@ public class RegMonitorBootstrapRunner implements CommandLineRunner {
     if (items.count() > 0) {
       return;
     }
-    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.DEFAULT_USER_ID);
+    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.SYSTEM_USER_ID);
     try {
       int n = ingestionService.ensureBootstrapFixtures();
       LOGGER.info("Reg-monitor bootstrap fixtures loaded: {} item(s)", n);

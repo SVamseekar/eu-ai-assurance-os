@@ -83,7 +83,7 @@ public class BootstrapData implements CommandLineRunner {
   @Override
   @Transactional
   public void run(String... args) {
-    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.DEFAULT_USER_ID);
+    tenantContext.setOverrides(TenantContext.DEFAULT_TENANT_ID, TenantContext.SYSTEM_USER_ID);
     try {
       seedBootstrapData();
     } finally {
@@ -99,6 +99,14 @@ public class BootstrapData implements CommandLineRunner {
             "MVP Tenant",
             "starter",
             "EU",
+            now)));
+    // Background jobs audit as this actor; it exists in every environment so audit FKs hold.
+    users.findById(TenantContext.SYSTEM_USER_ID)
+        .orElseGet(() -> users.save(new UserEntity(
+            TenantContext.SYSTEM_USER_ID,
+            TenantContext.DEFAULT_TENANT_ID,
+            TenantContext.SYSTEM_USER_EMAIL,
+            UserRole.AUDITOR,
             now)));
     if (!seedDemoUsers) {
       // Not demo data: backfills approval workflows for real systems in existing databases.
