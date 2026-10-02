@@ -25,10 +25,12 @@ class PostgresProfileSmokeTest {
   private AiSystemRepository systems;
   @Autowired
   private TenantJpaRepository tenants;
+  @Autowired
+  private TenantContext tenantContext;
 
   @Test
   void startsWithPostgresProfileAndRunsFlywayBootstrap() {
-    assertThat(systems.findAll()).isNotNull();
+    assertThat(tenantContext.withTenant(TenantContext.DEFAULT_TENANT_ID, systems::findAll)).isNotNull();
     assertThat(tenants.findById(TenantContext.DEFAULT_TENANT_ID)).isPresent();
   }
 }
