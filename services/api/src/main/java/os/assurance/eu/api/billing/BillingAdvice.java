@@ -16,4 +16,9 @@ public class BillingAdvice {
         "message", ex.getMessage(),
         "upgradeUrl", "/settings#billing"));
   }
+
+  @ExceptionHandler(WebhookSignatureException.class)
+  ResponseEntity<Map<String, String>> badSignature(WebhookSignatureException ex) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid_signature"));
+  }
 }

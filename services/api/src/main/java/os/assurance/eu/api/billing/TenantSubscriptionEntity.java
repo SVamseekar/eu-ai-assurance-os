@@ -49,6 +49,7 @@ public class TenantSubscriptionEntity {
   public String dodoSubscriptionId() { return dodoSubscriptionId; }
   public Instant currentPeriodEnd() { return currentPeriodEnd; }
   public Instant graceUntil() { return graceUntil; }
+  public Instant updatedAt() { return updatedAt; }
 
   /** Payment is current. A renewal that arrives late (older period end) never moves the period backwards. */
   public void activate(String plan, String interval, String customerId, String subscriptionId,
