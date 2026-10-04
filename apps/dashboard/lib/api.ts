@@ -2,6 +2,7 @@ import type {
   AiSystem,
   ApiKeyCreated,
   ApiKeyView,
+  BillingSummary,
   ApprovalWorkflow,
   AuditEvent,
   CertificationReadiness,
@@ -54,6 +55,9 @@ function redirectToLoginOnUnauthorized() {
   window.location.assign(href);
 }
 
+/** Fired on window when the API answers 402; detail is the human-readable limit message. */
+export const PLAN_LIMIT_EVENT = "aos:plan-limit";
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -77,6 +81,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       message = body.message ?? body.error ?? body.detail ?? message;
     } catch {
       // keep status text
+    }
+    if (res.status === 402 && typeof window !== "undefined") {
+      // Plan limit: the shell shows an upgrade prompt for any screen that hits one.
+      window.dispatchEvent(new CustomEvent(PLAN_LIMIT_EVENT, { detail: message }));
     }
     throw new ApiError(res.status, message);
   }
@@ -317,6 +325,15 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ notes }),
       }),
+  },
+  billing: {
+    get: () => request<BillingSummary>("/billing"),
+    checkout: (plan: "TEAM" | "BUSINESS", interval: "MONTHLY" | "YEARLY") =>
+      request<{ checkoutUrl: string }>("/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ plan, interval }),
+      }),
+    portal: () => request<{ url: string }>("/billing/portal", { method: "POST" }),
   },
   admin: {
     users: () => request<WorkspaceUser[]>("/admin/users"),

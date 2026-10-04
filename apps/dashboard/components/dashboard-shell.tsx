@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { DemoBanner } from "@/components/demo-banner";
+import { PlanLimitPrompt } from "@/components/plan-limit-prompt";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { normaliseDecision } from "@/lib/utils";
@@ -182,6 +183,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <Sidebar blockedCount={blockedCount} />
       <main className="ml-56 px-8 py-7">
         <DemoBanner />
+        <PlanLimitPrompt />
         <Header
           title={meta.title}
           subtitle={meta.subtitle}
