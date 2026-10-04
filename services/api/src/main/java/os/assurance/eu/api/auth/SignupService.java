@@ -7,10 +7,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import os.assurance.eu.api.audit.AuditChainHeads;
 import os.assurance.eu.api.audit.AuditService;
@@ -37,12 +40,14 @@ public class SignupService {
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokens;
   private final Clock clock;
+  private final TransactionTemplate transaction;
   private final String baseUrl;
   private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
   public SignupService(UserJpaRepository users, TenantJpaRepository tenants, AuthTokenService tokens,
       EmailSender email, AuditService audit, AuditChainHeads chainHeads, TenantContext tenantContext,
       JwtService jwtService, RefreshTokenService refreshTokens, Clock clock,
+      PlatformTransactionManager transactionManager,
       @Value("${assurance.app.base-url}") String baseUrl) {
     this.users = users;
     this.tenants = tenants;
@@ -54,6 +59,7 @@ public class SignupService {
     this.jwtService = jwtService;
     this.refreshTokens = refreshTokens;
     this.clock = clock;
+    this.transaction = new TransactionTemplate(transactionManager);
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
   }
 
@@ -62,8 +68,17 @@ public class SignupService {
    * one gets a fresh link and is otherwise left as it was; a verified one is left untouched and its
    * owner gets a notice. The password is only ever chosen on the emailed link.
    */
-  @Transactional
   public void signup(SignupRequest request) {
+    try {
+      transaction.executeWithoutResult(status -> signupOnce(request));
+    } catch (DataIntegrityViolationException raced) {
+      // A parallel signup created this address first and the unique index rejected ours. Run again
+      // so we land in the "existing account" branch and answer exactly as a normal signup would.
+      transaction.executeWithoutResult(status -> signupOnce(request));
+    }
+  }
+
+  private void signupOnce(SignupRequest request) {
     String normalized = request.email().trim().toLowerCase(Locale.ROOT);
     String orgName = request.organisationName().trim();
     UserEntity existing = users.findByEmailIgnoreCase(normalized).orElse(null);
@@ -84,7 +99,7 @@ public class SignupService {
     UUID tenantId = UUID.randomUUID();
     tenants.save(new TenantEntity(tenantId, orgName, "trial", "EU", now));
     chainHeads.attachToNewTenant(tenantId);
-    UserEntity user = users.save(new UserEntity(UUID.randomUUID(), tenantId, normalized, UserRole.ADMIN, now));
+    UserEntity user = users.saveAndFlush(new UserEntity(UUID.randomUUID(), tenantId, normalized, UserRole.ADMIN, now));
     tenantContext.setOverrides(tenantId, user.id());
     try {
       audit.append(null, "tenant.self_signup", "tenant", tenantId.toString(),
