@@ -41,7 +41,7 @@ export function LandingHero() {
           <p className="mt-5 max-w-xl text-lg text-muted-foreground">
             Register every AI system, classify EU AI Act risk against a pinned
             corpus, and only ship when cited evidence, evals, data contracts,
-            and a pinned Evgraph 0.1.2 scan pass. The evidence pack and that
+            and a pinned Evgraph 0.1.3 scan pass. The evidence pack and that
             scan share the same gap. Article 50 is already live. Not a notified
             body.
           </p>
