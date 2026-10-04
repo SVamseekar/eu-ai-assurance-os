@@ -29,6 +29,7 @@ public class OAuthService {
   private final AuditChainHeads auditChainHeads;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
+  private final AuthTokenService authTokens;
 
   public OAuthService(
       OAuthProperties properties,
@@ -38,7 +39,8 @@ public class OAuthService {
       TenantJpaRepository tenants,
       AuditChainHeads auditChainHeads,
       JwtService jwtService,
-      RefreshTokenService refreshTokenService) {
+      RefreshTokenService refreshTokenService,
+      AuthTokenService authTokens) {
     this.properties = properties;
     this.stateService = stateService;
     this.tokenClient = tokenClient;
@@ -47,6 +49,7 @@ public class OAuthService {
     this.auditChainHeads = auditChainHeads;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
+    this.authTokens = authTokens;
   }
 
   public String beginAuthorization(String provider, String browserNonce) {
@@ -98,6 +101,15 @@ public class OAuthService {
 
     UserEntity byEmail = users.findByEmailIgnoreCase(profile.email()).orElse(null);
     if (byEmail != null) {
+      if (byEmail.emailVerifiedAt() == null) {
+        // Nobody has proved this address yet, so whoever registered it may have set the password
+        // (pre-hijacking). The provider just proved ownership: drop every credential set before that.
+        byEmail.setPasswordHash(null);
+        byEmail.markEmailVerified(Instant.now());
+        refreshTokenService.revokeAllForUser(byEmail.id());
+        authTokens.invalidateOutstanding(byEmail.id(), AuthTokenPurpose.VERIFY_EMAIL);
+        authTokens.invalidateOutstanding(byEmail.id(), AuthTokenPurpose.RESET_PASSWORD);
+      }
       byEmail.linkOAuth(profile.provider(), profile.subject());
       return users.save(byEmail);
     }

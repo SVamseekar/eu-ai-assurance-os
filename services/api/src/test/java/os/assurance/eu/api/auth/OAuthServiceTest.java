@@ -51,6 +51,12 @@ class OAuthServiceTest {
   @Autowired
   private JwtService jwtService;
 
+  @Autowired
+  private RefreshTokenService refreshTokenService;
+
+  @Autowired
+  private AuthTokenService authTokens;
+
   @MockitoBean
   private OAuthTokenClient tokenClient;
 
@@ -194,5 +200,53 @@ class OAuthServiceTest {
     String state = stateService.issue("google", NONCE);
     oauthService.completeAuthorization("google", "case-code", state, NONCE);
     assertThat(users.findById(userId).orElseThrow().oauthSubject()).isEqualTo("case-subject");
+  }
+
+  @Test
+  void linkingAnUnverifiedPasswordAccountWipesThePasswordAndItsSessions() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    tenants.save(new TenantEntity(tenantId, "Pre-hijack Co", "trial", "EU", Instant.now()));
+    users.save(new UserEntity(userId, tenantId, "prehijack@victim.example", UserRole.ADMIN,
+        encoder.encode("attacker-chosen-password"), Instant.now()));
+    String attackerRefresh = refreshTokenService.issue(userId, tenantId).rawToken();
+    String pendingLink = authTokens.issue(userId, AuthTokenPurpose.VERIFY_EMAIL, java.time.Duration.ofHours(1));
+
+    when(tokenClient.exchangeCode(eq("google"), eq("victim-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of("sub", "victim-subject", "email", "prehijack@victim.example", "email_verified", true));
+
+    String state = stateService.issue("google", NONCE);
+    oauthService.completeAuthorization("google", "victim-code", state, NONCE);
+
+    UserEntity linked = users.findById(userId).orElseThrow();
+    assertThat(linked.passwordHash()).isNull();
+    assertThat(linked.emailVerifiedAt()).isNotNull();
+    assertThat(refreshTokenService.rotate(attackerRefresh))
+        .isInstanceOf(RefreshTokenService.RefreshResult.Rejected.class);
+    assertThatThrownBy(() -> authTokens.consume(pendingLink, AuthTokenPurpose.VERIFY_EMAIL))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
+
+  @Test
+  void linkingAVerifiedAccountKeepsItsPassword() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    tenants.save(new TenantEntity(tenantId, "Verified Co", "trial", "EU", Instant.now()));
+    UserEntity verified = new UserEntity(userId, tenantId, "verified@owner.example", UserRole.ADMIN,
+        encoder.encode("owner-password"), Instant.now());
+    verified.markEmailVerified(Instant.now());
+    users.save(verified);
+
+    when(tokenClient.exchangeCode(eq("google"), eq("owner-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of("sub", "owner-subject", "email", "verified@owner.example", "email_verified", true));
+
+    String state = stateService.issue("google", NONCE);
+    oauthService.completeAuthorization("google", "owner-code", state, NONCE);
+
+    assertThat(users.findById(userId).orElseThrow().passwordHash()).isNotNull();
   }
 }

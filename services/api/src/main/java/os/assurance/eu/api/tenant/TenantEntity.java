@@ -83,6 +83,10 @@ public class TenantEntity {
     this.purgeAfter = purgeAt;
   }
 
+  public void rename(String name) {
+    this.name = name;
+  }
+
   public void setPlan(String plan) {
     this.plan = plan;
   }

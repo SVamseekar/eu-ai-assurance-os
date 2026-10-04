@@ -29,6 +29,28 @@ POST /auth/logout
 GET  /.well-known/jwks.json
 ```
 
+### Self-serve signup and password reset
+
+```http
+POST /auth/signup                 # {email, organisationName}  -> 202 {status: verification_sent}
+POST /auth/verify-email           # {token, password}          -> 200 JWT pair; 410 if link unusable
+POST /auth/verify-email/resend    # {email}                    -> 202
+POST /auth/password/forgot        # {email}                    -> 202
+POST /auth/password/reset         # {token, newPassword}       -> 204
+```
+
+- Signup never takes a password. The user chooses it (12–128 characters) on the emailed link, so nobody
+  can register someone else's address with a password they know.
+- Signup, resend and forgot answer identically whether or not the address exists or is verified. A
+  verified address gets an "account exists" email with a reset link; nothing is created or changed.
+- Emailed links are single-use and stored hashed. Verify links expire after 24 hours, reset links after 1 hour.
+- Per address and purpose: one email per 60 seconds and 5 per hour (`assurance.auth.email.cooldown-seconds`,
+  `assurance.auth.email.max-per-hour`). Over the limit the email is skipped silently and the response is unchanged.
+- A successful reset invalidates the user's other reset links, revokes all refresh tokens and emails a
+  "password changed" notice.
+- Signing in with Google or Microsoft onto a still-unverified account removes any password set before
+  verification, revokes its sessions and marks the address verified.
+
 ### OAuth (Google + Microsoft) — Part 4
 
 Implemented with unit/integration tests. Production smoke pending

@@ -18,15 +18,15 @@ public class SignupController {
   }
 
   @PostMapping("/auth/signup")
-  @ResponseStatus(HttpStatus.CREATED)
+  @ResponseStatus(HttpStatus.ACCEPTED)
   public Map<String, String> signup(@Valid @RequestBody SignupRequest request) {
     signup.signup(request);
     return Map.of("status", "verification_sent");
   }
 
   @PostMapping("/auth/verify-email")
-  public TokenResponse verify(@Valid @RequestBody TokenBody body) {
-    return signup.verify(body.token());
+  public TokenResponse verify(@Valid @RequestBody VerifyBody body) {
+    return signup.verify(body.token(), body.password());
   }
 
   @PostMapping("/auth/verify-email/resend")
@@ -36,7 +36,7 @@ public class SignupController {
     return Map.of("status", "accepted");
   }
 
-  public record TokenBody(@NotBlank String token) {}
+  public record VerifyBody(@NotBlank String token, String password) {}
 
   public record EmailBody(String email) {}
 }

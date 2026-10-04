@@ -57,23 +57,42 @@ public class SignupService {
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
   }
 
+  /**
+   * Always answers the same way. A new address gets a passwordless account and a link; an unverified
+   * one gets a fresh link (and the latest organisation name); a verified one is left untouched and its
+   * owner gets a notice. The password is only ever chosen on the emailed link.
+   */
   @Transactional
   public void signup(SignupRequest request) {
     String normalized = request.email().trim().toLowerCase(Locale.ROOT);
-    if (users.existsByEmailIgnoreCase(normalized)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT,
-          "An account with this email already exists — sign in or reset your password.");
+    String orgName = request.organisationName().trim();
+    UserEntity existing = users.findByEmailIgnoreCase(normalized).orElse(null);
+    if (existing == null) {
+      createAccount(normalized, orgName);
+    } else if (existing.emailVerifiedAt() == null) {
+      if (tokens.canIssue(existing.id(), AuthTokenPurpose.VERIFY_EMAIL)) {
+        tenants.findById(existing.tenantId()).ifPresent(t -> {
+          t.rename(orgName);
+          tenants.save(t);
+        });
+        sendVerification(existing);
+      }
+    } else if (tokens.canIssue(existing.id(), AuthTokenPurpose.RESET_PASSWORD)) {
+      String raw = tokens.issue(existing.id(), AuthTokenPurpose.RESET_PASSWORD, PasswordResetService.RESET_TTL);
+      email.send(EmailTemplates.accountExists(baseUrl + "/reset-password?token=" + raw).withTo(existing.email()));
     }
+  }
+
+  private void createAccount(String normalized, String orgName) {
     Instant now = clock.instant();
     UUID tenantId = UUID.randomUUID();
-    tenants.save(new TenantEntity(tenantId, request.organisationName().trim(), "trial", "EU", now));
+    tenants.save(new TenantEntity(tenantId, orgName, "trial", "EU", now));
     chainHeads.attachToNewTenant(tenantId);
-    UserEntity user = users.save(new UserEntity(
-        UUID.randomUUID(), tenantId, normalized, UserRole.ADMIN, encoder.encode(request.password()), now));
+    UserEntity user = users.save(new UserEntity(UUID.randomUUID(), tenantId, normalized, UserRole.ADMIN, now));
     tenantContext.setOverrides(tenantId, user.id());
     try {
       audit.append(null, "tenant.self_signup", "tenant", tenantId.toString(),
-          Map.of("organisationName", request.organisationName().trim(), "email", normalized));
+          Map.of("organisationName", orgName, "email", normalized));
     } finally {
       tenantContext.clearOverrides();
     }
@@ -87,16 +106,23 @@ public class SignupService {
     }
     users.findByEmailIgnoreCase(rawEmail.trim())
         .filter(u -> u.emailVerifiedAt() == null)
+        .filter(u -> tokens.canIssue(u.id(), AuthTokenPurpose.VERIFY_EMAIL))
         .ifPresent(this::sendVerification);
   }
 
   @Transactional
-  public TokenResponse verify(String rawToken) {
+  public TokenResponse verify(String rawToken, String password) {
+    if (password == null || password.length() < 12 || password.length() > 128) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords must be 12–128 characters");
+    }
     UUID userId = tokens.consume(rawToken, AuthTokenPurpose.VERIFY_EMAIL);
-    UserEntity user = users.findById(userId).orElseThrow(
-        () -> new ResponseStatusException(HttpStatus.GONE, "This link is invalid, already used, or expired"));
+    UserEntity user = users.findById(userId)
+        .filter(u -> u.emailVerifiedAt() == null)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.GONE, "This link is invalid, already used, or expired"));
+    user.setPasswordHash(encoder.encode(password));
     user.markEmailVerified(clock.instant());
     users.save(user);
+    tokens.invalidateOutstanding(user.id(), AuthTokenPurpose.VERIFY_EMAIL);
     String access = jwtService.issueAccessToken(user.id(), user.tenantId(), user.role());
     var refresh = refreshTokens.issue(user.id(), user.tenantId());
     return new TokenResponse(access, refresh.rawToken(), ACCESS_TOKEN_TTL_SECONDS);

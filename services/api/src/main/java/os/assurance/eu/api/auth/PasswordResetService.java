@@ -48,7 +48,9 @@ public class PasswordResetService {
     if (rawEmail == null || rawEmail.isBlank()) {
       return;
     }
-    users.findByEmailIgnoreCase(rawEmail.trim()).ifPresent(user -> {
+    users.findByEmailIgnoreCase(rawEmail.trim())
+        .filter(u -> tokens.canIssue(u.id(), AuthTokenPurpose.RESET_PASSWORD))
+        .ifPresent(user -> {
       String raw = tokens.issue(user.id(), AuthTokenPurpose.RESET_PASSWORD, RESET_TTL);
       email.send(EmailTemplates.resetPassword(baseUrl + "/reset-password?token=" + raw).withTo(user.email()));
     });
@@ -67,6 +69,8 @@ public class PasswordResetService {
       user.markEmailVerified(clock.instant());
     }
     users.save(user);
+    tokens.invalidateOutstanding(user.id(), AuthTokenPurpose.RESET_PASSWORD);
+    tokens.invalidateOutstanding(user.id(), AuthTokenPurpose.VERIFY_EMAIL);
     refreshTokens.revokeAllForUser(user.id());
     tenantContext.setOverrides(user.tenantId(), user.id());
     try {
@@ -74,5 +78,6 @@ public class PasswordResetService {
     } finally {
       tenantContext.clearOverrides();
     }
+    email.send(EmailTemplates.passwordChanged().withTo(user.email()));
   }
 }

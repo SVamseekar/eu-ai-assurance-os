@@ -23,7 +23,9 @@ import os.assurance.eu.api.email.EmailSender;
 @SpringBootTest(properties = {
     "assurance.eval.worker.enabled=false",
     "assurance.eval.callback.secret=test-eval-callback-secret",
-    "assurance.app.base-url=https://app.test"
+    "assurance.app.base-url=https://app.test",
+    "assurance.security.auth-rate.per-ip-per-15m=1000",
+    "assurance.auth.email.cooldown-seconds=0"
 })
 @AutoConfigureMockMvc
 class PasswordResetApiTest {
@@ -49,8 +51,8 @@ class PasswordResetApiTest {
 
   private String signedUpVerifiedEmail() throws Exception {
     String email = "reset-" + UUID.randomUUID() + "@acme.example";
-    call("/auth/signup", "{\"email\":\"" + email + "\",\"password\":\"" + OLD + "\",\"organisationName\":\"Acme\"}", 201);
-    call("/auth/verify-email", "{\"token\":\"" + lastToken(email) + "\"}", 200);
+    call("/auth/signup", "{\"email\":\"" + email + "\",\"organisationName\":\"Acme\"}", 202);
+    call("/auth/verify-email", "{\"token\":\"" + lastToken(email) + "\",\"password\":\"" + OLD + "\"}", 200);
     return email;
   }
 
@@ -91,9 +93,38 @@ class PasswordResetApiTest {
   @Test
   void unverifiedUserCanVerifyThroughReset() throws Exception {
     String email = "unverified-" + UUID.randomUUID() + "@acme.example";
-    call("/auth/signup", "{\"email\":\"" + email + "\",\"password\":\"" + OLD + "\",\"organisationName\":\"Acme\"}", 201);
+    call("/auth/signup", "{\"email\":\"" + email + "\",\"organisationName\":\"Acme\"}", 202);
+    String verifyLink = lastToken(email);
     call("/auth/password/forgot", "{\"email\":\"" + email + "\"}", 202);
     call("/auth/password/reset", "{\"token\":\"" + lastToken(email) + "\",\"newPassword\":\"" + NEW + "\"}", 204);
     call("/auth/login", "{\"email\":\"" + email + "\",\"password\":\"" + NEW + "\"}", 200);
+    call("/auth/verify-email", "{\"token\":\"" + verifyLink + "\",\"password\":\"" + OLD + "\"}", 410);
+  }
+
+  @Test
+  void successfulResetKillsEveryOtherOutstandingResetLink() throws Exception {
+    String email = signedUpVerifiedEmail();
+    call("/auth/password/forgot", "{\"email\":\"" + email + "\"}", 202);
+    String first = lastToken(email);
+    call("/auth/password/forgot", "{\"email\":\"" + email + "\"}", 202);
+    String second = lastToken(email);
+    call("/auth/password/forgot", "{\"email\":\"" + email + "\"}", 202);
+    String third = lastToken(email);
+
+    call("/auth/password/reset", "{\"token\":\"" + second + "\",\"newPassword\":\"" + NEW + "\"}", 204);
+
+    call("/auth/password/reset", "{\"token\":\"" + first + "\",\"newPassword\":\"" + NEW + "-a\"}", 410);
+    call("/auth/password/reset", "{\"token\":\"" + third + "\",\"newPassword\":\"" + NEW + "-b\"}", 410);
+    call("/auth/login", "{\"email\":\"" + email + "\",\"password\":\"" + NEW + "\"}", 200);
+  }
+
+  @Test
+  void successfulResetEmailsAPasswordChangedNotice() throws Exception {
+    String email = signedUpVerifiedEmail();
+    call("/auth/password/forgot", "{\"email\":\"" + email + "\"}", 202);
+    String token = lastToken(email);
+    clearInvocations(emailSender);
+    call("/auth/password/reset", "{\"token\":\"" + token + "\",\"newPassword\":\"" + NEW + "\"}", 204);
+    verify(emailSender).send(argThat(m -> email.equals(m.to()) && m.subject().contains("password was changed")));
   }
 }
