@@ -34,6 +34,9 @@ public class TenantEntity {
   @Column(name = "purge_after")
   private Instant purgeAfter;
 
+  @Column(name = "trial_ends_at")
+  private Instant trialEndsAt;
+
   protected TenantEntity() {
   }
 
@@ -71,6 +74,14 @@ public class TenantEntity {
 
   public Instant purgeAfter() {
     return purgeAfter;
+  }
+
+  public Instant trialEndsAt() {
+    return trialEndsAt;
+  }
+
+  public void setTrialEndsAt(Instant trialEndsAt) {
+    this.trialEndsAt = trialEndsAt;
   }
 
   public boolean active() {

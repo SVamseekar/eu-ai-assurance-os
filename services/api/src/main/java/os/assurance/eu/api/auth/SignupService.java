@@ -100,7 +100,9 @@ public class SignupService {
   private void createAccount(String normalized, String orgName) {
     Instant now = clock.instant();
     UUID tenantId = UUID.randomUUID();
-    tenants.save(new TenantEntity(tenantId, orgName, "trial", "EU", now));
+    TenantEntity tenant = new TenantEntity(tenantId, orgName, "trial", "EU", now);
+    tenant.setTrialEndsAt(now.plus(java.time.Duration.ofDays(14)));
+    tenants.save(tenant);
     chainHeads.attachToNewTenant(tenantId);
     UserEntity user = users.saveAndFlush(new UserEntity(UUID.randomUUID(), tenantId, normalized, UserRole.ADMIN, now));
     tenantContext.setOverrides(tenantId, user.id());
