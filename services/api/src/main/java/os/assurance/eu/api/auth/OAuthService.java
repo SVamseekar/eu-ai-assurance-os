@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import os.assurance.eu.api.audit.AuditChainHeads;
 import os.assurance.eu.api.tenant.TenantEntity;
 import os.assurance.eu.api.tenant.TenantJpaRepository;
+import os.assurance.eu.api.tenant.TenantStatusCache;
 import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 import os.assurance.eu.api.tenant.UserRole;
@@ -29,6 +30,8 @@ public class OAuthService {
   private final AuditChainHeads auditChainHeads;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
+  private final AuthTokenService authTokens;
+  private final TenantStatusCache tenantStatus;
 
   public OAuthService(
       OAuthProperties properties,
@@ -38,7 +41,9 @@ public class OAuthService {
       TenantJpaRepository tenants,
       AuditChainHeads auditChainHeads,
       JwtService jwtService,
-      RefreshTokenService refreshTokenService) {
+      RefreshTokenService refreshTokenService,
+      AuthTokenService authTokens,
+      TenantStatusCache tenantStatus) {
     this.properties = properties;
     this.stateService = stateService;
     this.tokenClient = tokenClient;
@@ -47,6 +52,8 @@ public class OAuthService {
     this.auditChainHeads = auditChainHeads;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
+    this.authTokens = authTokens;
+    this.tenantStatus = tenantStatus;
   }
 
   public String beginAuthorization(String provider, String browserNonce) {
@@ -78,6 +85,9 @@ public class OAuthService {
     OAuthProviderProfile profile = OAuthProviderProfile.fromUserInfo(normalized, userInfo);
 
     UserEntity user = resolveUser(profile);
+    if (!tenantStatus.isActive(user.tenantId())) {
+      throw new OAuthLoginException("workspace_deleted", "This workspace has been deleted.");
+    }
     return issueTokenPair(user);
   }
 
@@ -98,6 +108,15 @@ public class OAuthService {
 
     UserEntity byEmail = users.findByEmailIgnoreCase(profile.email()).orElse(null);
     if (byEmail != null) {
+      if (byEmail.emailVerifiedAt() == null) {
+        // Nobody has proved this address yet, so whoever registered it may have set the password
+        // (pre-hijacking). The provider just proved ownership: drop every credential set before that.
+        byEmail.setPasswordHash(null);
+        byEmail.markEmailVerified(Instant.now());
+        refreshTokenService.revokeAllForUser(byEmail.id());
+        authTokens.invalidateOutstanding(byEmail.id(), AuthTokenPurpose.VERIFY_EMAIL);
+        authTokens.invalidateOutstanding(byEmail.id(), AuthTokenPurpose.RESET_PASSWORD);
+      }
       byEmail.linkOAuth(profile.provider(), profile.subject());
       return users.save(byEmail);
     }
@@ -114,11 +133,8 @@ public class OAuthService {
   private UserEntity provisionNewTenantAdmin(OAuthProviderProfile profile) {
     Instant now = Instant.now();
     UUID tenantId = UUID.randomUUID();
-    String domain = profile.email().contains("@")
-        ? profile.email().substring(profile.email().indexOf('@') + 1)
-        : profile.email();
-    String tenantName = domain + " (OAuth)";
-    tenants.save(new TenantEntity(tenantId, tenantName, "starter", "EU", now));
+    String tenantName = profile.displayName() + "'s workspace";
+    tenants.save(new TenantEntity(tenantId, tenantName, "trial", "EU", now));
     auditChainHeads.attachToNewTenant(tenantId);
 
     UserEntity user = new UserEntity(
@@ -130,6 +146,7 @@ public class OAuthService {
         profile.provider(),
         profile.subject(),
         now);
+    user.markEmailVerified(now);
     return users.save(user);
   }
 

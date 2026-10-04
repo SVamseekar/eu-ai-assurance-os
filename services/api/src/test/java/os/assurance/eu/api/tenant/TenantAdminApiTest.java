@@ -10,6 +10,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import os.assurance.eu.api.auth.JwtService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import os.assurance.eu.api.email.EmailMessage;
+import os.assurance.eu.api.email.EmailSender;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,6 +34,56 @@ class TenantAdminApiTest {
   @Autowired MockMvc mockMvc;
   @Autowired ObjectMapper objectMapper;
   @Autowired JwtService jwtService;
+  @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+  @MockitoSpyBean EmailSender emailSender;
+
+  private String inviteTokenEmailedTo(String to) {
+    ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+    verify(emailSender, org.mockito.Mockito.atLeastOnce()).send(captor.capture());
+    String body = captor.getAllValues().stream().filter(m -> to.equalsIgnoreCase(m.to()))
+        .reduce((a, b) -> b).orElseThrow().textBody();
+    return body.substring(body.indexOf("token=") + 6).split("\\s")[0];
+  }
+
+  private String signupAdmin(String email) throws Exception {
+    mockMvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"email\":\"" + email + "\",\"organisationName\":\"Invite Org\"}"))
+        .andExpect(status().isAccepted());
+    String token = inviteTokenEmailedTo(email);
+    MvcResult verified = mockMvc.perform(post("/auth/verify-email").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"token\":\"" + token + "\",\"password\":\"a-long-password-1\"}"))
+        .andExpect(status().isOk()).andReturn();
+    return objectMapper.readTree(verified.getResponse().getContentAsString()).get("accessToken").asText();
+  }
+
+  @Test
+  void inviteTokenIsEmailedToInviteeAndNeverReturnedToInviter() throws Exception {
+    String unique = Long.toHexString(System.nanoTime());
+    String admin = signupAdmin("owner-" + unique + "@invite.example");
+    String victim = "ceo-" + unique + "@victim.example";
+    mockMvc.perform(post("/api/v1/admin/users/invites")
+            .header("Authorization", "Bearer " + admin).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"email\":\"" + victim + "\",\"role\":\"AUDITOR\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.inviteToken").doesNotExist())
+        .andExpect(jsonPath("$.acceptPath").value("/invite"));
+    String token = inviteTokenEmailedTo(victim);
+    mockMvc.perform(get("/auth/invites/{token}", token)).andExpect(status().isOk());
+  }
+
+  @Test
+  void invitingARegisteredAddressLooksIdenticalAndSendsNothing() throws Exception {
+    String unique = Long.toHexString(System.nanoTime());
+    String admin = signupAdmin("owner2-" + unique + "@invite.example");
+    String existing = "taken-" + unique + "@invite.example";
+    signupAdmin(existing);
+    org.mockito.Mockito.clearInvocations(emailSender);
+    mockMvc.perform(post("/api/v1/admin/users/invites")
+            .header("Authorization", "Bearer " + admin).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"email\":\"" + existing + "\",\"role\":\"AUDITOR\"}"))
+        .andExpect(status().isCreated());
+    verify(emailSender, never()).send(any());
+  }
 
   @Test
   void operatorAdminCanProvisionTenantInviteAndAccept() throws Exception {
@@ -54,6 +111,13 @@ class TenantAdminApiTest {
     String tenantId = body.get("tenant").get("id").asText();
     String adminId = body.get("admin").get("id").asText();
 
+    // The new tenant's own audit trail must not point at users of another tenant, or purging the
+    // operator tenant would be blocked by a foreign key.
+    assertThat(jdbc.queryForObject(
+        "select count(*) from audit_events a join users u on u.id = a.actor_id "
+            + "where a.tenant_id = ? and u.tenant_id <> a.tenant_id",
+        Integer.class, java.util.UUID.fromString(tenantId))).isZero();
+
     String engineerEmail = "eng-" + unique + "@customer.example";
     MvcResult invite = mockMvc.perform(post("/api/v1/admin/users/invites")
             .with(bearer(adminId, tenantId, UserRole.ADMIN))
@@ -66,11 +130,9 @@ class TenantAdminApiTest {
                 """.formatted(engineerEmail)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.email").value(engineerEmail))
-        .andExpect(jsonPath("$.inviteToken").isNotEmpty())
         .andReturn();
 
-    String token = objectMapper.readTree(invite.getResponse().getContentAsString())
-        .get("inviteToken").asText();
+    String token = inviteTokenEmailedTo(engineerEmail);
 
     mockMvc.perform(get("/auth/invites/{token}", token))
         .andExpect(status().isOk())

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ApiKeysCard } from "@/components/settings/api-keys-card";
+import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 import { api } from "@/lib/api";
 
 const ROLES = [
@@ -21,12 +23,12 @@ export default function SettingsPage() {
   const ops = useQuery({ queryKey: ["ops", "readiness"], queryFn: api.ops.readiness });
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<(typeof ROLES)[number]>("COMPLIANCE_OFFICER");
-  const [lastToken, setLastToken] = useState<string | null>(null);
+  const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
 
   const invite = useMutation({
     mutationFn: () => api.admin.inviteUser({ email, role }),
     onSuccess: (created) => {
-      setLastToken(created.inviteToken ?? null);
+      setInvitedEmail(created.email);
       setEmail("");
       void qc.invalidateQueries({ queryKey: ["admin"] });
     },
@@ -80,13 +82,12 @@ export default function SettingsPage() {
           </form>
           {invite.isError && (
             <p className="text-xs text-destructive">
-              Invite failed. You need the ADMIN role, and the email must be unused.
+              Invite failed. You need the ADMIN role.
             </p>
           )}
-          {lastToken && (
-            <p className="break-all rounded-lg bg-muted px-3 py-2 text-xs">
-              Send this link once:{" "}
-              <span className="font-mono">/invite?token={lastToken}</span>
+          {invitedEmail && (
+            <p className="rounded-lg bg-muted px-3 py-2 text-xs">
+              If {invitedEmail} can be invited, an invitation link is on its way to that inbox.
             </p>
           )}
           <ul className="text-sm">
@@ -103,6 +104,10 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ApiKeysCard />
+
+      <DangerZoneCard />
 
       <Card>
         <CardHeader>

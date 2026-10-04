@@ -6,6 +6,7 @@ import {
   refreshAccessToken,
   setSessionCookies,
 } from "@/lib/session";
+import { clientIpHeaders } from "@/lib/client-ip";
 import { fetchUpstream, serviceUnavailable } from "@/lib/upstream";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
@@ -17,8 +18,10 @@ async function forward(
 ): Promise<Response | null> {
   const targetUrl = `${API_BASE}/api/v1/${path.join("/")}${request.nextUrl.search}`;
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
+  // The visitor's IP lets the API apply per-client limits to the visitor, not to this server.
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
+    ...clientIpHeaders(request),
   };
   const contentType = request.headers.get("Content-Type");
   if (contentType) {

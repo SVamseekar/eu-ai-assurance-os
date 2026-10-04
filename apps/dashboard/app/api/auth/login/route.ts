@@ -28,6 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many sign-in attempts. Try again in 15 minutes." }, { status: 429 });
   }
   if (upstream.status >= 500) return serviceUnavailable();
+  if (upstream.status === 403) {
+    const body = await upstream.json().catch(() => null);
+    const error = body?.error === "workspace_deleted" ? "workspace_deleted" : "email_not_verified";
+    return NextResponse.json({ error }, { status: 403 });
+  }
   if (!upstream.ok) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }

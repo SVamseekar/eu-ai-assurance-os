@@ -15,6 +15,10 @@ public class ApiKeyEntity {
     @Column(name = "tenant_id", nullable = false) private UUID tenantId;
     @Column(name = "user_id", nullable = false) private UUID userId;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
+    @Column(name = "name") private String name;
+    @Column(name = "prefix") private String prefix;
+    @Column(name = "last_used_at") private Instant lastUsedAt;
+    @Column(name = "revoked_at") private Instant revokedAt;
 
     protected ApiKeyEntity() {}
 
@@ -26,8 +30,20 @@ public class ApiKeyEntity {
         this.createdAt = createdAt;
     }
 
+    public ApiKeyEntity(UUID id, String keyHash, UUID tenantId, UUID userId, Instant createdAt, String name, String prefix) {
+        this(id, keyHash, tenantId, userId, createdAt);
+        this.name = name;
+        this.prefix = prefix;
+    }
+
     public UUID id() { return id; }
     public String keyHash() { return keyHash; }
     public UUID tenantId() { return tenantId; }
     public UUID userId() { return userId; }
+    public Instant createdAt() { return createdAt; }
+    public String name() { return name; }
+    public String prefix() { return prefix; }
+    public Instant lastUsedAt() { return lastUsedAt; }
+    public boolean revoked() { return revokedAt != null; }
+    public void revoke(Instant at) { this.revokedAt = at; }
 }

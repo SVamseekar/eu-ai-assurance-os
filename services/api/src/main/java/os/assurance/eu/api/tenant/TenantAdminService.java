@@ -4,6 +4,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Value;
+import os.assurance.eu.api.email.AfterCommit;
+import os.assurance.eu.api.email.EmailMessage;
+import os.assurance.eu.api.email.EmailSender;
+import os.assurance.eu.api.email.EmailTemplates;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
@@ -37,6 +42,8 @@ public class TenantAdminService {
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
   private final Clock clock;
+  private final EmailSender emailSender;
+  private final String baseUrl;
   private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder(12);
 
   public TenantAdminService(
@@ -50,7 +57,9 @@ public class TenantAdminService {
       AuditChainHeads auditChainHeads,
       JwtService jwtService,
       RefreshTokenService refreshTokenService,
-      Clock clock) {
+      Clock clock,
+      EmailSender emailSender,
+      @Value("${assurance.app.base-url}") String baseUrl) {
     this.tenants = tenants;
     this.users = users;
     this.invites = invites;
@@ -62,6 +71,8 @@ public class TenantAdminService {
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
     this.clock = clock;
+    this.emailSender = emailSender;
+    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
   }
 
   @Transactional
@@ -85,7 +96,12 @@ public class TenantAdminService {
         UserRole.ADMIN,
         passwords.encode(request.adminPassword()),
         now));
-    tenantContext.withTenant(tenantId, () -> {
+    admin.markEmailVerified(now);
+    users.save(admin);
+    // Audit as the new admin: an actor from the operator tenant would tie this tenant's rows to
+    // another tenant's user and block either tenant's purge.
+    tenantContext.setOverrides(tenantId, adminId);
+    try {
       auditService.append(
           null,
           "tenant.provisioned",
@@ -96,8 +112,9 @@ public class TenantAdminService {
               "adminEmail", email,
               "plan", plan,
               "dataRegion", region));
-      return null;
-    });
+    } finally {
+      tenantContext.clearOverrides();
+    }
     return new CreateTenantResponse(TenantView.from(tenant), UserView.from(admin));
   }
 
@@ -113,10 +130,13 @@ public class TenantAdminService {
   public InviteCreatedResponse inviteUser(InviteUserRequest request) {
     authorization.requireAnyRole(UserRole.ADMIN);
     String email = normalizeEmail(request.email());
-    if (users.existsByEmailIgnoreCase(email)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
-    }
     Instant now = clock.instant();
+    if (users.existsByEmailIgnoreCase(email)) {
+      // Same answer as a fresh invite so an admin cannot probe which addresses have accounts.
+      return new InviteCreatedResponse(
+          UUID.randomUUID(), tenantContext.tenantId(), email, request.role(),
+          now.plus(platformProperties.getInviteTtlHours(), ChronoUnit.HOURS), null, "/invite");
+    }
     String rawToken = newToken();
     UserInviteEntity invite = invites.save(new UserInviteEntity(
         UUID.randomUUID(),
@@ -133,14 +153,18 @@ public class TenantAdminService {
         "user_invite",
         invite.id().toString(),
         java.util.Map.of("email", email, "role", request.role().name()));
+    // The token reaches only the invitee's inbox. Accepting it is what proves the address,
+    // so the inviter must never see it.
+    EmailMessage message = EmailTemplates.workspaceInvite(baseUrl + "/invite?token=" + rawToken).withTo(email);
+    AfterCommit.run(() -> emailSender.send(message));
     return new InviteCreatedResponse(
         invite.id(),
         invite.tenantId(),
         invite.email(),
         invite.role(),
         invite.expiresAt(),
-        rawToken,
-        "/invite?token=" + rawToken);
+        null,
+        "/invite");
   }
 
   @Transactional(readOnly = true)
@@ -185,6 +209,10 @@ public class TenantAdminService {
     if (invite.expiresAt().isBefore(now)) {
       throw new ResponseStatusException(HttpStatus.GONE, "Invite expired");
     }
+    boolean workspaceActive = tenants.findById(invite.tenantId()).map(TenantEntity::active).orElse(false);
+    if (!workspaceActive) {
+      throw new ResponseStatusException(HttpStatus.GONE, "This workspace is no longer available");
+    }
     if (users.existsByEmailIgnoreCase(invite.email())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
     }
@@ -195,6 +223,8 @@ public class TenantAdminService {
         invite.role(),
         passwords.encode(request.password()),
         now));
+    user.markEmailVerified(now);
+    users.save(user);
     invite.markAccepted(now);
     invites.save(invite);
     tenantContext.setOverrides(invite.tenantId(), user.id());

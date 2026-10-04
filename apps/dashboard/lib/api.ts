@@ -1,9 +1,12 @@
 import type {
   AiSystem,
+  ApiKeyCreated,
+  ApiKeyView,
   ApprovalWorkflow,
   AuditEvent,
   CertificationReadiness,
   Control,
+  Me,
   ControlStatus,
   DataContract,
   DeterminationQuestionnaire,
@@ -334,6 +337,28 @@ export const api = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+  },
+  me: () => request<Me>("/me"),
+  account: {
+    /** Downloads every workspace table as a zip. Admin only. */
+    exportAll: async () => {
+      const res = await fetch(`${BASE}/account/export`);
+      if (res.status === 401) redirectToLoginOnUnauthorized();
+      if (!res.ok) throw new ApiError(res.status, "Export failed");
+      triggerBrowserDownload(await res.blob(), "assurance-os-export.zip");
+    },
+    /** Schedules deletion in 30 days; the typed name must match exactly. */
+    deleteWorkspace: (confirmOrganisationName: string) =>
+      request<{ status: string }>("/account", {
+        method: "DELETE",
+        body: JSON.stringify({ confirmOrganisationName }),
+      }),
+  },
+  apiKeys: {
+    list: () => request<ApiKeyView[]>("/api-keys"),
+    create: (name: string) =>
+      request<ApiKeyCreated>("/api-keys", { method: "POST", body: JSON.stringify({ name }) }),
+    revoke: (id: string) => request<null>(`/api-keys/${id}`, { method: "DELETE" }),
   },
   ops: {
     readiness: () => request<OpsReadiness>("/ops/readiness"),

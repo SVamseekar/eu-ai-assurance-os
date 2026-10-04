@@ -7,7 +7,17 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class RateLimitAdvice {
+public class AuthAdvice {
+  @ExceptionHandler(EmailNotVerifiedException.class)
+  public ResponseEntity<Map<String, String>> emailNotVerified(EmailNotVerifiedException ex) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "email_not_verified"));
+  }
+
+  @ExceptionHandler(WorkspaceDeletedException.class)
+  public ResponseEntity<Map<String, String>> workspaceDeleted(WorkspaceDeletedException ex) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "workspace_deleted"));
+  }
+
   @ExceptionHandler(TooManyAttemptsException.class)
   public ResponseEntity<Map<String, String>> tooMany(TooManyAttemptsException ex) {
     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)

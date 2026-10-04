@@ -1,5 +1,6 @@
 package os.assurance.eu.api.tenant;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,8 @@ public class TenantAdminController {
 
   @PostMapping("/tenants")
   @ResponseStatus(HttpStatus.CREATED)
-  public CreateTenantResponse createTenant(@Valid @RequestBody CreateTenantRequest request) {
+  public CreateTenantResponse createTenant(HttpServletRequest http, @Valid @RequestBody CreateTenantRequest request) {
+    SessionOnly.require(http);
     return tenantAdminService.createTenant(request);
   }
 
@@ -32,7 +34,8 @@ public class TenantAdminController {
 
   @PostMapping("/users/invites")
   @ResponseStatus(HttpStatus.CREATED)
-  public InviteCreatedResponse inviteUser(@Valid @RequestBody InviteUserRequest request) {
+  public InviteCreatedResponse inviteUser(HttpServletRequest http, @Valid @RequestBody InviteUserRequest request) {
+    SessionOnly.require(http);
     return tenantAdminService.inviteUser(request);
   }
 

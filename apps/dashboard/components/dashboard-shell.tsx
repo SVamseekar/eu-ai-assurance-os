@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { DemoBanner } from "@/components/demo-banner";
 import { Sidebar } from "@/components/sidebar";
 import { Header } from "@/components/header";
 import { normaliseDecision } from "@/lib/utils";
@@ -62,6 +63,10 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "Public-claims teasers",
     subtitle:
       "Four EU firms reconstructed from public pages. Not customers. Evgraph fails closed when approval or dataset license is unpublished.",
+  },
+  "/onboarding": {
+    title: "Get started",
+    subtitle: "Register your first AI system, see what applies, and gate your pipeline.",
   },
   "/settings": {
     title: "Workspace",
@@ -176,6 +181,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <Sidebar blockedCount={blockedCount} />
       <main className="ml-56 px-8 py-7">
+        <DemoBanner />
         <Header
           title={meta.title}
           subtitle={meta.subtitle}

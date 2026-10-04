@@ -13,7 +13,11 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -70,6 +74,26 @@ public class FileStorageService {
             .build(), RequestBody.fromInputStream(content, contentLength));
         log.info("Uploaded {} bytes to s3://{}/{}", contentLength, props.bucket(), key);
         return "s3://" + props.bucket() + "/" + key;
+    }
+
+    /** Deletes every object whose key starts with {@code prefix}; a no-op when storage is disabled. */
+    public void deletePrefix(String prefix) {
+        if (!props.enabled() || s3 == null) {
+            return;
+        }
+        var listing = s3.listObjectsV2Paginator(ListObjectsV2Request.builder()
+            .bucket(props.bucket()).prefix(prefix).build());
+        for (var page : listing) {
+            if (page.contents().isEmpty()) {
+                continue;
+            }
+            var ids = page.contents().stream()
+                .map(o -> ObjectIdentifier.builder().key(o.key()).build())
+                .toList();
+            s3.deleteObjects(DeleteObjectsRequest.builder().bucket(props.bucket())
+                .delete(Delete.builder().objects(ids).quiet(true).build()).build());
+        }
+        log.info("Deleted stored objects under s3://{}/{}", props.bucket(), prefix);
     }
 
     public InputStream download(String bucket, String key) {
