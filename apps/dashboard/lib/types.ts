@@ -272,6 +272,21 @@ export interface WorkspaceInvite {
   acceptPath: string;
 }
 
+export interface ApiKeyView {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface ApiKeyCreated {
+  id: string;
+  name: string;
+  prefix: string;
+  key: string;
+}
+
 export interface OpsReadiness {
   disclaimer: string;
   productionReady: boolean;

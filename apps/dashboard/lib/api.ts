@@ -1,5 +1,7 @@
 import type {
   AiSystem,
+  ApiKeyCreated,
+  ApiKeyView,
   ApprovalWorkflow,
   AuditEvent,
   CertificationReadiness,
@@ -334,6 +336,12 @@ export const api = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+  },
+  apiKeys: {
+    list: () => request<ApiKeyView[]>("/api-keys"),
+    create: (name: string) =>
+      request<ApiKeyCreated>("/api-keys", { method: "POST", body: JSON.stringify({ name }) }),
+    revoke: (id: string) => request<null>(`/api-keys/${id}`, { method: "DELETE" }),
   },
   ops: {
     readiness: () => request<OpsReadiness>("/ops/readiness"),

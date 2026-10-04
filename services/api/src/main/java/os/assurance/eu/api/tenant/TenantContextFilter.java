@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -42,14 +41,17 @@ public class TenantContextFilter extends OncePerRequestFilter {
     private final ApiKeyJpaRepository apiKeys;
     private final TenantContext tenantContext;
     private final JwtService jwtService;
+    private final ApiKeyUsageRecorder apiKeyUsage;
 
     public TenantContextFilter(
             ApiKeyJpaRepository apiKeys,
             TenantContext tenantContext,
-            JwtService jwtService) {
+            JwtService jwtService,
+            ApiKeyUsageRecorder apiKeyUsage) {
         this.apiKeys = apiKeys;
         this.tenantContext = tenantContext;
         this.jwtService = jwtService;
+        this.apiKeyUsage = apiKeyUsage;
     }
 
     static boolean isUnauthenticatedPath(String requestUri) {
@@ -102,18 +104,18 @@ public class TenantContextFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        try {
-            UUID.fromString(apiKeyHeader);
-        } catch (IllegalArgumentException e) {
+        boolean legacy = apiKeyHeader.matches("^[0-9a-fA-F-]{36}$");
+        boolean modern = apiKeyHeader.matches("^aos_[A-Za-z0-9_-]{43}$");
+        if (!legacy && !modern) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid " + API_KEY_HEADER);
             return;
         }
-        String keyHash = ApiKeyHasher.sha256Hex(apiKeyHeader);
-        ApiKeyEntity key = apiKeys.findByKeyHash(keyHash).orElse(null);
-        if (key == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown API key");
+        ApiKeyEntity key = apiKeys.findByKeyHash(ApiKeyHasher.sha256Hex(apiKeyHeader)).orElse(null);
+        if (key == null || key.revoked()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown or revoked API key");
             return;
         }
+        apiKeyUsage.touch(key.id());
         tenantContext.setOverrides(key.tenantId(), key.userId());
         try {
             filterChain.doFilter(request, response);

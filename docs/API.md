@@ -51,6 +51,21 @@ POST /auth/password/reset         # {token, newPassword}       -> 204
 - Signing in with Google or Microsoft onto a still-unverified account removes any password set before
   verification, revokes its sessions and marks the address verified.
 
+### API keys (CI release gate)
+
+```http
+GET    /api/v1/api-keys          # [{id, name, prefix, createdAt, lastUsedAt, createdBy}]
+POST   /api/v1/api-keys          # {name} -> 201 {id, name, prefix, key}  (raw key shown once)
+DELETE /api/v1/api-keys/{id}     # 204; revoked keys get 401 immediately
+```
+
+- Roles: ADMIN and AI_ENGINEERING_LEAD. Keys look like `aos_` + 43 characters; only a SHA-256 hash is stored.
+- Keys are created and revoked from a signed-in session only. A request authenticated by a key cannot
+  create or revoke keys (403), so a leaked key cannot mint replacements.
+- A key acts with the permissions of the user who created it. Legacy UUID keys keep working.
+- CI calls `GET /api/v1/ci/release-gate?systemId=…` with `X-Api-Key`. The dashboard exposes the same path
+  without a session cookie and forwards it unchanged.
+
 ### OAuth (Google + Microsoft) — Part 4
 
 Implemented with unit/integration tests. Production smoke pending
