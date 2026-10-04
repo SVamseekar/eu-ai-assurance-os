@@ -1,5 +1,6 @@
 package os.assurance.eu.api.sector;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -17,9 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/integrations")
 public class InsuranceIntegrationController {
+  private final EntitlementService entitlements;
   private final SectorPackService sectorPackService;
 
-  public InsuranceIntegrationController(SectorPackService sectorPackService) {
+  public InsuranceIntegrationController(SectorPackService sectorPackService,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.sectorPackService = sectorPackService;
   }
 
@@ -27,6 +31,7 @@ public class InsuranceIntegrationController {
   @ResponseStatus(HttpStatus.CREATED)
   public ClaimsModelRegisterResponse registerClaimsModel(
       @Valid @RequestBody ClaimsModelRegisterRequest request) {
+    entitlements.requireCanCreateSystem();
     return sectorPackService.registerClaimsModel(request);
   }
 

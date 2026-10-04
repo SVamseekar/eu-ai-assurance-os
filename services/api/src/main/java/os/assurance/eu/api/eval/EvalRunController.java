@@ -135,12 +135,14 @@ public class EvalRunController {
   @PostMapping("/{runId}/execute")
   public EvalRun executeEvalRun(@PathVariable UUID runId) {
     authorizationService.requireAnyRole(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(getEvalRun(runId).systemId());
     return workerService.execute(runId);
   }
 
   @PostMapping("/{runId}/retry")
   public EvalRun retryEvalRun(@PathVariable UUID runId) {
     authorizationService.requireAnyRole(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(getEvalRun(runId).systemId());
     return operationsService.retryFailed(runId);
   }
 

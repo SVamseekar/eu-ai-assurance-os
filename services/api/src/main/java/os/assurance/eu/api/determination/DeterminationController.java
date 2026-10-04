@@ -1,5 +1,6 @@
 package os.assurance.eu.api.determination;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -15,12 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 public class DeterminationController {
+  private final EntitlementService entitlements;
   private final DeterminationService determinationService;
   private final TenantAuthorizationService authorizationService;
 
   public DeterminationController(
       DeterminationService determinationService,
-      TenantAuthorizationService authorizationService) {
+      TenantAuthorizationService authorizationService,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.determinationService = determinationService;
     this.authorizationService = authorizationService;
   }
@@ -39,6 +43,7 @@ public class DeterminationController {
         UserRole.COMPLIANCE_OFFICER,
         UserRole.LEGAL_COUNSEL,
         UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(systemId);
     return determinationService.createRun(systemId, request.answers());
   }
 

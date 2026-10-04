@@ -1,5 +1,6 @@
 package os.assurance.eu.api.contract;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -19,10 +20,13 @@ import os.assurance.eu.api.tenant.UserRole;
 @RestController
 @RequestMapping("/api/v1/data-contracts")
 public class DataContractController {
+  private final EntitlementService entitlements;
   private final DataContractService service;
   private final TenantAuthorizationService authorizationService;
 
-  public DataContractController(DataContractService service, TenantAuthorizationService authorizationService) {
+  public DataContractController(DataContractService service, TenantAuthorizationService authorizationService,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.service = service;
     this.authorizationService = authorizationService;
   }
@@ -41,6 +45,7 @@ public class DataContractController {
   @ResponseStatus(HttpStatus.CREATED)
   public DataContract createContract(@Valid @RequestBody CreateDataContractRequest request) {
     requireContractMutator();
+    entitlements.requireSystemWritable(request.systemId());
     return service.createContract(request);
   }
 
@@ -49,6 +54,7 @@ public class DataContractController {
       @PathVariable UUID contractId,
       @Valid @RequestBody UpdateDataContractRequest request) {
     requireContractMutator();
+    entitlements.requireSystemWritable(service.getContract(contractId).systemId());
     return service.updateContract(contractId, request);
   }
 
@@ -63,6 +69,7 @@ public class DataContractController {
       @PathVariable UUID contractId,
       @Valid @RequestBody DriftEventRequest request) {
     requireContractMutator();
+    entitlements.requireSystemWritable(service.getContract(contractId).systemId());
     return service.createDriftEvent(contractId, request);
   }
 
@@ -72,6 +79,7 @@ public class DataContractController {
       @PathVariable UUID eventId,
       @Valid @RequestBody UpdateDriftEventRequest request) {
     requireContractMutator();
+    entitlements.requireSystemWritable(service.getContract(contractId).systemId());
     return service.updateDriftEvent(contractId, eventId, request);
   }
 

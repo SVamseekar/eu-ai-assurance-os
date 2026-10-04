@@ -79,12 +79,24 @@ public class DodoWebhookService {
     if (pi == null) {
       return;
     }
+    // A subscription belongs to exactly one workspace. An event that names another workspace, or a different
+    // subscription id than the one already bound, is acknowledged but ignored.
+    String subscriptionId = textOrNull(data.path("subscription_id"));
+    if (subscriptionId != null) {
+      var owner = subscriptions.findByDodoSubscriptionId(subscriptionId);
+      if (owner.isPresent() && !owner.get().tenantId().equals(tenantId)) {
+        return;
+      }
+    }
     Instant eventTime = parseInstant(root.path("timestamp").asText(null));
     if (eventTime == null) {
       eventTime = now;
     }
     TenantSubscriptionEntity sub = subscriptions.findById(tenantId)
         .orElseGet(() -> new TenantSubscriptionEntity(tenantId));
+    if (sub.dodoSubscriptionId() != null && subscriptionId != null && !sub.dodoSubscriptionId().equals(subscriptionId)) {
+      return;
+    }
     if (eventTime.isBefore(sub.updatedAt())) {
       return; // older than what we already hold
     }

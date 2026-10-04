@@ -239,6 +239,40 @@ class DodoWebhookApiTest {
   }
 
   @Test
+  void aSubscriptionAlreadyBoundToOneWorkspaceCannotBeAppliedToAnother() throws Exception {
+    Workspace a = newWorkspace();
+    Workspace b = newWorkspace();
+    deliver(id(), event("subscription.active", "2026-11-10T12:00:00Z", a.tenantId(), "prod_team_m",
+        "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
+    String subOfA = jdbc.queryForObject("select dodo_subscription_id from tenant_subscriptions where tenant_id = ?",
+        String.class, a.tenantId());
+
+    // a signed event that names workspace B but carries A's subscription id
+    String crossed = event("subscription.active", "2026-11-11T12:00:00Z", b.tenantId(), "prod_bus_m",
+        "2099-12-10T12:00:00Z").replace("\"subscription_id\":\"sub_" + b.tenantId().toString().substring(0, 8) + "\"",
+        "\"subscription_id\":\"" + subOfA + "\"");
+    deliver(id(), crossed, true).andExpect(status().isOk()); // acknowledged, so Dodo stops retrying
+
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", b.bearer()))
+        .andExpect(jsonPath("$.plan").value("FREE"));
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", a.bearer()))
+        .andExpect(jsonPath("$.plan").value("TEAM"));
+  }
+
+  @Test
+  void aWorkspaceKeepsItsOwnSubscriptionWhenAnotherIdArrives() throws Exception {
+    Workspace a = newWorkspace();
+    deliver(id(), event("subscription.active", "2026-11-10T12:00:00Z", a.tenantId(), "prod_team_m",
+        "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
+    String other = event("subscription.plan_changed", "2026-11-11T12:00:00Z", a.tenantId(), "prod_bus_m",
+        "2099-12-10T12:00:00Z").replace("\"subscription_id\":\"sub_" + a.tenantId().toString().substring(0, 8) + "\"",
+        "\"subscription_id\":\"sub_someone_elses\"");
+    deliver(id(), other, true).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", a.bearer()))
+        .andExpect(jsonPath("$.plan").value("TEAM"));
+  }
+
+  @Test
   void billingSummaryNeedsASignedInUser() throws Exception {
     mockMvc.perform(get("/api/v1/billing")).andExpect(status().isUnauthorized());
   }

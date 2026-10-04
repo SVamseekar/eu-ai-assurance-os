@@ -1,5 +1,6 @@
 package os.assurance.eu.api.assessment;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -22,10 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/systems/{systemId}/assessment")
 public class AssessmentController {
+  private final EntitlementService entitlements;
   private final AssessmentService assessment;
   private final TenantAuthorizationService authorizationService;
 
-  public AssessmentController(AssessmentService assessment, TenantAuthorizationService authorizationService) {
+  public AssessmentController(AssessmentService assessment, TenantAuthorizationService authorizationService,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.assessment = assessment;
     this.authorizationService = authorizationService;
   }
@@ -42,6 +46,7 @@ public class AssessmentController {
       @PathVariable UUID proposalId,
       @Valid @RequestBody ApplicabilityRequest request) {
     requireWriter();
+    entitlements.requireSystemWritable(systemId);
     return assessment.setApplicability(systemId, proposalId, request.applicability());
   }
 
@@ -51,6 +56,7 @@ public class AssessmentController {
       @PathVariable UUID systemId,
       @Valid @RequestBody ExceptionRequest request) {
     requireWriter();
+    entitlements.requireSystemWritable(systemId);
     return assessment.recordException(systemId, request.proposalId(), request.rationale(), request.expiresOn());
   }
 
@@ -59,6 +65,7 @@ public class AssessmentController {
       @PathVariable UUID systemId,
       @PathVariable UUID proposalId) {
     requireWriter();
+    entitlements.requireSystemWritable(systemId);
     return assessment.refuseSatisfied(systemId, proposalId);
   }
 

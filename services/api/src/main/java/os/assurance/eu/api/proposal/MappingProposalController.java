@@ -1,5 +1,6 @@
 package os.assurance.eu.api.proposal;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -20,12 +21,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/systems/{systemId}/proposals")
 public class MappingProposalController {
+  private final EntitlementService entitlements;
   private final MappingProposalService proposals;
   private final TenantAuthorizationService authorizationService;
 
   public MappingProposalController(
       MappingProposalService proposals,
-      TenantAuthorizationService authorizationService) {
+      TenantAuthorizationService authorizationService,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.proposals = proposals;
     this.authorizationService = authorizationService;
   }
@@ -50,6 +54,7 @@ public class MappingProposalController {
         UserRole.ADMIN,
         UserRole.COMPLIANCE_OFFICER,
         UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(systemId);
     return proposals.create(systemId, request);
   }
 
@@ -62,6 +67,7 @@ public class MappingProposalController {
         UserRole.ADMIN,
         UserRole.COMPLIANCE_OFFICER,
         UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(systemId);
     return proposals.mapDocuments(
         systemId,
         request.documents().stream()
@@ -74,6 +80,7 @@ public class MappingProposalController {
       @PathVariable UUID systemId,
       @PathVariable UUID proposalId) {
     requireDecisionRole();
+    entitlements.requireSystemWritable(systemId);
     return proposals.accept(systemId, proposalId);
   }
 
@@ -83,6 +90,7 @@ public class MappingProposalController {
       @PathVariable UUID proposalId,
       @Valid @RequestBody SetModeRequest request) {
     requireDecisionRole();
+    entitlements.requireSystemWritable(systemId);
     return proposals.setMode(systemId, proposalId, request.mode());
   }
 
@@ -91,6 +99,7 @@ public class MappingProposalController {
       @PathVariable UUID systemId,
       @PathVariable UUID proposalId) {
     requireDecisionRole();
+    entitlements.requireSystemWritable(systemId);
     return proposals.reject(systemId, proposalId);
   }
 
