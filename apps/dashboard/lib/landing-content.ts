@@ -78,7 +78,7 @@ export const gateInputs = [
   },
   {
     title: "Promotion files",
-    body: "A pinned evgraph-cli 0.1.2 scan checks approval-before-deploy and dataset license. The evidence pack reports that same gap. Missing fields are not invented.",
+    body: "A pinned evgraph-cli 0.1.3 scan checks approval-before-deploy and dataset license. The evidence pack reports that same gap. Missing fields are not invented.",
   },
 ] as const;
 
@@ -111,7 +111,7 @@ export const methodSteps = [
   {
     title: "Run the same fail-closed checks",
     description:
-      "The pinned evgraph-cli 0.1.2 scan used on a customer system. The evidence pack and the live scan report the same current gap. A missing approval timestamp stays inconclusive. We do not fill the field.",
+      "The pinned evgraph-cli 0.1.3 scan used on a customer system. The evidence pack and the live scan report the same current gap. A missing approval timestamp stays inconclusive. We do not fill the field.",
   },
 ] as const;
 
@@ -358,7 +358,7 @@ export const capabilities: Capability[] = [
     icon: ScanSearch,
     title: "Pinned Evgraph scan",
     description:
-      "The pack runs evgraph-cli 0.1.2, the same library as the public Evidence Graph. Approval-before-deploy and dataset license are checked on the files you already have. Missing timestamps stay inconclusive. We do not invent them.",
+      "The pack runs evgraph-cli 0.1.3, the same library as the public Evidence Graph. Approval-before-deploy and dataset license are checked on the files you already have. Missing timestamps stay inconclusive. We do not invent them.",
   },
 ];
 
@@ -381,7 +381,7 @@ export const howItWorksSteps: HowItWorksStep[] = [
   {
     title: "Scan, eval, and check contracts",
     description:
-      "A pinned Evgraph 0.1.2 scan, the eval score, and any open data-contract breach feed one decision. Corpus-backed mapping proposals stay in a queue until a person accepts them. Missing files do not pass.",
+      "A pinned Evgraph 0.1.3 scan, the eval score, and any open data-contract breach feed one decision. Corpus-backed mapping proposals stay in a queue until a person accepts them. Missing files do not pass.",
   },
   {
     title: "Get a release decision",
@@ -419,7 +419,7 @@ export const personas: Persona[] = [
   {
     role: "Product Owner",
     description:
-      "A single PASS, REVIEW, or BLOCKED before launch. The sealed evidence pack and a live evgraph-cli 0.1.2 scan report the same current gap.",
+      "A single PASS, REVIEW, or BLOCKED before launch. The sealed evidence pack and a live evgraph-cli 0.1.3 scan report the same current gap.",
   },
   {
     role: "Auditor",
@@ -518,7 +518,7 @@ export const homeDestinations = [
     href: "/how-it-works",
     title: "How it works",
     description:
-      "Register the system, classify risk against a pinned corpus, and queue mapping proposals until a person accepts them. In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or BLOCKING. The pack and evgraph-cli 0.1.2 share the current gap.",
+      "Register the system, classify risk against a pinned corpus, and queue mapping proposals until a person accepts them. In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or BLOCKING. The pack and evgraph-cli 0.1.3 share the current gap.",
   },
   {
     href: "/method",
@@ -568,7 +568,7 @@ export const faqItems: FaqItem[] = [
   {
     question: "What is Evgraph?",
     answer:
-      "A separate Python library. This product pins evgraph-cli 0.1.2 and runs it on the promotion files and dataset manifest. The pack and the scan must show the same current gap. If an approval timestamp or dataset license is missing, the finding stays inconclusive. We do not invent the field.",
+      "A separate Python library. This product pins evgraph-cli 0.1.3 and runs it on the promotion files and dataset manifest. The pack and the scan must show the same current gap. If an approval timestamp or dataset license is missing, the finding stays inconclusive. We do not invent the field.",
   },
   {
     question: "What is an evidence pack?",

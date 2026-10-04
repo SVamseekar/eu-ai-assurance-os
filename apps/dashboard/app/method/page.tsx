@@ -16,7 +16,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "How we read public AI claims";
 const description =
-  "What a pinned evgraph-cli 0.1.2 scan sees from pages a company already published. A missing approval timestamp stays inconclusive. Named organisations are examples, not customers.";
+  "What a pinned evgraph-cli 0.1.3 scan sees from pages a company already published. A missing approval timestamp stays inconclusive. Named organisations are examples, not customers.";
 const path = "/method";
 const crumbs = [
   { name: "Home", path: "/" },
@@ -76,7 +76,7 @@ export default function MethodPage() {
           Same check as a customer system. Risk is read against a pinned legal
           corpus. Control mappings stay proposals until a person accepts them.
           In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or
-          BLOCKING. The evidence pack and a live evgraph-cli 0.1.2 scan report
+          BLOCKING. The evidence pack and a live evgraph-cli 0.1.3 scan report
           the same gap. Public pages often yield a model card. They rarely yield
           an approval timestamp, and that field stays inconclusive.
         </p>

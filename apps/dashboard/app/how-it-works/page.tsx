@@ -11,7 +11,7 @@ import { siteConfig } from "@/lib/site-config";
 
 const title = "How an EU AI Act release gate works";
 const description =
-  "Register the system, classify risk against a pinned corpus, queue mapping proposals until a person accepts them, then take PASS, REVIEW, or BLOCKED. The pack and evgraph-cli 0.1.2 share the current gap.";
+  "Register the system, classify risk against a pinned corpus, queue mapping proposals until a person accepts them, then take PASS, REVIEW, or BLOCKED. The pack and evgraph-cli 0.1.3 share the current gap.";
 const path = "/how-it-works";
 const crumbs = [
   { name: "Home", path: "/" },

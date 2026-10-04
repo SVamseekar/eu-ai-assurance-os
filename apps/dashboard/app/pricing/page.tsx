@@ -67,7 +67,7 @@ export default function PricingPage() {
             </p>
             <ul className="mt-6 space-y-3 text-sm text-foreground/90">
               <li>
-                Pinned evgraph-cli 0.1.2 scan of promotion and dataset files.
+                Pinned evgraph-cli 0.1.3 scan of promotion and dataset files.
                 The evidence pack and the live scan share the current gap. A
                 missing approval timestamp stays inconclusive. You keep the CLI.
               </li>

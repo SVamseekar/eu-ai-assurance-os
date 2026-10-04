@@ -4,21 +4,21 @@
 #
 #    pip-compile --allow-unsafe --generate-hashes --no-index --output-file=evgraph-requirements.txt evgraph-requirements.in
 #
-evgraph==0.1.2 \
-    --hash=sha256:2d38a3f4219019c6974137a9ac97d1d2a1005b2825e6bdae1c88c8bf666d26b7 \
-    --hash=sha256:7f961b637cd82627f11b8d6f2cc5cb0f5dd7629cf89f008ce9b892401e014593
+evgraph==0.1.3 \
+    --hash=sha256:3bbb47427a9ca6e70362bc4588669df28ab06c7efc357cf5cbbcc03ddb30c1b9 \
+    --hash=sha256:bd0b61460242ea220aedaa9ed6202d5ac53b5a58eaa8fbaebcfe07b9dd037198
     # via evgraph-cli
-evgraph-cli==0.1.2 \
-    --hash=sha256:326d0f104583f8d81f9c46bab1c9d15c84c4485b1e7a79dd10ec40a86bd4ad44 \
-    --hash=sha256:56befc8cb71854da391f3d6dd996768af7d5a9b26ab8d2c4cd61645c9da263b7
+evgraph-cli==0.1.3 \
+    --hash=sha256:1659676dbbda2276e87f44d2bb5b0dd7c536edae3efdbb002d440b0c19ee2194 \
+    --hash=sha256:f9f2b0538d53900afcc51085c42d19cdd819be426c957ab87ea46fde72e2d160
     # via -r evgraph-requirements.in
-evgraph-core==0.1.2 \
-    --hash=sha256:149355d225e7db1606aa0e798e9e29b64be59b3af4b7ef73a6157092f2322d60 \
-    --hash=sha256:8197f6942e54fff7d1a62306770e4e32f01fc2441772a817e78c63c98ccf643e
+evgraph-core==0.1.3 \
+    --hash=sha256:21acb24d1b625264df8afc2f13655607955e2744efe3e2253bb30bf0b68be779 \
+    --hash=sha256:d7a3b7f249af3c0bd2913efc9f433ea0950f157e4810bbea7790c969e17b0131
     # via
     #   evgraph
     #   evgraph-rules
-evgraph-rules==0.1.2 \
-    --hash=sha256:4c8c3f2b45f3eccdbe2bebfb8d18766fb115c9cdab2625992ff5d303559afadc \
-    --hash=sha256:fdfe2c07a370900e3f96752eb7ba013acc04919ba96637ae491e7597fb6672ae
+evgraph-rules==0.1.3 \
+    --hash=sha256:5bdc2a5e143b0c90951f280c3e4aba861629a2338264b6268ded911cc95e88b3 \
+    --hash=sha256:8c19f4ecf8a072cdf3489e4e2681e6f8af70c72d1b2546512d94c46fca46da9f
     # via evgraph

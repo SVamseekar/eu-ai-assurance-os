@@ -105,7 +105,7 @@ Keep strip qualitative + structural (release decisions, risk classes, stack, sca
 
 Recommended scale line (measured):
 
-- **Spring Boot 4.1.1 · Tika 4.0.0 · Flyway through V20 · Next.js 16 · pinned evgraph-cli 0.1.2**
+- **Spring Boot 4.1.1 · Tika 4.0.0 · Flyway through V20 · Next.js 16 · pinned evgraph-cli 0.1.3**
 
 ---
 
@@ -154,7 +154,7 @@ Recommended scale line (measured):
 ```text
 Spring Boot 4.1.1 · Java 17 · Tika 4.0.0 · Next.js 16 · pgvector HNSW · DJL/ONNX embeddings · Multi-tenant
 JWT + API keys · Google/Microsoft OAuth (implemented; prod smoke pending)
-Flyway V1–V20 · Hash-chained audit · HMAC eval callbacks · Evidence Pack JSON+PDF · pinned evgraph-cli 0.1.2
+Flyway V1–V20 · Hash-chained audit · HMAC eval callbacks · Evidence Pack JSON+PDF · pinned evgraph-cli 0.1.3
 ```
 
 ---

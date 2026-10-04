@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class EvgraphCli {
-  static final String PINNED_VERSION = "0.1.2";
+  static final String PINNED_VERSION = "0.1.3";
   static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
   private static final String PINNED_PACKAGE = "evgraph-cli==" + PINNED_VERSION;
   private static final int MAX_CAPTURE_BYTES = 2 * 1024 * 1024;
