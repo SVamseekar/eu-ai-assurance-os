@@ -47,6 +47,8 @@ public class WorkspacePurgeJob {
       "delete from api_keys where tenant_id = ?",
       "delete from refresh_tokens where tenant_id = ?",
       "delete from user_invites where tenant_id = ?",
+      "delete from gate_run_counters where tenant_id = ?",
+      "delete from tenant_subscriptions where tenant_id = ?",
       "delete from auth_tokens where user_id in (select id from users where tenant_id = ?)",
       "delete from ai_systems where tenant_id = ?",
       "delete from users where tenant_id = ?",

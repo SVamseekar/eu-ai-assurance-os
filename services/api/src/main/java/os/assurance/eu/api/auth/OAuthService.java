@@ -134,7 +134,9 @@ public class OAuthService {
     Instant now = Instant.now();
     UUID tenantId = UUID.randomUUID();
     String tenantName = profile.displayName() + "'s workspace";
-    tenants.save(new TenantEntity(tenantId, tenantName, "trial", "EU", now));
+    TenantEntity tenant = new TenantEntity(tenantId, tenantName, "trial", "EU", now);
+    tenant.setTrialEndsAt(now.plus(java.time.Duration.ofDays(14)));
+    tenants.save(tenant);
     auditChainHeads.attachToNewTenant(tenantId);
 
     UserEntity user = new UserEntity(

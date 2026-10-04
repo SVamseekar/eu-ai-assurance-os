@@ -67,6 +67,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
         if (requestUri.startsWith("/auth/invites/")) {
             return true;
         }
+        if (requestUri.equals("/api/v1/billing/webhooks/dodo")) {
+            return true;
+        }
         if (requestUri.equals("/auth/signup") || requestUri.startsWith("/auth/verify-email")
             || requestUri.startsWith("/auth/password/") || requestUri.equals("/auth/demo")) {
             return true;

@@ -1,5 +1,6 @@
 package os.assurance.eu.api.system;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import os.assurance.eu.api.observability.AssuranceMetrics;
 @RestController
 @RequestMapping("/api/v1/ci")
 public class CiReleaseGateController {
+  private final EntitlementService entitlements;
   private final AiSystemRepository repository;
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
@@ -29,7 +31,9 @@ public class CiReleaseGateController {
       AiSystemRepository repository,
       ReleaseGateService releaseGateService,
       AuditService auditService,
-      AssuranceMetrics assuranceMetrics) {
+      AssuranceMetrics assuranceMetrics,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
@@ -40,6 +44,7 @@ public class CiReleaseGateController {
   public CiReleaseGateResponse getReleaseGate(@RequestParam UUID systemId) {
     AiSystem system = repository.findById(systemId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    entitlements.recordGateRun();
     ReleaseGateResponse gate = releaseGateService.calculate(system);
     CiReleaseGateResponse response = CiReleaseGateResponse.from(system, gate);
     assuranceMetrics.releaseGateDecision(response.decision());

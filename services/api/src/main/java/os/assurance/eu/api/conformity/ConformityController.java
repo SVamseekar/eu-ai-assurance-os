@@ -1,5 +1,6 @@
 package os.assurance.eu.api.conformity;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import os.assurance.eu.api.tenant.TenantAuthorizationService;
@@ -14,12 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/systems/{systemId}/conformity")
 public class ConformityController {
+  private final EntitlementService entitlements;
   private final ConformityService conformityService;
   private final TenantAuthorizationService authorizationService;
 
   public ConformityController(
       ConformityService conformityService,
-      TenantAuthorizationService authorizationService) {
+      TenantAuthorizationService authorizationService,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.conformityService = conformityService;
     this.authorizationService = authorizationService;
   }
@@ -35,6 +39,7 @@ public class ConformityController {
       @Valid @RequestBody UpdateConformityDossierRequest request) {
     authorizationService.requireAnyRole(
         UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER, UserRole.LEGAL_COUNSEL);
+    entitlements.requireSystemWritable(systemId);
     return conformityService.update(systemId, request);
   }
 }

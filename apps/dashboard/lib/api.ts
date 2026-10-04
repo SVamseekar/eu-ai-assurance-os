@@ -2,6 +2,7 @@ import type {
   AiSystem,
   ApiKeyCreated,
   ApiKeyView,
+  BillingSummary,
   ApprovalWorkflow,
   AuditEvent,
   CertificationReadiness,
@@ -33,6 +34,7 @@ import type {
   WorkspaceInvite,
   WorkspaceUser,
 } from "./types";
+import { dispatchPlanLimit, reportPlanLimit } from "./plan-limit";
 import type {
   PublicClaimsArtifacts,
   PublicClaimsIndex,
@@ -53,6 +55,8 @@ function redirectToLoginOnUnauthorized() {
   loginRedirectStarted = true;
   window.location.assign(href);
 }
+
+export { PLAN_LIMIT_EVENT } from "./plan-limit";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -77,6 +81,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       message = body.message ?? body.error ?? body.detail ?? message;
     } catch {
       // keep status text
+    }
+    if (res.status === 402) {
+      // Plan limit: the shell shows an upgrade prompt for any screen that hits one.
+      dispatchPlanLimit(message);
     }
     throw new ApiError(res.status, message);
   }
@@ -149,6 +157,8 @@ export const api = {
       if (res.status === 401) {
         redirectToLoginOnUnauthorized();
       }
+      const pdfLimit = await reportPlanLimit(res);
+      if (pdfLimit) throw new ApiError(402, pdfLimit);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const contentSha256 = res.headers.get("X-Content-Sha256") ?? "";
       const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -174,6 +184,8 @@ export const api = {
       if (res.status === 401) {
         redirectToLoginOnUnauthorized();
       }
+      const exportLimit = await reportPlanLimit(res);
+      if (exportLimit) throw new ApiError(402, exportLimit);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const readinessStatus = res.headers.get("X-Readiness-Status") ?? "";
       const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -317,6 +329,15 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ notes }),
       }),
+  },
+  billing: {
+    get: () => request<BillingSummary>("/billing"),
+    checkout: (plan: "TEAM" | "BUSINESS", interval: "MONTHLY" | "YEARLY") =>
+      request<{ checkoutUrl: string }>("/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ plan, interval }),
+      }),
+    portal: () => request<{ url: string }>("/billing/portal", { method: "POST" }),
   },
   admin: {
     users: () => request<WorkspaceUser[]>("/admin/users"),

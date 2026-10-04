@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BillingCard } from "@/components/billing-card";
 import { ApiKeysCard } from "@/components/settings/api-keys-card";
 import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 import { api } from "@/lib/api";
@@ -40,8 +41,8 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Workspace users</CardTitle>
           <CardDescription>
-            Invite colleagues. The raw invite token is shown once — send it out of band.
-            Only workspace admins can invite.
+            Invite colleagues by email. Each invitation link goes to the invitee only.
+            Only workspace admins can invite. Auditors and legal counsel are free viewers.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -105,6 +106,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <BillingCard />
       <ApiKeysCard />
 
       <DangerZoneCard />

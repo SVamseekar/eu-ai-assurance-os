@@ -1,5 +1,6 @@
 package os.assurance.eu.api.eval;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/eval-runs")
 public class EvalRunController {
+  private final EntitlementService entitlements;
   private final AiSystemRepository systems;
   private final EvalDatasetRepository datasets;
   private final EvalRunRepository evalRuns;
@@ -49,7 +51,9 @@ public class EvalRunController {
       EvalRunMetrics metrics,
       AuditService auditService,
       TenantAuthorizationService authorizationService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.systems = systems;
     this.datasets = datasets;
     this.evalRuns = evalRuns;
@@ -70,6 +74,7 @@ public class EvalRunController {
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(request.systemId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    entitlements.requireSystemWritable(request.systemId());
     EvalDataset dataset = datasets.findByName(request.dataset())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Eval dataset is not registered"));
     UUID runId = UUID.randomUUID();
@@ -130,12 +135,14 @@ public class EvalRunController {
   @PostMapping("/{runId}/execute")
   public EvalRun executeEvalRun(@PathVariable UUID runId) {
     authorizationService.requireAnyRole(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(getEvalRun(runId).systemId());
     return workerService.execute(runId);
   }
 
   @PostMapping("/{runId}/retry")
   public EvalRun retryEvalRun(@PathVariable UUID runId) {
     authorizationService.requireAnyRole(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD);
+    entitlements.requireSystemWritable(getEvalRun(runId).systemId());
     return operationsService.retryFailed(runId);
   }
 

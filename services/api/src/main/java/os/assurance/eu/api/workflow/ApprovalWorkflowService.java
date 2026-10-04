@@ -280,6 +280,12 @@ public class ApprovalWorkflowService {
             "404: Actor not found: " + actorId));
   }
 
+  /** The system a workflow really belongs to, for callers that must not trust a systemId in the URL. */
+  @Transactional(readOnly = true)
+  public UUID systemIdOf(UUID workflowId) {
+    return resolveWorkflow(workflowId).systemId();
+  }
+
   private ApprovalWorkflow resolveWorkflow(UUID workflowId) {
     return repository.findById(workflowId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,

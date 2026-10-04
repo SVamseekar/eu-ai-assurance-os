@@ -1,5 +1,6 @@
 package os.assurance.eu.api.evidence;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/evidence")
 public class EvidenceController {
+  private final EntitlementService entitlements;
   private final AiSystemRepository systems;
   private final EvidenceService evidenceService;
   private final FileStorageService fileStorage;
@@ -43,7 +45,9 @@ public class EvidenceController {
       NfrMetrics nfrMetrics,
       TextExtractionService textExtraction,
       TenantContext tenantContext,
-      EvidenceProperties properties) {
+      EvidenceProperties properties,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.systems = systems;
     this.evidenceService = evidenceService;
     this.fileStorage = fileStorage;
@@ -61,6 +65,7 @@ public class EvidenceController {
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(request.systemId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    entitlements.requireSystemWritable(request.systemId());
     return evidenceService.ingest(request);
   }
 
@@ -76,6 +81,7 @@ public class EvidenceController {
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
     systems.findById(systemId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found"));
+    entitlements.requireSystemWritable(systemId);
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded file is empty");
     }

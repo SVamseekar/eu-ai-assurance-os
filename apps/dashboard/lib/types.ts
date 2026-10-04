@@ -581,3 +581,15 @@ export interface WorkflowNotification {
   readAt: string | null;
   createdAt: string;
 }
+
+export interface BillingSummary {
+  plan: "FREE" | "TRIAL" | "TEAM" | "BUSINESS" | "ENTERPRISE" | "DEMO";
+  status: string;
+  interval: "MONTHLY" | "YEARLY" | null;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
+  graceUntil: string | null;
+  usage: { systems: number; editors: number; gateRunsThisMonth: number };
+  /** -1 means unlimited. */
+  limits: { gatedSystems: number; editorSeats: number; gateRunsPerMonth: number };
+}

@@ -1,5 +1,7 @@
 package os.assurance.eu.api.system;
 
+import os.assurance.eu.api.billing.EntitlementService;
+import os.assurance.eu.api.billing.Feature;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/systems")
 public class AiSystemController {
+  private final EntitlementService entitlements;
   private final AiSystemRepository repository;
   private final ReleaseGateService releaseGateService;
   private final AuditService auditService;
@@ -54,7 +57,9 @@ public class AiSystemController {
       AssuranceMetrics assuranceMetrics,
       EvidencePackService evidencePackService,
       LinkedControlReopenService linkedControlReopenService,
-      GateInputService gateInputs) {
+      GateInputService gateInputs,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.repository = repository;
     this.releaseGateService = releaseGateService;
     this.auditService = auditService;
@@ -84,6 +89,7 @@ public class AiSystemController {
   public CreateAiSystemResponse createSystem(@Valid @RequestBody CreateAiSystemRequest request) {
     authorizationService.requireAnyRole(
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
+    entitlements.requireCanCreateSystem();
     rejectComputedGateFields(request.evidenceCoverage(), request.evalScore(), request.dataContractStatus());
     Instant now = Instant.now();
     int coverage = request.evidenceCoverage() == null ? 0 : request.evidenceCoverage();
@@ -145,6 +151,7 @@ public class AiSystemController {
       @Valid @RequestBody UpdateAiSystemRequest request) {
     authorizationService.requireAnyRole(
         UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
+    entitlements.requireSystemWritable(systemId);
     rejectComputedGateFields(request.evidenceCoverage(), request.evalScore(), request.dataContractStatus());
     AiSystem existing = getSystem(systemId);
     List<String> removedGapsForAudit = List.of();
@@ -209,6 +216,7 @@ public class AiSystemController {
         UserRole.AI_ENGINEERING_LEAD,
         UserRole.COMPLIANCE_OFFICER,
         UserRole.LEGAL_COUNSEL);
+    entitlements.requireSystemWritable(systemId);
     AiSystem existing = getSystem(systemId);
     List<String> openGaps = new ArrayList<>(existing.openGaps());
     if (request.humanOversightRequired() && openGaps.stream().noneMatch(this::isOversightGap)) {
@@ -306,6 +314,7 @@ public class AiSystemController {
   @GetMapping(value = "/{systemId}/evidence-pack.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
   public ResponseEntity<byte[]> getEvidencePackPdf(@PathVariable UUID systemId) {
     requireEvidencePackRole();
+    entitlements.requireFeature(Feature.SIGNED_PDF);
     try {
       EvidencePackResponse pack = evidencePackService.buildAndExport(systemId, "pdf");
       AiSystem system = getSystem(systemId);

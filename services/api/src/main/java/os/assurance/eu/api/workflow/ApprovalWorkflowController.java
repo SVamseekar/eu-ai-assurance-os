@@ -1,5 +1,6 @@
 package os.assurance.eu.api.workflow;
 
+import os.assurance.eu.api.billing.EntitlementService;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -13,9 +14,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class ApprovalWorkflowController {
+  private final EntitlementService entitlements;
   private final ApprovalWorkflowService service;
 
-  public ApprovalWorkflowController(ApprovalWorkflowService service) {
+  public ApprovalWorkflowController(ApprovalWorkflowService service,
+      EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.service = service;
   }
 
@@ -52,6 +56,7 @@ public class ApprovalWorkflowController {
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody(required = false) StageActionRequest request) {
+    entitlements.requireSystemWritable(service.systemIdOf(workflowId));
     String rationale = request != null ? request.rationale() : null;
     String oversightEvidence = request != null ? request.oversightEvidence() : null;
     return service.approveStage(workflowId, stageId, rationale, oversightEvidence);
@@ -63,6 +68,7 @@ public class ApprovalWorkflowController {
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody StageActionRequest request) {
+    entitlements.requireSystemWritable(service.systemIdOf(workflowId));
     return service.rejectStage(workflowId, stageId, request.rationale());
   }
 
@@ -72,6 +78,7 @@ public class ApprovalWorkflowController {
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody StageActionRequest request) {
+    entitlements.requireSystemWritable(service.systemIdOf(workflowId));
     return service.overrideStage(workflowId, stageId, request.rationale());
   }
 }

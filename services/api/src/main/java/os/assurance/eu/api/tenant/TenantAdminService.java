@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
+import os.assurance.eu.api.billing.EntitlementService;
 import os.assurance.eu.api.email.AfterCommit;
 import os.assurance.eu.api.email.EmailMessage;
 import os.assurance.eu.api.email.EmailSender;
@@ -42,6 +43,9 @@ public class TenantAdminService {
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
   private final Clock clock;
+  private final EntitlementService entitlements;
+  private static final java.util.Set<UserRole> EDITOR_ROLES =
+      java.util.Set.of(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
   private final EmailSender emailSender;
   private final String baseUrl;
   private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder(12);
@@ -59,6 +63,7 @@ public class TenantAdminService {
       RefreshTokenService refreshTokenService,
       Clock clock,
       EmailSender emailSender,
+      EntitlementService entitlements,
       @Value("${assurance.app.base-url}") String baseUrl) {
     this.tenants = tenants;
     this.users = users;
@@ -72,6 +77,7 @@ public class TenantAdminService {
     this.refreshTokenService = refreshTokenService;
     this.clock = clock;
     this.emailSender = emailSender;
+    this.entitlements = entitlements;
     this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
   }
 
@@ -86,7 +92,11 @@ public class TenantAdminService {
     UUID tenantId = UUID.randomUUID();
     String plan = blankTo(request.plan(), "design-partner");
     String region = blankTo(request.dataRegion(), "EU");
-    TenantEntity tenant = tenants.save(new TenantEntity(tenantId, request.name().trim(), plan, region, now));
+    TenantEntity newTenant = new TenantEntity(tenantId, request.name().trim(), plan, region, now);
+    if ("trial".equalsIgnoreCase(plan)) {
+      newTenant.setTrialEndsAt(now.plus(java.time.Duration.ofDays(14)));
+    }
+    TenantEntity tenant = tenants.save(newTenant);
     auditChainHeads.attachToNewTenant(tenantId);
     UUID adminId = UUID.randomUUID();
     UserEntity admin = users.save(new UserEntity(
@@ -129,6 +139,9 @@ public class TenantAdminService {
   @Transactional
   public InviteCreatedResponse inviteUser(InviteUserRequest request) {
     authorization.requireAnyRole(UserRole.ADMIN);
+    if (EDITOR_ROLES.contains(request.role())) {
+      entitlements.requireEditorSeatAvailable();
+    }
     String email = normalizeEmail(request.email());
     Instant now = clock.instant();
     if (users.existsByEmailIgnoreCase(email)) {

@@ -1,0 +1,3 @@
+package os.assurance.eu.api.billing;
+
+public enum Feature { SIGNED_PDF, NIST_CROSSWALK, SSO, ISO_CROSSWALK, QUESTIONNAIRE_EXPORT, INTEGRATIONS, AU_ADM_PACK }
