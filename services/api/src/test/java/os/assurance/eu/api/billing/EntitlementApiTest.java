@@ -164,6 +164,32 @@ class EntitlementApiTest {
   }
 
   @Test
+  void theUsageFigureCountsOpenEditorInvitesSoItMatchesWhatIsEnforced() throws Exception {
+    Workspace w = newWorkspace(1);
+    endTrial(w);
+    invite(w, "u-" + UUID.randomUUID() + "@acme.example", "COMPLIANCE_OFFICER").andExpect(status().isCreated());
+    org.assertj.core.api.Assertions.assertThat(entitlements.usage(w.tenantId()).editors()).isEqualTo(2);
+  }
+
+  @Test
+  void aWorkspaceWithALivePaidSubscriptionMustCancelBeforeDeleting() throws Exception {
+    Workspace w = newWorkspace(1);
+    jdbc.update("insert into tenant_subscriptions(tenant_id, plan_code, status, current_period_end, updated_at) "
+        + "values (?, 'TEAM', 'ACTIVE', current_timestamp + interval '20' day, current_timestamp)", w.tenantId());
+    String orgName = jdbc.queryForObject("select name from tenants where id = ?", String.class, w.tenantId());
+    mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/account")
+            .header("Authorization", w.bearer()).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"confirmOrganisationName\":\"" + orgName + "\"}"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Cancel your subscription")));
+    jdbc.update("update tenant_subscriptions set status = 'CANCELLED' where tenant_id = ?", w.tenantId());
+    mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/account")
+            .header("Authorization", w.bearer()).contentType(MediaType.APPLICATION_JSON)
+            .content("{\"confirmOrganisationName\":\"" + orgName + "\"}"))
+        .andExpect(status().isAccepted());
+  }
+
+  @Test
   void legacyDefaultWorkspaceIsNotLimited() {
     assertThat(entitlements.effectivePlan(TenantContext.DEFAULT_TENANT_ID)).isEqualTo(PlanCatalog.ENTERPRISE);
   }

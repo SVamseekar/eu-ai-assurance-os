@@ -18,6 +18,6 @@ public interface AiSystemJpaRepository extends JpaRepository<AiSystemEntity, UUI
 
   long countByTenantId(UUID tenantId);
 
-  @Query("select s.id from AiSystemEntity s where s.tenantId = :tenantId order by s.createdAt asc")
+  @Query("select s.id from AiSystemEntity s where s.tenantId = :tenantId order by s.createdAt asc, s.id asc")
   List<UUID> findIdsByTenantIdOrderByCreatedAtAsc(@Param("tenantId") UUID tenantId);
 }

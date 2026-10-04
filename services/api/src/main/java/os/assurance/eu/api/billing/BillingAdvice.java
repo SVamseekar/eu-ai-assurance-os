@@ -21,4 +21,17 @@ public class BillingAdvice {
   ResponseEntity<Map<String, String>> badSignature(WebhookSignatureException ex) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid_signature"));
   }
+
+  /** Dodo down, slow or refusing: the caller gets a clear 502 instead of a server error. */
+  @ExceptionHandler(org.springframework.web.client.RestClientException.class)
+  ResponseEntity<Map<String, String>> providerUnavailable(org.springframework.web.client.RestClientException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
+        "error", "billing_provider_unavailable",
+        "message", "The billing provider is unavailable. Try again in a moment."));
+  }
+
+  @ExceptionHandler(BillingConflictException.class)
+  ResponseEntity<Map<String, String>> conflict(BillingConflictException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "billing_conflict", "message", ex.getMessage()));
+  }
 }

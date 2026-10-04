@@ -32,11 +32,13 @@ export function BillingCard() {
   const billing = useQuery({ queryKey: ["billing"], queryFn: api.billing.get, retry: false });
   const [interval, setInterval_] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [returning, setReturning] = useState(false);
+  const checkoutError = (e: unknown) => (e instanceof Error ? e.message : "Checkout could not start.");
 
   // After Dodo's hosted checkout the plan changes through a webhook, so poll briefly.
   useEffect(() => {
     if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("billing") !== "return") return;
     setReturning(true);
+    window.history.replaceState(null, "", window.location.pathname + "#billing");
     let polls = 0;
     const timer = window.setInterval(() => {
       polls += 1;
@@ -61,6 +63,8 @@ export function BillingCard() {
   const b = billing.data;
   const banner = b ? billingBanner(b) : null;
   const paid = b?.plan === "TEAM" || b?.plan === "BUSINESS";
+  // A workspace that already pays changes plan in the billing portal; a second checkout would bill twice.
+  const subscribed = paid && (b?.status === "ACTIVE" || b?.status === "ON_HOLD");
 
   return (
     <Card id="billing">
@@ -73,7 +77,7 @@ export function BillingCard() {
       <CardContent className="space-y-4">
         {returning && (
           <p role="status" className="rounded-lg bg-muted px-3 py-2 text-xs">
-            Payment received. Your plan updates in a few seconds.
+            {paid ? "Your plan is active." : "If you completed the payment, your plan updates in a few seconds."}
           </p>
         )}
         {billing.isError && <p className="text-xs text-destructive">Billing details could not be loaded.</p>}
@@ -131,20 +135,24 @@ export function BillingCard() {
                     </li>
                   ))}
                 </ul>
-                <Button
-                  className="mt-3 w-full"
-                  disabled={isCurrent || checkout.isPending}
-                  onClick={() => checkout.mutate(plan.code as "TEAM" | "BUSINESS")}
-                >
-                  {isCurrent ? "Current plan" : `Upgrade to ${plan.name}`}
-                </Button>
+                {subscribed ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {isCurrent ? "Current plan" : "Change plan in Manage billing"}
+                  </p>
+                ) : (
+                  <Button
+                    className="mt-3 w-full"
+                    disabled={checkout.isPending}
+                    onClick={() => checkout.mutate(plan.code as "TEAM" | "BUSINESS")}
+                  >
+                    {`Upgrade to ${plan.name}`}
+                  </Button>
+                )}
               </div>
             );
           })}
         </div>
-        {checkout.isError && (
-          <p className="text-xs text-destructive">Checkout could not start. You need the ADMIN role, signed in.</p>
-        )}
+        {checkout.isError && <p className="text-xs text-destructive">{checkoutError(checkout.error)}</p>}
 
         {paid && (
           <Button variant="outline" onClick={() => portal.mutate()} disabled={portal.isPending}>

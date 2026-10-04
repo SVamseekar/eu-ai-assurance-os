@@ -211,17 +211,18 @@ class DodoWebhookApiTest {
     deliver(id, event("subscription.active", "2026-11-10T12:00:00Z", UUID.randomUUID(), "prod_team_m",
         "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
     assertThat(eventRows(id)).isEqualTo(1);
-    assertThat(jdbc.queryForObject("select count(*) from tenant_subscriptions where tenant_id not in (select id from tenants)",
-        Long.class)).isZero();
   }
 
   @Test
-  void aProductWeDoNotSellChangesNothing() throws Exception {
+  void aProductWeDoNotSellChangesNothingAndCanBeResentOnceConfigured() throws Exception {
     Workspace w = newWorkspace();
-    deliver(id(), event("subscription.active", "2026-11-10T12:00:00Z", w.tenantId(), "prod_unknown",
+    String eventId = id();
+    deliver(eventId, event("subscription.active", "2026-11-10T12:00:00Z", w.tenantId(), "prod_unknown",
         "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/billing").header("Authorization", w.bearer()))
         .andExpect(jsonPath("$.plan").value("FREE"));
+    // not marked processed: a "resend" from the Dodo dashboard after fixing the product ids must be able to apply it
+    assertThat(eventRows(eventId)).isZero();
   }
 
   @Test
@@ -269,6 +270,41 @@ class DodoWebhookApiTest {
         "\"subscription_id\":\"sub_someone_elses\"");
     deliver(id(), other, true).andExpect(status().isOk());
     mockMvc.perform(get("/api/v1/billing").header("Authorization", a.bearer()))
+        .andExpect(jsonPath("$.plan").value("TEAM"));
+  }
+
+  @Test
+  void aNewSubscriptionAfterCancellationLapsesIsAccepted() throws Exception {
+    Workspace w = newWorkspace();
+    String short8 = w.tenantId().toString().substring(0, 8);
+    deliver(id(), event("subscription.active", "2026-09-10T12:00:00Z", w.tenantId(), "prod_team_m",
+        "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
+    deliver(id(), event("subscription.expired", "2026-09-20T12:00:00Z", w.tenantId(), "prod_team_m",
+        "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", w.bearer()))
+        .andExpect(jsonPath("$.plan").value("FREE"));
+
+    String resubscribed = event("subscription.active", "2026-10-01T12:00:00Z", w.tenantId(), "prod_bus_m",
+        "2099-12-10T12:00:00Z").replace("\"subscription_id\":\"sub_" + short8 + "\"", "\"subscription_id\":\"sub_second\"");
+    deliver(id(), resubscribed, true).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", w.bearer()))
+        .andExpect(jsonPath("$.plan").value("BUSINESS"));
+    assertThat(jdbc.queryForObject("select dodo_subscription_id from tenant_subscriptions where tenant_id = ?",
+        String.class, w.tenantId())).isEqualTo("sub_second");
+  }
+
+  @Test
+  void anActiveSubscriptionThatMissedRenewalLapsesAfterAWeek() throws Exception {
+    Workspace w = newWorkspace();
+    deliver(id(), event("subscription.active", "2026-11-10T12:00:00Z", w.tenantId(), "prod_team_m",
+        "2099-12-10T12:00:00Z"), true).andExpect(status().isOk());
+    jdbc.update("update tenant_subscriptions set current_period_end = ? where tenant_id = ?",
+        Timestamp.from(Instant.now().minusSeconds(8L * 24 * 3600)), w.tenantId());
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", w.bearer()))
+        .andExpect(jsonPath("$.plan").value("FREE"));
+    jdbc.update("update tenant_subscriptions set current_period_end = ? where tenant_id = ?",
+        Timestamp.from(Instant.now().minusSeconds(2L * 24 * 3600)), w.tenantId());
+    mockMvc.perform(get("/api/v1/billing").header("Authorization", w.bearer()))
         .andExpect(jsonPath("$.plan").value("TEAM"));
   }
 

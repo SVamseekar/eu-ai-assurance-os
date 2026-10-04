@@ -103,6 +103,45 @@ class BillingCheckoutApiTest {
   }
 
   @Test
+  void aWorkspaceThatAlreadyPaysCannotStartASecondSubscription() throws Exception {
+    String email = "co5-" + UUID.randomUUID() + "@acme.example";
+    String bearer = adminBearer(email);
+    UUID tenantId = users.findByEmailIgnoreCase(email).orElseThrow().tenantId();
+    jdbc.update("insert into tenant_subscriptions(tenant_id, plan_code, status, current_period_end, updated_at) "
+        + "values (?, 'TEAM', 'ACTIVE', current_timestamp + interval '20' day, current_timestamp)", tenantId);
+
+    mockMvc.perform(post("/api/v1/billing/checkout").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{\"plan\":\"BUSINESS\",\"interval\":\"MONTHLY\"}"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("billing portal")));
+    verify(dodo, never()).createCheckout(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void aCancelledAndLapsedWorkspaceCanSubscribeAgain() throws Exception {
+    String email = "co6-" + UUID.randomUUID() + "@acme.example";
+    String bearer = adminBearer(email);
+    UUID tenantId = users.findByEmailIgnoreCase(email).orElseThrow().tenantId();
+    jdbc.update("insert into tenant_subscriptions(tenant_id, plan_code, status, grace_until, updated_at) "
+        + "values (?, 'TEAM', 'CANCELLED', current_timestamp - interval '1' day, current_timestamp)", tenantId);
+    when(dodo.createCheckout(any(), any(), any(), any(), any()))
+        .thenReturn(new DodoClient.CheckoutSession("cks_2", "https://checkout.test/pay/cks_2"));
+    mockMvc.perform(post("/api/v1/billing/checkout").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{\"plan\":\"TEAM\",\"interval\":\"YEARLY\"}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void aBillingProviderOutageIsABadGatewayNotAServerError() throws Exception {
+    String bearer = adminBearer("co7-" + UUID.randomUUID() + "@acme.example");
+    when(dodo.createCheckout(any(), any(), any(), any(), any()))
+        .thenThrow(new org.springframework.web.client.ResourceAccessException("timed out"));
+    mockMvc.perform(post("/api/v1/billing/checkout").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{\"plan\":\"TEAM\",\"interval\":\"MONTHLY\"}"))
+        .andExpect(status().isBadGateway()).andExpect(jsonPath("$.error").value("billing_provider_unavailable"));
+  }
+
+  @Test
   void portalNeedsAnExistingDodoCustomer() throws Exception {
     String email = "co4-" + UUID.randomUUID() + "@acme.example";
     String bearer = adminBearer(email);

@@ -87,6 +87,10 @@ public class BillingController {
     SessionOnly.require(request);
     authorization.requireAnyRole(UserRole.ADMIN);
     String productId = products.productId(body.plan(), body.interval());
+    if (entitlements.hasBillingSubscription(tenantContext.tenantId())) {
+      throw new BillingConflictException(
+          "This workspace already has a subscription. Change or cancel it in the billing portal.");
+    }
     UserEntity admin = users.findByIdAndTenantId(tenantContext.actorId(), tenantContext.tenantId()).orElseThrow();
     TenantEntity tenant = tenants.findById(tenantContext.tenantId()).orElseThrow();
     var session = dodo.createCheckout(productId, admin.email(), tenant.name(), tenant.id(), props.getReturnUrl());

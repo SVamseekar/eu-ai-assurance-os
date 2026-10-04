@@ -18,7 +18,11 @@ public class DodoClient {
 
   public DodoClient(DodoProperties props) {
     this.props = props;
+    var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+    factory.setConnectTimeout(5_000);
+    factory.setReadTimeout(10_000);
     this.http = RestClient.builder()
+        .requestFactory(factory)
         .baseUrl(props.getBaseUrl())
         .defaultHeader("Authorization", "Bearer " + props.getApiKey())
         .build();

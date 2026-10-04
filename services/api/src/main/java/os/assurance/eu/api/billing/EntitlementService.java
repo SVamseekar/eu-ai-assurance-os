@@ -28,6 +28,9 @@ public class EntitlementService {
   static final Set<UserRole> EDITOR_ROLES =
       Set.of(UserRole.ADMIN, UserRole.AI_ENGINEERING_LEAD, UserRole.COMPLIANCE_OFFICER);
 
+  /** How late a renewal webhook may be before an ACTIVE subscription is treated as lapsed. */
+  static final java.time.Duration RENEWAL_SLACK = java.time.Duration.ofDays(7);
+
   public record Usage(int systems, int editors, int gateRunsThisMonth) {}
 
   private final TenantJpaRepository tenants;
@@ -57,7 +60,10 @@ public class EntitlementService {
     if (subscriptionPlan != null && subscriptionStatus != null) {
       switch (subscriptionStatus) {
         case "ACTIVE", "TRIALING" -> {
-          return PlanCatalog.valueOf(subscriptionPlan);
+          // A paid period that ended more than a week ago without a renewal webhook has lapsed.
+          if (graceOrPeriodEnd == null || now.isBefore(graceOrPeriodEnd.plus(RENEWAL_SLACK))) {
+            return PlanCatalog.valueOf(subscriptionPlan);
+          }
         }
         case "ON_HOLD", "PAST_DUE", "CANCELLED" -> {
           if (graceOrPeriodEnd != null && now.isBefore(graceOrPeriodEnd)) {
@@ -110,7 +116,7 @@ public class EntitlementService {
     int index = ordered.indexOf(systemId);
     if (index >= plan.gatedSystems()) {
       throw new PaymentRequiredException("system_read_only",
-          "This system is read-only on the " + plan + " plan. Upgrade or archive other systems to edit it.");
+          "This system is read-only on the " + plan + " plan. Upgrade to edit it.");
     }
   }
 
@@ -146,9 +152,23 @@ public class EntitlementService {
   public Usage usage(UUID tenantId) {
     return new Usage(
         (int) systemsJpa.countByTenantId(tenantId),
-        (int) users.findAllByTenantIdOrderByCreatedAtAsc(tenantId).stream()
-            .filter(u -> EDITOR_ROLES.contains(u.role())).count(),
+        (int) editorsIncludingOpenInvites(tenantId),
         counters.runsIn(tenantId, currentPeriod()));
+  }
+
+  /** True while a paid subscription is live and still billing (active or in payment grace), so a second one must not start. */
+  @Transactional(readOnly = true)
+  public boolean hasBillingSubscription(UUID tenantId) {
+    var sub = subscriptions.findById(tenantId).orElse(null);
+    if (sub == null) {
+      return false;
+    }
+    Instant now = clock.instant();
+    return switch (sub.status()) {
+      case "ACTIVE", "TRIALING" -> sub.currentPeriodEnd() == null || now.isBefore(sub.currentPeriodEnd().plus(RENEWAL_SLACK));
+      case "ON_HOLD", "PAST_DUE" -> sub.graceUntil() != null && now.isBefore(sub.graceUntil());
+      default -> false;
+    };
   }
 
   private long editorsIncludingOpenInvites(UUID tenantId) {

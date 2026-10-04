@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PLAN_LIMIT_EVENT, api } from "@/lib/api";
+import { api } from "@/lib/api";
+import { PLAN_LIMIT_EVENT } from "@/lib/plan-limit";
 import { billingBanner } from "@/lib/billing-view";
 
 /** Trial/payment banner plus a dialog that opens whenever the API answers 402 (a plan limit). */

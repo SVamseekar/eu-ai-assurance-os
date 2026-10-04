@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/audit-events")
 public class AuditController {
+  private final os.assurance.eu.api.billing.EntitlementService entitlements;
   private final AuditService auditService;
   private final AiSystemRepository systems;
   private final TenantAuthorizationService authorizationService;
@@ -27,7 +28,9 @@ public class AuditController {
   public AuditController(
       AuditService auditService,
       AiSystemRepository systems,
-      TenantAuthorizationService authorizationService) {
+      TenantAuthorizationService authorizationService,
+      os.assurance.eu.api.billing.EntitlementService entitlements) {
+    this.entitlements = entitlements;
     this.auditService = auditService;
     this.systems = systems;
     this.authorizationService = authorizationService;
@@ -53,6 +56,9 @@ public class AuditController {
         UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER, UserRole.AI_ENGINEERING_LEAD);
     if (request.systemId() != null && systems.findById(request.systemId()).isEmpty()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AI system not found");
+    }
+    if (request.systemId() != null) {
+      entitlements.requireSystemWritable(request.systemId());
     }
     String requested = request.eventType() == null ? "" : request.eventType().trim().toLowerCase(java.util.Locale.ROOT);
     if (!requested.matches("^[a-z0-9_.-]{3,64}$")) {

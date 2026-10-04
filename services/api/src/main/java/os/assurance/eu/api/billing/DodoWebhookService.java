@@ -26,6 +26,7 @@ import os.assurance.eu.api.tenant.UserRole;
  */
 @Service
 public class DodoWebhookService {
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DodoWebhookService.class);
   static final Duration PAYMENT_GRACE = Duration.ofDays(7);
 
   private final BillingWebhookEventJpaRepository events;
@@ -77,6 +78,11 @@ public class DodoWebhookService {
     }
     BillingProducts.PlanAndInterval pi = products.lookup(data.path("product_id").asText());
     if (pi == null) {
+      // Most likely a missing or renamed DODO_PRODUCT_* setting. Do not mark the event processed, so a resend
+      // from the Dodo dashboard works once the setting is fixed.
+      log.error("Billing webhook {} ({}) names product '{}' that is not configured; not applied",
+          webhookId, type, data.path("product_id").asText());
+      events.deleteById(webhookId);
       return;
     }
     // A subscription belongs to exactly one workspace. An event that names another workspace, or a different
@@ -85,6 +91,7 @@ public class DodoWebhookService {
     if (subscriptionId != null) {
       var owner = subscriptions.findByDodoSubscriptionId(subscriptionId);
       if (owner.isPresent() && !owner.get().tenantId().equals(tenantId)) {
+        log.warn("Billing webhook {} names subscription {} that belongs to another workspace; ignored", webhookId, subscriptionId);
         return;
       }
     }
@@ -94,7 +101,13 @@ public class DodoWebhookService {
     }
     TenantSubscriptionEntity sub = subscriptions.findById(tenantId)
         .orElseGet(() -> new TenantSubscriptionEntity(tenantId));
-    if (sub.dodoSubscriptionId() != null && subscriptionId != null && !sub.dodoSubscriptionId().equals(subscriptionId)) {
+    // While a subscription is live (active or in payment grace) a different id is a duplicate, not a replacement.
+    // After it was cancelled, expired or lapsed, a new subscription takes over the workspace.
+    boolean live = "ACTIVE".equals(sub.status()) || "ON_HOLD".equals(sub.status());
+    if (live && sub.dodoSubscriptionId() != null && subscriptionId != null
+        && !sub.dodoSubscriptionId().equals(subscriptionId)) {
+      log.warn("Billing webhook {} carries subscription {} but workspace already has live subscription {}; ignored",
+          webhookId, subscriptionId, sub.dodoSubscriptionId());
       return;
     }
     if (eventTime.isBefore(sub.updatedAt())) {
@@ -116,7 +129,7 @@ public class DodoWebhookService {
     users.findFirstByTenantIdAndRoleOrderByCreatedAtAsc(tenantId, UserRole.ADMIN).ifPresent(admin -> {
       tenantContext.setOverrides(tenantId, admin.id());
       try {
-        audit.append(null, "billing." + type, "subscription", String.valueOf(sub.dodoSubscriptionId()),
+        audit.append(null, "billing." + type, "subscription", sub.dodoSubscriptionId() == null ? "" : sub.dodoSubscriptionId(),
             Map.of("plan", sub.planCode(), "status", sub.status()));
       } finally {
         tenantContext.clearOverrides();

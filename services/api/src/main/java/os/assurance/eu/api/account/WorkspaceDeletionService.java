@@ -38,10 +38,12 @@ public class WorkspaceDeletionService {
   private final AuditService audit;
   private final EmailSender email;
   private final Clock clock;
+  private final os.assurance.eu.api.billing.EntitlementService entitlements;
 
   public WorkspaceDeletionService(TenantJpaRepository tenants, UserJpaRepository users, ApiKeyJpaRepository apiKeys,
       RefreshTokenService refreshTokens, TenantStatusCache tenantStatus, TenantContext tenantContext,
-      AuditService audit, EmailSender email, Clock clock) {
+      AuditService audit, EmailSender email, Clock clock,
+      os.assurance.eu.api.billing.EntitlementService entitlements) {
     this.tenants = tenants;
     this.users = users;
     this.apiKeys = apiKeys;
@@ -51,6 +53,7 @@ public class WorkspaceDeletionService {
     this.audit = audit;
     this.email = email;
     this.clock = clock;
+    this.entitlements = entitlements;
   }
 
   @Transactional
@@ -61,6 +64,10 @@ public class WorkspaceDeletionService {
     if (confirmOrganisationName == null || !confirmOrganisationName.equals(tenant.name())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
           "Type the exact organisation name to confirm deletion");
+    }
+    if (entitlements.hasBillingSubscription(tenantId)) {
+      throw new os.assurance.eu.api.billing.BillingConflictException(
+          "Cancel your subscription in Plan and billing first, so you are not charged after deletion.");
     }
     Instant now = clock.instant();
     Instant purgeOn = now.plus(RETENTION);

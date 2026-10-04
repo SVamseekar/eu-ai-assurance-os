@@ -143,6 +143,17 @@ class EntitlementParityApiTest {
   }
 
   @Test
+  void aManualAuditEventCannotBeAddedToAReadOnlySystem() throws Exception {
+    freeWorkspaceWithTwoSystems();
+    write("POST", "/api/v1/audit-events",
+        "{\"systemId\":\"" + newer + "\",\"eventType\":\"note.added\",\"resourceType\":\"x\"}")
+        .andExpect(status().isPaymentRequired()).andExpect(jsonPath("$.code").value("system_read_only"));
+    write("POST", "/api/v1/audit-events",
+        "{\"systemId\":\"" + oldest + "\",\"eventType\":\"note.added\",\"resourceType\":\"x\"}")
+        .andExpect(status().isCreated());
+  }
+
+  @Test
   void theInsuranceIntegrationCannotCreateSystemsPastTheLimit() throws Exception {
     freeWorkspaceWithTwoSystems(); // Free allows one; this workspace already holds two
     write("POST", "/api/v1/integrations/insurance/claims-model-register",

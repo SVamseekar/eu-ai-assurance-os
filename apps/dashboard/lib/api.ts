@@ -34,6 +34,7 @@ import type {
   WorkspaceInvite,
   WorkspaceUser,
 } from "./types";
+import { dispatchPlanLimit, reportPlanLimit } from "./plan-limit";
 import type {
   PublicClaimsArtifacts,
   PublicClaimsIndex,
@@ -55,8 +56,7 @@ function redirectToLoginOnUnauthorized() {
   window.location.assign(href);
 }
 
-/** Fired on window when the API answers 402; detail is the human-readable limit message. */
-export const PLAN_LIMIT_EVENT = "aos:plan-limit";
+export { PLAN_LIMIT_EVENT } from "./plan-limit";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -82,9 +82,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // keep status text
     }
-    if (res.status === 402 && typeof window !== "undefined") {
+    if (res.status === 402) {
       // Plan limit: the shell shows an upgrade prompt for any screen that hits one.
-      window.dispatchEvent(new CustomEvent(PLAN_LIMIT_EVENT, { detail: message }));
+      dispatchPlanLimit(message);
     }
     throw new ApiError(res.status, message);
   }
@@ -157,6 +157,8 @@ export const api = {
       if (res.status === 401) {
         redirectToLoginOnUnauthorized();
       }
+      const pdfLimit = await reportPlanLimit(res);
+      if (pdfLimit) throw new ApiError(402, pdfLimit);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const contentSha256 = res.headers.get("X-Content-Sha256") ?? "";
       const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -182,6 +184,8 @@ export const api = {
       if (res.status === 401) {
         redirectToLoginOnUnauthorized();
       }
+      const exportLimit = await reportPlanLimit(res);
+      if (exportLimit) throw new ApiError(402, exportLimit);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const readinessStatus = res.headers.get("X-Readiness-Status") ?? "";
       const disposition = res.headers.get("Content-Disposition") ?? "";

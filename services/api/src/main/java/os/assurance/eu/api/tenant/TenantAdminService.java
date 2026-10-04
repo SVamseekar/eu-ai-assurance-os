@@ -92,7 +92,11 @@ public class TenantAdminService {
     UUID tenantId = UUID.randomUUID();
     String plan = blankTo(request.plan(), "design-partner");
     String region = blankTo(request.dataRegion(), "EU");
-    TenantEntity tenant = tenants.save(new TenantEntity(tenantId, request.name().trim(), plan, region, now));
+    TenantEntity newTenant = new TenantEntity(tenantId, request.name().trim(), plan, region, now);
+    if ("trial".equalsIgnoreCase(plan)) {
+      newTenant.setTrialEndsAt(now.plus(java.time.Duration.ofDays(14)));
+    }
+    TenantEntity tenant = tenants.save(newTenant);
     auditChainHeads.attachToNewTenant(tenantId);
     UUID adminId = UUID.randomUUID();
     UserEntity admin = users.save(new UserEntity(
