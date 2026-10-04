@@ -44,6 +44,24 @@ class UnverifiedAccountCleanupTest {
         Timestamp.from(Instant.now().minus(hours, ChronoUnit.HOURS)), email);
   }
 
+  private void expireLinks(String email) {
+    jdbc.update("update auth_tokens set expires_at = ? where user_id in "
+            + "(select id from users where lower(email) = lower(?))",
+        Timestamp.from(Instant.now().minus(1, ChronoUnit.HOURS)), email);
+  }
+
+  @Test
+  void aSignupWhoseConfirmationLinkIsStillValidIsKept() throws Exception {
+    String email = "late-" + UUID.randomUUID() + "@squat.example";
+    UUID tenant = signup(email);
+    backdate(email, 72); // an old account that asked for a fresh link a moment ago
+
+    cleanup.removeStale();
+
+    assertThat(users.findByEmailIgnoreCase(email)).isPresent();
+    assertThat(tenants.findById(tenant)).isPresent();
+  }
+
   @Test
   void staleUnverifiedSignupsAreRemovedWithTheirEmptyWorkspace() throws Exception {
     String stale = "stale-" + UUID.randomUUID() + "@squat.example";
@@ -51,6 +69,7 @@ class UnverifiedAccountCleanupTest {
     UUID staleTenant = signup(stale);
     UUID freshTenant = signup(fresh);
     backdate(stale, 72);
+    expireLinks(stale);
 
     cleanup.removeStale();
 
@@ -78,6 +97,7 @@ class UnverifiedAccountCleanupTest {
     String email = "again-" + UUID.randomUUID() + "@squat.example";
     signup(email);
     backdate(email, 72);
+    expireLinks(email);
     cleanup.removeStale();
     signup(email);
     assertThat(users.findByEmailIgnoreCase(email)).isPresent();

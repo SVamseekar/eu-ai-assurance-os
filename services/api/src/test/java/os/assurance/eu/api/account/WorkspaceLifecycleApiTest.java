@@ -58,6 +58,7 @@ class WorkspaceLifecycleApiTest {
   @Autowired TenantJpaRepository tenants;
   @Autowired UserJpaRepository users;
   @Autowired WorkspacePurgeJob purgeJob;
+  @Autowired UnverifiedAccountCleanupJob cleanupJob;
   @MockitoSpyBean EmailSender emailSender;
   @MockitoSpyBean os.assurance.eu.api.evidence.FileStorageService storage;
 
@@ -196,6 +197,19 @@ class WorkspaceLifecycleApiTest {
             .content("{\"token\":\"" + token + "\",\"password\":\"" + PASSWORD + "\"}"))
         .andExpect(status().isGone());
     assertThat(users.findByEmailIgnoreCase(invitee)).isEmpty();
+  }
+
+  @Test
+  void cleanupNeverRemovesAWorkspaceThatHoldsData() throws Exception {
+    Workspace w = newWorkspace("hasdata");
+    jdbc.update("update users set email_verified_at = null, created_at = ? where tenant_id = ?",
+        java.sql.Timestamp.from(Instant.now().minusSeconds(3600L * 24 * 30)), w.tenantId());
+    jdbc.update("delete from auth_tokens where user_id in (select id from users where tenant_id = ?)", w.tenantId());
+
+    cleanupJob.removeStale();
+
+    assertThat(tenants.findById(w.tenantId())).isPresent();
+    assertThat(count("ai_systems", "tenant_id", w.tenantId())).isEqualTo(1);
   }
 
   @Test
