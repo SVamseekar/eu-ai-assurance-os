@@ -90,8 +90,12 @@ class EntitlementParityApiTest {
   }
 
   /** Each entry is a write that targets {@code systemId}. */
-  private List<String[]> systemWrites(String systemId) {
+  private List<String[]> systemWrites(String systemId) throws Exception {
     String random = UUID.randomUUID().toString();
+    String workflowId = json.readTree(mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/v1/systems/" + systemId + "/workflows/active").header("Authorization", bearer))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("id").asText();
     return List.of(
         new String[] {"PUT", "/api/v1/systems/" + systemId + "/conformity", "{}"},
         new String[] {"POST", "/api/v1/systems/" + systemId + "/determination/runs", "{\"answers\":{}}"},
@@ -99,7 +103,7 @@ class EntitlementParityApiTest {
         new String[] {"POST", "/api/v1/systems/" + systemId + "/proposals/map",
             "{\"documents\":[{\"title\":\"t\",\"text\":\"x\"}]}"},
         new String[] {"PUT", "/api/v1/systems/" + systemId + "/assessment/" + random, "{\"applicability\":\"APPLICABLE\"}"},
-        new String[] {"POST", "/api/v1/systems/" + systemId + "/workflows/" + random + "/stages/" + random + "/approve", "{}"},
+        new String[] {"POST", "/api/v1/systems/" + systemId + "/workflows/" + workflowId + "/stages/" + random + "/approve", "{}"},
         new String[] {"POST", "/api/v1/data-contracts",
             "{\"systemId\":\"" + systemId + "\",\"name\":\"c\",\"owner\":\"o\",\"version\":\"1\"}"});
   }
@@ -119,6 +123,22 @@ class EntitlementParityApiTest {
     for (String[] w : systemWrites(oldest)) {
       int status = write(w[0], w[1], w[2]).andReturn().getResponse().getStatus();
       assertThat(status).as(w[1]).isNotEqualTo(402);
+    }
+  }
+
+  @Test
+  void aWorkflowOfAReadOnlySystemCannotBeActedOnThroughAnEditableSystemsPath() throws Exception {
+    freeWorkspaceWithTwoSystems();
+    String workflowOfNewer = json.readTree(mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/v1/systems/" + newer + "/workflows/active").header("Authorization", bearer))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("id").asText();
+    String random = UUID.randomUUID().toString();
+    // path names the editable (oldest) system, but the workflow belongs to the read-only one
+    for (String action : new String[] {"approve", "reject", "override"}) {
+      write("POST", "/api/v1/systems/" + oldest + "/workflows/" + workflowOfNewer + "/stages/" + random + "/" + action,
+          "{\"rationale\":\"x\"}")
+          .andExpect(status().isPaymentRequired()).andExpect(jsonPath("$.code").value("system_read_only"));
     }
   }
 

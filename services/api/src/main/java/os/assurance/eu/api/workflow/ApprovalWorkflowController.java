@@ -56,7 +56,7 @@ public class ApprovalWorkflowController {
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody(required = false) StageActionRequest request) {
-    entitlements.requireSystemWritable(systemId);
+    entitlements.requireSystemWritable(service.systemIdOf(workflowId));
     String rationale = request != null ? request.rationale() : null;
     String oversightEvidence = request != null ? request.oversightEvidence() : null;
     return service.approveStage(workflowId, stageId, rationale, oversightEvidence);
@@ -68,7 +68,7 @@ public class ApprovalWorkflowController {
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody StageActionRequest request) {
-    entitlements.requireSystemWritable(systemId);
+    entitlements.requireSystemWritable(service.systemIdOf(workflowId));
     return service.rejectStage(workflowId, stageId, request.rationale());
   }
 
@@ -78,7 +78,7 @@ public class ApprovalWorkflowController {
       @PathVariable UUID workflowId,
       @PathVariable UUID stageId,
       @RequestBody StageActionRequest request) {
-    entitlements.requireSystemWritable(systemId);
+    entitlements.requireSystemWritable(service.systemIdOf(workflowId));
     return service.overrideStage(workflowId, stageId, request.rationale());
   }
 }

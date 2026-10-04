@@ -810,3 +810,46 @@ Request:
 ```
 
 Audit events are append-only and cannot be modified through public APIs.
+
+## Plans and billing
+
+Every workspace has an effective plan, worked out on each request from its subscription, trial end and payment
+grace period. Paid plans are activated only by verified Dodo Payments webhooks; the checkout redirect alone never
+grants a plan.
+
+| Plan | Gated systems | Editor seats | CI gate runs / month |
+|---|---|---|---|
+| Free | 1 | 3 | 300 |
+| Trial (14 days from signup) | 15 | unlimited | unlimited |
+| Team | 3 | 10 | unlimited |
+| Business | 15 | unlimited | unlimited |
+| Enterprise | unlimited | unlimited | unlimited |
+
+Auditors and legal counsel are viewers and never count as editor seats. Pending editor invitations do.
+
+When a limit is reached the API answers `402`:
+
+```json
+{ "error": "plan_limit", "code": "gated_systems", "message": "…", "upgradeUrl": "/settings#billing" }
+```
+
+Codes: `gated_systems`, `system_read_only`, `editor_seats`, `gate_runs`, and `feature_<name>` (for example
+`feature_signed_pdf`). Systems beyond the plan's limit (oldest are kept) become read-only: every write that targets
+them returns `402 system_read_only`; reads and the JSON evidence pack keep working. Nothing is ever deleted by a
+downgrade. The signed PDF pack needs Team or above.
+
+```http
+GET  /api/v1/billing            # plan, status, interval, trial end, period end, grace, usage, limits (any role)
+POST /api/v1/billing/checkout   # {"plan":"TEAM|BUSINESS","interval":"MONTHLY|YEARLY"} -> {"checkoutUrl"}  (ADMIN, session only)
+POST /api/v1/billing/portal     # -> {"url"}, 409 until the workspace has a Dodo customer (ADMIN, session only)
+POST /api/v1/billing/webhooks/dodo   # public; Standard Webhooks signature over the raw body
+```
+
+Webhook behaviour: a bad or missing signature returns `401` and records nothing; a redelivered `webhook-id` is a
+no-op; an event older than the stored state is ignored; an event for an unknown workspace, an unknown product, or a
+subscription already bound to another workspace is acknowledged (`200`) and ignored. A failed payment keeps the plan
+for seven days, then the workspace drops to Free. A cancelled subscription keeps its plan until the paid period ends.
+
+Environment: `DODO_BASE_URL`, `DODO_API_KEY`, `DODO_WEBHOOK_SECRET`, `DODO_PRODUCT_TEAM_MONTHLY`,
+`DODO_PRODUCT_TEAM_YEARLY`, `DODO_PRODUCT_BUSINESS_MONTHLY`, `DODO_PRODUCT_BUSINESS_YEARLY`, and optionally
+`DODO_BUSINESS_ID` (static customer-portal fallback).
