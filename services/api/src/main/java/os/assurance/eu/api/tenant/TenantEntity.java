@@ -25,6 +25,15 @@ public class TenantEntity {
   @Column(nullable = false)
   private Instant createdAt;
 
+  @Column(nullable = false)
+  private String status = "ACTIVE";
+
+  @Column(name = "deleted_at")
+  private Instant deletedAt;
+
+  @Column(name = "purge_after")
+  private Instant purgeAfter;
+
   protected TenantEntity() {
   }
 
@@ -54,5 +63,27 @@ public class TenantEntity {
 
   public Instant createdAt() {
     return createdAt;
+  }
+
+  public String status() {
+    return status;
+  }
+
+  public Instant purgeAfter() {
+    return purgeAfter;
+  }
+
+  public boolean active() {
+    return "ACTIVE".equals(status);
+  }
+
+  public void scheduleDeletion(Instant now, Instant purgeAt) {
+    this.status = "DELETION_PENDING";
+    this.deletedAt = now;
+    this.purgeAfter = purgeAt;
+  }
+
+  public void setPlan(String plan) {
+    this.plan = plan;
   }
 }

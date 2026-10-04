@@ -4,12 +4,15 @@ import java.util.Properties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 @Configuration
 public class EmailConfig {
   @Bean
   EmailSender emailSender(
+      Environment environment,
       @Value("${assurance.email.mode:log}") String mode,
       @Value("${assurance.email.from:Assurance OS <no-reply@localhost>}") String from,
       @Value("${assurance.email.primary.host:}") String primaryHost,
@@ -20,8 +23,18 @@ public class EmailConfig {
       @Value("${assurance.email.fallback.port:587}") int fallbackPort,
       @Value("${assurance.email.fallback.username:}") String fallbackUser,
       @Value("${assurance.email.fallback.password:}") String fallbackPassword) {
-    if (!"smtp".equalsIgnoreCase(mode)) {
+    if ("log".equalsIgnoreCase(mode)) {
+      // Log mode prints verification and reset links, so it must never run on a deployed instance.
+      if (environment.acceptsProfiles(Profiles.of("postgres"))) {
+        throw new IllegalStateException("assurance.email.mode=log is not allowed with the postgres profile; set smtp");
+      }
       return new LoggingEmailSender();
+    }
+    if (!"smtp".equalsIgnoreCase(mode)) {
+      throw new IllegalStateException("assurance.email.mode must be 'log' or 'smtp', was: " + mode);
+    }
+    if (primaryHost.isBlank()) {
+      throw new IllegalStateException("assurance.email.primary.host is required when assurance.email.mode=smtp");
     }
     return new SmtpFailoverEmailSender(
         smtp(primaryHost, primaryPort, primaryUser, primaryPassword),

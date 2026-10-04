@@ -56,7 +56,9 @@ class AuthControllerTest {
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         tenants.save(new TenantEntity(tenantId, "Test Tenant", "starter", "EU", Instant.now()));
-        users.save(new UserEntity(userId, tenantId, email, UserRole.ADMIN, encoder.encode(rawPassword), Instant.now()));
+        UserEntity user = new UserEntity(userId, tenantId, email, UserRole.ADMIN, encoder.encode(rawPassword), Instant.now());
+        user.markEmailVerified(Instant.now());
+        users.save(user);
         return userId;
     }
 

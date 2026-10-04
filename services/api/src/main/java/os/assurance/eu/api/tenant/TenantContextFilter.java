@@ -62,6 +62,10 @@ public class TenantContextFilter extends OncePerRequestFilter {
         if (requestUri.startsWith("/auth/invites/")) {
             return true;
         }
+        if (requestUri.equals("/auth/signup") || requestUri.startsWith("/auth/verify-email")
+            || requestUri.startsWith("/auth/password/") || requestUri.equals("/auth/demo")) {
+            return true;
+        }
         // Part 4: Google/Microsoft OAuth start + callback must be reachable without a session.
         return requestUri.startsWith("/auth/oauth/");
     }

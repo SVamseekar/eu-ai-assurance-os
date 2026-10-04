@@ -34,6 +34,9 @@ public class UserEntity {
   @Column(name = "oauth_subject")
   private String oauthSubject;
 
+  @Column(name = "email_verified_at")
+  private Instant emailVerifiedAt;
+
   @Column(nullable = false)
   private Instant createdAt;
 
@@ -110,5 +113,13 @@ public class UserEntity {
 
   public void setRole(UserRole role) {
     this.role = role;
+  }
+
+  public Instant emailVerifiedAt() {
+    return emailVerifiedAt;
+  }
+
+  public void markEmailVerified(Instant at) {
+    this.emailVerifiedAt = at;
   }
 }

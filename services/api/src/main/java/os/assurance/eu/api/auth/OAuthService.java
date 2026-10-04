@@ -114,11 +114,8 @@ public class OAuthService {
   private UserEntity provisionNewTenantAdmin(OAuthProviderProfile profile) {
     Instant now = Instant.now();
     UUID tenantId = UUID.randomUUID();
-    String domain = profile.email().contains("@")
-        ? profile.email().substring(profile.email().indexOf('@') + 1)
-        : profile.email();
-    String tenantName = domain + " (OAuth)";
-    tenants.save(new TenantEntity(tenantId, tenantName, "starter", "EU", now));
+    String tenantName = profile.displayName() + "'s workspace";
+    tenants.save(new TenantEntity(tenantId, tenantName, "trial", "EU", now));
     auditChainHeads.attachToNewTenant(tenantId);
 
     UserEntity user = new UserEntity(
@@ -130,6 +127,7 @@ public class OAuthService {
         profile.provider(),
         profile.subject(),
         now);
+    user.markEmailVerified(now);
     return users.save(user);
   }
 

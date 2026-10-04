@@ -66,6 +66,9 @@ public class AuthController {
             assuranceMetrics.authLoginFailure("invalid_credentials");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
+        if (user.emailVerifiedAt() == null) {
+            throw new EmailNotVerifiedException();
+        }
         return issueTokenPair(user.id(), user.tenantId(), user.role());
     }
 

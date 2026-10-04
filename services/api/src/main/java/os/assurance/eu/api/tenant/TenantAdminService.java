@@ -85,6 +85,8 @@ public class TenantAdminService {
         UserRole.ADMIN,
         passwords.encode(request.adminPassword()),
         now));
+    admin.markEmailVerified(now);
+    users.save(admin);
     tenantContext.withTenant(tenantId, () -> {
       auditService.append(
           null,
@@ -195,6 +197,8 @@ public class TenantAdminService {
         invite.role(),
         passwords.encode(request.password()),
         now));
+    user.markEmailVerified(now);
+    users.save(user);
     invite.markAccepted(now);
     invites.save(invite);
     tenantContext.setOverrides(invite.tenantId(), user.id());
