@@ -8,7 +8,8 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-const request = () => new NextRequest("http://dashboard.test/api/auth/demo", { method: "POST" });
+const request = (headers: Record<string, string> = {}) =>
+  new NextRequest("http://dashboard.test/api/auth/demo", { method: "POST", headers });
 
 describe("POST /api/auth/demo", () => {
   it("starts a demo session with an access cookie only", async () => {
@@ -19,6 +20,16 @@ describe("POST /api/auth/demo", () => {
     assert.deepEqual(await res.json(), { ok: true, next: "/command" });
     assert.equal(res.cookies.get("session_access")?.value, "demo-acc");
     assert.equal(res.cookies.get("session_refresh"), undefined);
+  });
+
+  it("forwards the visitor's IP so the API rate-limits visitors separately", async () => {
+    let sent: Record<string, string> = {};
+    globalThis.fetch = async (_u, init) => {
+      sent = init?.headers as Record<string, string>;
+      return new Response(JSON.stringify({ accessToken: "a", refreshToken: "" }), { status: 200 });
+    };
+    await POST(request({ "cf-connecting-ip": "198.51.100.7" }));
+    assert.equal(sent["X-Client-IP"], "198.51.100.7");
   });
 
   it("reports the demo as unavailable when the API has it switched off", async () => {

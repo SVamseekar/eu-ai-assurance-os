@@ -20,7 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(properties = {
     "assurance.eval.worker.enabled=false",
     "assurance.eval.callback.secret=test-eval-callback-secret",
-    "assurance.demo.enabled=true"
+    "assurance.demo.enabled=true",
+    "assurance.demo.query-limit-per-15m=3"
 })
 @AutoConfigureMockMvc
 class DemoWorkspaceApiTest {
@@ -93,6 +94,27 @@ class DemoWorkspaceApiTest {
     mockMvc.perform(post("/api/v1/evidence/query").header("Authorization", bearer)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"systemId\":\"" + id + "\",\"question\":\"Can reviewers override automated routing?\"}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void evidenceQuestionsAreRateLimitedPerClientSoTheSharedWorkspaceCannotBeFlooded() throws Exception {
+    String id = idOf("Claims Triage AI (demo)");
+    String question = "{\"systemId\":\"" + id + "\",\"question\":\"Who can override routing?\"}";
+    for (int i = 0; i < 3; i++) {
+      mockMvc.perform(post("/api/v1/evidence/query").header("Authorization", bearer)
+              .with(r -> { r.setRemoteAddr("203.0.113.9"); return r; })
+              .contentType(MediaType.APPLICATION_JSON).content(question))
+          .andExpect(status().isOk());
+    }
+    mockMvc.perform(post("/api/v1/evidence/query").header("Authorization", bearer)
+            .with(r -> { r.setRemoteAddr("203.0.113.9"); return r; })
+            .contentType(MediaType.APPLICATION_JSON).content(question))
+        .andExpect(status().isTooManyRequests());
+    // a different client is unaffected
+    mockMvc.perform(post("/api/v1/evidence/query").header("Authorization", bearer)
+            .with(r -> { r.setRemoteAddr("203.0.113.10"); return r; })
+            .contentType(MediaType.APPLICATION_JSON).content(question))
         .andExpect(status().isOk());
   }
 
