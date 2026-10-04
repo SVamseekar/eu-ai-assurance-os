@@ -25,15 +25,18 @@ public class DemoReadOnlyFilter extends OncePerRequestFilter {
 
   private final TenantContext tenantContext;
   private final SlidingWindowRateLimiter queriesPerClient;
+  private final SlidingWindowRateLimiter queriesInTotal;
   private final boolean trustClientIpHeader;
 
   public DemoReadOnlyFilter(
       TenantContext tenantContext,
       @Value("${assurance.demo.query-limit-per-15m:20}") int queryLimit,
+      @Value("${assurance.demo.query-limit-global-per-15m:300}") int globalQueryLimit,
       @Value("${assurance.security.trust-client-ip-header:false}") boolean trustClientIpHeader,
       Clock clock) {
     this.tenantContext = tenantContext;
     this.queriesPerClient = new SlidingWindowRateLimiter(queryLimit, Duration.ofMinutes(15), clock);
+    this.queriesInTotal = new SlidingWindowRateLimiter(globalQueryLimit, Duration.ofMinutes(15), clock);
     this.trustClientIpHeader = trustClientIpHeader;
   }
 
@@ -48,8 +51,9 @@ public class DemoReadOnlyFilter extends OncePerRequestFilter {
         response.sendError(HttpServletResponse.SC_FORBIDDEN, "The demo workspace is read-only. Sign up to make changes.");
         return;
       }
-      // The one allowed write stores a question in the shared workspace, so cap it per client.
-      if (!queriesPerClient.tryAcquire(clientIp(request))) {
+      // The one allowed write stores a question in the shared workspace, so cap it per client and, in case
+      // client addresses are spoofed or rotated, for the whole workspace.
+      if (!queriesPerClient.tryAcquire(clientIp(request)) || !queriesInTotal.tryAcquire("demo")) {
         response.setStatus(429);
         response.setHeader("Retry-After", "900");
         response.setContentType("application/json");
