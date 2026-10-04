@@ -96,7 +96,10 @@ public class TenantAdminService {
         now));
     admin.markEmailVerified(now);
     users.save(admin);
-    tenantContext.withTenant(tenantId, () -> {
+    // Audit as the new admin: an actor from the operator tenant would tie this tenant's rows to
+    // another tenant's user and block either tenant's purge.
+    tenantContext.setOverrides(tenantId, adminId);
+    try {
       auditService.append(
           null,
           "tenant.provisioned",
@@ -107,8 +110,9 @@ public class TenantAdminService {
               "adminEmail", email,
               "plan", plan,
               "dataRegion", region));
-      return null;
-    });
+    } finally {
+      tenantContext.clearOverrides();
+    }
     return new CreateTenantResponse(TenantView.from(tenant), UserView.from(admin));
   }
 
@@ -201,6 +205,10 @@ public class TenantAdminService {
     }
     if (invite.expiresAt().isBefore(now)) {
       throw new ResponseStatusException(HttpStatus.GONE, "Invite expired");
+    }
+    boolean workspaceActive = tenants.findById(invite.tenantId()).map(TenantEntity::active).orElse(false);
+    if (!workspaceActive) {
+      throw new ResponseStatusException(HttpStatus.GONE, "This workspace is no longer available");
     }
     if (users.existsByEmailIgnoreCase(invite.email())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");

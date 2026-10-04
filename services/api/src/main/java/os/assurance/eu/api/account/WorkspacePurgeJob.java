@@ -72,13 +72,24 @@ public class WorkspacePurgeJob {
         (rs, i) -> rs.getObject(1, UUID.class), Timestamp.from(clock.instant()));
     for (UUID tenantId : due) {
       try {
-        storage.deletePrefix("evidence/" + tenantId + "/");
-        transaction.executeWithoutResult(status -> PURGE_SQL.forEach(sql -> jdbc.update(sql, tenantId)));
+        purge(tenantId);
         log.info("Purged workspace {}", tenantId);
       } catch (RuntimeException e) {
         // One failing workspace must not block the others; it is retried on the next run.
         log.error("Could not purge workspace {}", tenantId, e);
       }
     }
+  }
+
+  /** Deletes every row of one workspace, then its stored files. */
+  public void purge(UUID tenantId) {
+    transaction.executeWithoutResult(status -> {
+      // Row lock: two instances running the job at once take turns instead of racing; the second
+      // finds nothing left to delete.
+      jdbc.query("select id from tenants where id = ? for update", rs -> { }, tenantId);
+      PURGE_SQL.forEach(sql -> jdbc.update(sql, tenantId));
+    });
+    // Files go only after the rows are gone: a failed purge must not leave rows pointing at missing files.
+    storage.deletePrefix("evidence/" + tenantId + "/");
   }
 }

@@ -34,6 +34,7 @@ class TenantAdminApiTest {
   @Autowired MockMvc mockMvc;
   @Autowired ObjectMapper objectMapper;
   @Autowired JwtService jwtService;
+  @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
   @MockitoSpyBean EmailSender emailSender;
 
   private String inviteTokenEmailedTo(String to) {
@@ -109,6 +110,13 @@ class TenantAdminApiTest {
     JsonNode body = objectMapper.readTree(created.getResponse().getContentAsString());
     String tenantId = body.get("tenant").get("id").asText();
     String adminId = body.get("admin").get("id").asText();
+
+    // The new tenant's own audit trail must not point at users of another tenant, or purging the
+    // operator tenant would be blocked by a foreign key.
+    assertThat(jdbc.queryForObject(
+        "select count(*) from audit_events a join users u on u.id = a.actor_id "
+            + "where a.tenant_id = ? and u.tenant_id <> a.tenant_id",
+        Integer.class, java.util.UUID.fromString(tenantId))).isZero();
 
     String engineerEmail = "eng-" + unique + "@customer.example";
     MvcResult invite = mockMvc.perform(post("/api/v1/admin/users/invites")

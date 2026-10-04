@@ -59,6 +59,7 @@ class WorkspaceLifecycleApiTest {
   @Autowired UserJpaRepository users;
   @Autowired WorkspacePurgeJob purgeJob;
   @MockitoSpyBean EmailSender emailSender;
+  @MockitoSpyBean os.assurance.eu.api.evidence.FileStorageService storage;
 
   record Workspace(String email, String org, String bearer, UUID tenantId, String systemId) {}
 
@@ -174,6 +175,30 @@ class WorkspaceLifecycleApiTest {
   }
 
   @Test
+  void anInviteIntoAWorkspaceScheduledForDeletionCannotBeAccepted() throws Exception {
+    Workspace w = newWorkspace("invdel");
+    String invitee = "late-" + UUID.randomUUID() + "@acme.example";
+    mockMvc.perform(post("/api/v1/admin/users/invites").header("Authorization", w.bearer())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"email\":\"" + invitee + "\",\"role\":\"AUDITOR\"}"))
+        .andExpect(status().isCreated());
+    ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+    verify(emailSender, org.mockito.Mockito.atLeastOnce()).send(captor.capture());
+    String body = captor.getAllValues().stream().filter(m -> invitee.equals(m.to()))
+        .reduce((a, b) -> b).orElseThrow().textBody();
+    String token = body.substring(body.indexOf("token=") + 6).split("\\s")[0];
+    mockMvc.perform(delete("/api/v1/account").header("Authorization", w.bearer())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"confirmOrganisationName\":\"" + w.org() + "\"}"))
+        .andExpect(status().isAccepted());
+
+    mockMvc.perform(post("/auth/accept-invite").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"token\":\"" + token + "\",\"password\":\"" + PASSWORD + "\"}"))
+        .andExpect(status().isGone());
+    assertThat(users.findByEmailIgnoreCase(invitee)).isEmpty();
+  }
+
+  @Test
   void purgeRemovesTheWorkspaceEverywhereAndLeavesOthersAlone() throws Exception {
     Workspace gone = newWorkspace("purge");
     Workspace kept = newWorkspace("kept");
@@ -202,6 +227,25 @@ class WorkspaceLifecycleApiTest {
     assertThat(count("ai_systems", "tenant_id", kept.tenantId())).isEqualTo(1);
     assertThat(count("audit_events", "tenant_id", kept.tenantId())).isPositive();
     mockMvc.perform(get("/api/v1/systems").header("Authorization", kept.bearer())).andExpect(status().isOk());
+  }
+
+  @Test
+  void filesAreDeletedOnlyAfterTheDatabasePurgeHasCommitted() throws Exception {
+    Workspace w = newWorkspace("order");
+    mockMvc.perform(delete("/api/v1/account").header("Authorization", w.bearer())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"confirmOrganisationName\":\"" + w.org() + "\"}"))
+        .andExpect(status().isAccepted());
+    jdbc.update("update tenants set purge_after = ? where id = ?",
+        java.sql.Timestamp.from(Instant.now().minusSeconds(60)), w.tenantId());
+    java.util.concurrent.atomic.AtomicBoolean tenantStillThere = new java.util.concurrent.atomic.AtomicBoolean(true);
+    org.mockito.Mockito.doAnswer(inv -> {
+      tenantStillThere.set(tenants.findById(w.tenantId()).isPresent());
+      return null;
+    }).when(storage).deletePrefix(org.mockito.ArgumentMatchers.contains(w.tenantId().toString()));
+    purgeJob.purgeDue();
+    assertThat(tenantStillThere).isFalse();
+    org.mockito.Mockito.verify(storage).deletePrefix(org.mockito.ArgumentMatchers.contains(w.tenantId().toString()));
   }
 
   @Test
