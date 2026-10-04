@@ -1,14 +1,16 @@
 -- Postgres only: H2 has no expression indexes.
 -- Fails the deploy with a readable message, before any index is built, if two accounts share an address
--- (ignoring case). Resolve those rows by hand, then redeploy.
+-- (ignoring case). Resolve those rows by hand, then redeploy. The message gives a count and the query to run,
+-- not the addresses themselves, so personal data stays out of deploy logs.
 do $$
 declare
-  dupes text;
+  dupes integer;
 begin
-  select string_agg(addr || ' (' || n || ')', ', ') into dupes
-  from (select lower(email) as addr, count(*) as n from users group by 1 having count(*) > 1) d;
-  if dupes is not null then
-    raise exception 'Cannot enforce one account per email address. Duplicate addresses: %', dupes;
+  select count(*) into dupes
+  from (select 1 from users group by lower(email) having count(*) > 1) d;
+  if dupes > 0 then
+    raise exception 'Cannot enforce one account per email address: % address(es) are shared by several accounts. '
+      'Find them with: select lower(email), count(*) from users group by 1 having count(*) > 1', dupes;
   end if;
 end $$;
 

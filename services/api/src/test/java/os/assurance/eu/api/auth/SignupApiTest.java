@@ -39,6 +39,22 @@ class SignupApiTest {
   @Autowired TenantJpaRepository tenants;
   @MockitoSpyBean EmailSender emailSender;
 
+  @Test
+  void theConfirmationEmailIsSentOnlyAfterTheAccountIsCommitted() throws Exception {
+    String email = "commit-" + UUID.randomUUID() + "@example.test";
+    java.util.concurrent.atomic.AtomicReference<Boolean> visibleElsewhere = new java.util.concurrent.atomic.AtomicReference<>();
+    org.mockito.Mockito.doAnswer(inv -> {
+      // A second thread has its own connection: it sees the row only if the signup transaction committed.
+      visibleElsewhere.set(java.util.concurrent.CompletableFuture
+          .supplyAsync(() -> users.findByEmailIgnoreCase(email).isPresent()).get());
+      return null;
+    }).when(emailSender).send(argThat(m -> email.equals(m.to())));
+
+    signup(email, "Commit Org");
+
+    assertThat(visibleElsewhere.get()).isTrue();
+  }
+
   private void signup(String email, String org) throws Exception {
     mockMvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
             .content("{\"email\":\"" + email + "\",\"organisationName\":\"" + org + "\"}"))

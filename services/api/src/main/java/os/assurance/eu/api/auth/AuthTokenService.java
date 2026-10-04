@@ -23,6 +23,7 @@ public class AuthTokenService {
   private final AuthTokenJpaRepository tokens;
   private final Clock clock;
   private final EntityManager entityManager;
+  static final Duration CAP_WINDOW = Duration.ofHours(1);
   private final Duration cooldown;
   private final int maxPerHour;
 
@@ -52,7 +53,7 @@ public class AuthTokenService {
     if (!cooldown.isZero() && tokens.countIssuedSince(userId, purpose, now.minus(cooldown)) > 0) {
       return false;
     }
-    return tokens.countIssuedSince(userId, purpose, now.minus(Duration.ofHours(1))) < maxPerHour;
+    return tokens.countIssuedSince(userId, purpose, now.minus(CAP_WINDOW)) < maxPerHour;
   }
 
   /** Retires every unused link of this purpose for the user. */

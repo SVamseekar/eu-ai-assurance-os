@@ -5,6 +5,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
+import os.assurance.eu.api.email.AfterCommit;
+import os.assurance.eu.api.email.EmailMessage;
 import os.assurance.eu.api.email.EmailSender;
 import os.assurance.eu.api.email.EmailTemplates;
 import java.time.Instant;
@@ -153,7 +155,8 @@ public class TenantAdminService {
         java.util.Map.of("email", email, "role", request.role().name()));
     // The token reaches only the invitee's inbox. Accepting it is what proves the address,
     // so the inviter must never see it.
-    emailSender.send(EmailTemplates.workspaceInvite(baseUrl + "/invite?token=" + rawToken).withTo(email));
+    EmailMessage message = EmailTemplates.workspaceInvite(baseUrl + "/invite?token=" + rawToken).withTo(email);
+    AfterCommit.run(() -> emailSender.send(message));
     return new InviteCreatedResponse(
         invite.id(),
         invite.tenantId(),

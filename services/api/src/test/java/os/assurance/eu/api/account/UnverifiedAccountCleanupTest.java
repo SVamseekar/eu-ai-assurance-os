@@ -63,6 +63,18 @@ class UnverifiedAccountCleanupTest {
   }
 
   @Test
+  void repeatedResendsCannotKeepAnUnconfirmedSignupAliveForever() throws Exception {
+    String email = "squat-" + UUID.randomUUID() + "@squat.example";
+    UUID tenant = signup(email);
+    backdate(email, 24 * 8); // link is fresh (just resent) but the signup is over a week old
+
+    cleanup.removeStale();
+
+    assertThat(users.findByEmailIgnoreCase(email)).isEmpty();
+    assertThat(tenants.findById(tenant)).isEmpty();
+  }
+
+  @Test
   void staleUnverifiedSignupsAreRemovedWithTheirEmptyWorkspace() throws Exception {
     String stale = "stale-" + UUID.randomUUID() + "@squat.example";
     String fresh = "fresh-" + UUID.randomUUID() + "@squat.example";

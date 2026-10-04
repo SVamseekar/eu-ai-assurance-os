@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.email.AfterCommit;
+import os.assurance.eu.api.email.EmailMessage;
 import os.assurance.eu.api.email.EmailSender;
 import os.assurance.eu.api.email.EmailTemplates;
 import os.assurance.eu.api.tenant.TenantContext;
@@ -52,7 +54,8 @@ public class PasswordResetService {
         .filter(u -> tokens.canIssue(u.id(), AuthTokenPurpose.RESET_PASSWORD))
         .ifPresent(user -> {
       String raw = tokens.issue(user.id(), AuthTokenPurpose.RESET_PASSWORD, RESET_TTL);
-      email.send(EmailTemplates.resetPassword(baseUrl + "/reset-password?token=" + raw).withTo(user.email()));
+      EmailMessage message = EmailTemplates.resetPassword(baseUrl + "/reset-password?token=" + raw).withTo(user.email());
+      AfterCommit.run(() -> email.send(message));
     });
   }
 
@@ -78,6 +81,7 @@ public class PasswordResetService {
     } finally {
       tenantContext.clearOverrides();
     }
-    email.send(EmailTemplates.passwordChanged().withTo(user.email()));
+    EmailMessage changed = EmailTemplates.passwordChanged().withTo(user.email());
+    AfterCommit.run(() -> email.send(changed));
   }
 }

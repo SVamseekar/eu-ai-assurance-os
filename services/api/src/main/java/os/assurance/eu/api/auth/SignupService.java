@@ -17,6 +17,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import os.assurance.eu.api.audit.AuditChainHeads;
 import os.assurance.eu.api.audit.AuditService;
+import os.assurance.eu.api.email.AfterCommit;
+import os.assurance.eu.api.email.EmailMessage;
 import os.assurance.eu.api.email.EmailSender;
 import os.assurance.eu.api.email.EmailTemplates;
 import os.assurance.eu.api.tenant.TenantContext;
@@ -90,7 +92,8 @@ public class SignupService {
       }
     } else if (tokens.canIssue(existing.id(), AuthTokenPurpose.RESET_PASSWORD)) {
       String raw = tokens.issue(existing.id(), AuthTokenPurpose.RESET_PASSWORD, PasswordResetService.RESET_TTL);
-      email.send(EmailTemplates.accountExists(baseUrl + "/reset-password?token=" + raw).withTo(existing.email()));
+      EmailMessage message = EmailTemplates.accountExists(baseUrl + "/reset-password?token=" + raw).withTo(existing.email());
+      AfterCommit.run(() -> email.send(message));
     }
   }
 
@@ -141,6 +144,7 @@ public class SignupService {
 
   private void sendVerification(UserEntity user) {
     String raw = tokens.issue(user.id(), AuthTokenPurpose.VERIFY_EMAIL, VERIFY_TTL);
-    email.send(EmailTemplates.verifyEmail(baseUrl + "/verify-email?token=" + raw).withTo(user.email()));
+    EmailMessage message = EmailTemplates.verifyEmail(baseUrl + "/verify-email?token=" + raw).withTo(user.email());
+    AfterCommit.run(() -> email.send(message));
   }
 }
