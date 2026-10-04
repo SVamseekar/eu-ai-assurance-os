@@ -15,7 +15,10 @@ import org.springframework.test.context.ActiveProfiles;
     "assurance.eval.callback.secret=ci-eval-callback-secret-for-postgres-smoke-only",
     "assurance.audit.chain-secret=ci-audit-chain-secret-for-postgres-smoke-only",
     "assurance.oauth.state-secret=ci-oauth-state-secret-for-postgres-smoke-only",
-    "assurance.auth.key-encryption-secret=ci-jwt-key-encryption-secret-for-postgres-smoke"
+    "assurance.auth.key-encryption-secret=ci-jwt-key-encryption-secret-for-postgres-smoke",
+    // The postgres profile refuses log-mode email; the sender is built but never connects in this test.
+    "assurance.email.mode=smtp",
+    "assurance.email.primary.host=smtp.invalid"
 })
 @ActiveProfiles("postgres")
 @EnabledIfEnvironmentVariable(named = "RUN_POSTGRES_SMOKE", matches = "true")

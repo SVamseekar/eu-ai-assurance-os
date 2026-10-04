@@ -319,6 +319,8 @@ jobs:
         env:
           ASSURANCE_API_BASE_URL: http://localhost:8080
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          # A production build refuses signup without a Turnstile secret; this opts the test run out explicitly.
+          TURNSTILE_DISABLED: "1"
         run: |
           npm ci
           npx playwright install --with-deps chromium
