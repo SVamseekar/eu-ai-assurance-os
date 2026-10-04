@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clientIpHeaders } from "@/lib/client-ip";
-import { setSessionCookies } from "@/lib/session";
+import { REFRESH_COOKIE_NAME, setSessionCookies } from "@/lib/session";
 import { fetchUpstream, serviceUnavailable } from "@/lib/upstream";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
@@ -19,5 +19,7 @@ export async function POST(request: NextRequest) {
   const tokens = await upstream.json();
   const response = NextResponse.json({ ok: true, next: "/command" });
   setSessionCookies(response, tokens.accessToken, "");
+  // A refresh cookie from an earlier real session would let the proxy swap this demo for that account.
+  response.cookies.set(REFRESH_COOKIE_NAME, "", { path: "/", maxAge: 0 });
   return response;
 }

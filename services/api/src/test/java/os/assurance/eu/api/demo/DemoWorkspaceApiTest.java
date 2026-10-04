@@ -74,18 +74,23 @@ class DemoWorkspaceApiTest {
     String id = idOf("Claims Triage AI (demo)");
     mockMvc.perform(post("/api/v1/systems").header("Authorization", bearer)
             .contentType(MediaType.APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(status().reason(org.hamcrest.Matchers.containsString("demo workspace is read-only")));
     mockMvc.perform(patch("/api/v1/systems/{id}", id).header("Authorization", bearer)
             .contentType(MediaType.APPLICATION_JSON).content("{\"owner\":\"x\"}"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(status().reason(org.hamcrest.Matchers.containsString("demo workspace is read-only")));
     mockMvc.perform(post("/api/v1/api-keys").header("Authorization", bearer)
             .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"x\"}"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(status().reason(org.hamcrest.Matchers.containsString("demo workspace is read-only")));
     mockMvc.perform(delete("/api/v1/api-keys/{id}", id).header("Authorization", bearer))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(status().reason(org.hamcrest.Matchers.containsString("demo workspace is read-only")));
     mockMvc.perform(post("/api/v1/evidence/documents").header("Authorization", bearer)
             .contentType(MediaType.APPLICATION_JSON).content("{}"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(status().reason(org.hamcrest.Matchers.containsString("demo workspace is read-only")));
   }
 
   @Test

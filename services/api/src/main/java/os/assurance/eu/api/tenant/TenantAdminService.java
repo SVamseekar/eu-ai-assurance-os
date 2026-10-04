@@ -4,6 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Value;
+import os.assurance.eu.api.email.EmailSender;
+import os.assurance.eu.api.email.EmailTemplates;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
@@ -37,6 +40,8 @@ public class TenantAdminService {
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
   private final Clock clock;
+  private final EmailSender emailSender;
+  private final String baseUrl;
   private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder(12);
 
   public TenantAdminService(
@@ -50,7 +55,9 @@ public class TenantAdminService {
       AuditChainHeads auditChainHeads,
       JwtService jwtService,
       RefreshTokenService refreshTokenService,
-      Clock clock) {
+      Clock clock,
+      EmailSender emailSender,
+      @Value("${assurance.app.base-url}") String baseUrl) {
     this.tenants = tenants;
     this.users = users;
     this.invites = invites;
@@ -62,6 +69,8 @@ public class TenantAdminService {
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
     this.clock = clock;
+    this.emailSender = emailSender;
+    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
   }
 
   @Transactional
@@ -115,10 +124,13 @@ public class TenantAdminService {
   public InviteCreatedResponse inviteUser(InviteUserRequest request) {
     authorization.requireAnyRole(UserRole.ADMIN);
     String email = normalizeEmail(request.email());
-    if (users.existsByEmailIgnoreCase(email)) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
-    }
     Instant now = clock.instant();
+    if (users.existsByEmailIgnoreCase(email)) {
+      // Same answer as a fresh invite so an admin cannot probe which addresses have accounts.
+      return new InviteCreatedResponse(
+          UUID.randomUUID(), tenantContext.tenantId(), email, request.role(),
+          now.plus(platformProperties.getInviteTtlHours(), ChronoUnit.HOURS), null, "/invite");
+    }
     String rawToken = newToken();
     UserInviteEntity invite = invites.save(new UserInviteEntity(
         UUID.randomUUID(),
@@ -135,14 +147,17 @@ public class TenantAdminService {
         "user_invite",
         invite.id().toString(),
         java.util.Map.of("email", email, "role", request.role().name()));
+    // The token reaches only the invitee's inbox. Accepting it is what proves the address,
+    // so the inviter must never see it.
+    emailSender.send(EmailTemplates.workspaceInvite(baseUrl + "/invite?token=" + rawToken).withTo(email));
     return new InviteCreatedResponse(
         invite.id(),
         invite.tenantId(),
         invite.email(),
         invite.role(),
         invite.expiresAt(),
-        rawToken,
-        "/invite?token=" + rawToken);
+        null,
+        "/invite");
   }
 
   @Transactional(readOnly = true)

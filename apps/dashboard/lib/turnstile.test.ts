@@ -42,7 +42,17 @@ describe("verifyTurnstile", () => {
     };
     assert.equal(await verifyTurnstile("tok", null, "secret"), false);
   });
-  it("is disabled when no secret is configured", async () => {
+  it("is disabled when no secret is configured outside production", async () => {
     assert.equal(await verifyTurnstile(null, null, ""), true);
+  });
+  it("fails closed when no secret is configured in production", async () => {
+    const env = process.env as Record<string, string | undefined>;
+    const before = env.NODE_ENV;
+    env.NODE_ENV = "production";
+    try {
+      assert.equal(await verifyTurnstile("tok", null, ""), false);
+    } finally {
+      env.NODE_ENV = before;
+    }
   });
 });

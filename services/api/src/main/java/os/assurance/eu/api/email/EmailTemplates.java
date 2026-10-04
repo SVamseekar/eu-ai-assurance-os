@@ -29,6 +29,12 @@ public final class EmailTemplates {
             + "\n\nThe link works once and expires in 1 hour. If it was not you, ignore this email." + FOOTER);
   }
 
+  public static EmailMessage workspaceInvite(String link) {
+    return new EmailMessage("", "You have been invited to an Assurance OS workspace",
+        "You were invited to join a workspace on Assurance OS. To accept and choose a password, open:\n\n" + link
+            + "\n\nThe link works once and expires. If you did not expect this, ignore this email." + FOOTER);
+  }
+
   public static EmailMessage passwordChanged() {
     return new EmailMessage("", "Your Assurance OS password was changed",
         "The password for this account was just changed and all signed-in sessions were ended. "

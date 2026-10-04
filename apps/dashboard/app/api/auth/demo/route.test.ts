@@ -19,7 +19,16 @@ describe("POST /api/auth/demo", () => {
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { ok: true, next: "/command" });
     assert.equal(res.cookies.get("session_access")?.value, "demo-acc");
-    assert.equal(res.cookies.get("session_refresh"), undefined);
+    assert.equal(res.cookies.get("session_refresh")?.value, "");
+  });
+
+  it("expires any refresh cookie left over from an earlier real session", async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ accessToken: "demo-acc", refreshToken: "" }), { status: 200 });
+    const res = await POST(request({ cookie: "session_refresh=real-refresh" }));
+    const refresh = res.cookies.get("session_refresh");
+    assert.equal(refresh?.value, "");
+    assert.equal(refresh?.maxAge, 0);
   });
 
   it("forwards the visitor's IP so the API rate-limits visitors separately", async () => {
