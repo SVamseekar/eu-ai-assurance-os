@@ -13,6 +13,7 @@ import os.assurance.eu.api.observability.AssuranceMetrics;
 import os.assurance.eu.api.tenant.AcceptInviteRequest;
 import os.assurance.eu.api.tenant.InvitePreview;
 import os.assurance.eu.api.tenant.TenantAdminService;
+import os.assurance.eu.api.tenant.TenantStatusCache;
 import os.assurance.eu.api.tenant.UserEntity;
 import os.assurance.eu.api.tenant.UserJpaRepository;
 
@@ -24,6 +25,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final AssuranceMetrics assuranceMetrics;
     private final TenantAdminService tenantAdminService;
+    private final TenantStatusCache tenantStatus;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     private final SlidingWindowRateLimiter perEmail;
@@ -40,6 +42,7 @@ public class AuthController {
             RefreshTokenService refreshTokenService,
             AssuranceMetrics assuranceMetrics,
             TenantAdminService tenantAdminService,
+            TenantStatusCache tenantStatus,
             @org.springframework.beans.factory.annotation.Value("${assurance.security.auth-rate.per-email-per-15m:10}") int perEmailLimit,
             java.time.Clock clock) {
         this.users = users;
@@ -47,6 +50,7 @@ public class AuthController {
         this.refreshTokenService = refreshTokenService;
         this.assuranceMetrics = assuranceMetrics;
         this.tenantAdminService = tenantAdminService;
+        this.tenantStatus = tenantStatus;
         this.perEmail = new SlidingWindowRateLimiter(perEmailLimit, java.time.Duration.ofMinutes(15), clock);
     }
 
@@ -69,6 +73,9 @@ public class AuthController {
         if (user.emailVerifiedAt() == null) {
             throw new EmailNotVerifiedException();
         }
+        if (!tenantStatus.isActive(user.tenantId())) {
+            throw new WorkspaceDeletedException();
+        }
         return issueTokenPair(user.id(), user.tenantId(), user.role());
     }
 
@@ -82,6 +89,9 @@ public class AuthController {
         UserEntity user = users.findByIdAndTenantId(rotated.userId(), rotated.tenantId()).orElse(null);
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User no longer exists");
+        }
+        if (!tenantStatus.isActive(user.tenantId())) {
+            throw new WorkspaceDeletedException();
         }
         String accessToken = jwtService.issueAccessToken(user.id(), user.tenantId(), user.role());
         return new TokenResponse(accessToken, rotated.newToken().rawToken(), ACCESS_TOKEN_TTL_SECONDS);

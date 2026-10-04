@@ -249,4 +249,27 @@ class OAuthServiceTest {
 
     assertThat(users.findById(userId).orElseThrow().passwordHash()).isNotNull();
   }
+
+  @Test
+  void usersOfADeletedWorkspaceCannotSignInWithAProvider() {
+    UUID tenantId = UUID.randomUUID();
+    UUID userId = UUID.randomUUID();
+    TenantEntity tenant = new TenantEntity(tenantId, "Gone Co", "trial", "EU", Instant.now());
+    tenant.scheduleDeletion(Instant.now(), Instant.now().plusSeconds(3600));
+    tenants.save(tenant);
+    UserEntity user = new UserEntity(userId, tenantId, "gone@gone.example", UserRole.ADMIN, null, Instant.now());
+    user.markEmailVerified(Instant.now());
+    users.save(user);
+
+    when(tokenClient.exchangeCode(eq("google"), eq("gone-code"), anyString()))
+        .thenReturn(Map.of("access_token", "at"));
+    when(tokenClient.fetchUserInfo(eq("google"), any()))
+        .thenReturn(Map.of("sub", "gone-subject", "email", "gone@gone.example", "email_verified", true));
+
+    String state = stateService.issue("google", NONCE);
+    assertThatThrownBy(() -> oauthService.completeAuthorization("google", "gone-code", state, NONCE))
+        .isInstanceOf(OAuthService.OAuthLoginException.class)
+        .extracting(ex -> ((OAuthService.OAuthLoginException) ex).code())
+        .isEqualTo("workspace_deleted");
+  }
 }

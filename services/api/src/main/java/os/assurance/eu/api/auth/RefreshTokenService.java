@@ -96,6 +96,13 @@ public class RefreshTokenService {
         }
     }
 
+    public void revokeAllForTenant(UUID tenantId) {
+        for (RefreshTokenEntity token : repository.findAllByTenantIdAndRevokedAtIsNull(tenantId)) {
+            token.revoke(null);
+            repository.save(token);
+        }
+    }
+
     private void revokeChainFrom(RefreshTokenEntity entity) {
         String nextHash = entity.replacedByTokenHash();
         while (nextHash != null) {

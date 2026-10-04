@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiKeysCard } from "@/components/settings/api-keys-card";
+import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 import { api } from "@/lib/api";
 
 const ROLES = [
@@ -106,6 +107,8 @@ export default function SettingsPage() {
       </Card>
 
       <ApiKeysCard />
+
+      <DangerZoneCard />
 
       <Card>
         <CardHeader>

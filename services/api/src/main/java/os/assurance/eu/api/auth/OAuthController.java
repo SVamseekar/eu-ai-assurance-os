@@ -101,7 +101,7 @@ public class OAuthController {
 
   private static ResponseStatusException toStatus(OAuthService.OAuthLoginException e) {
     return switch (e.code()) {
-      case "not_provisioned" -> new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
+      case "not_provisioned", "workspace_deleted" -> new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
       case "state" -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
       case "denied" -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
       case "unsupported_provider" -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());

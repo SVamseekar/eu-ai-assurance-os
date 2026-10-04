@@ -13,6 +13,11 @@ public class AuthAdvice {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "email_not_verified"));
   }
 
+  @ExceptionHandler(WorkspaceDeletedException.class)
+  public ResponseEntity<Map<String, String>> workspaceDeleted(WorkspaceDeletedException ex) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "workspace_deleted"));
+  }
+
   @ExceptionHandler(TooManyAttemptsException.class)
   public ResponseEntity<Map<String, String>> tooMany(TooManyAttemptsException ex) {
     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)

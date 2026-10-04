@@ -24,6 +24,14 @@ describe("POST /api/auth/login", () => {
     assert.deepEqual(await res.json(), { error: "email_not_verified" });
   });
 
+  it("tells the browser when the workspace has been deleted", async () => {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: "workspace_deleted" }), { status: 403 });
+    const res = await POST(request());
+    assert.equal(res.status, 403);
+    assert.deepEqual(await res.json(), { error: "workspace_deleted" });
+  });
+
   it("still reports bad credentials as a plain 401", async () => {
     globalThis.fetch = async () => new Response("{}", { status: 401 });
     const res = await POST(request());

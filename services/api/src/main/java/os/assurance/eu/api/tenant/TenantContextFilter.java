@@ -42,16 +42,19 @@ public class TenantContextFilter extends OncePerRequestFilter {
     private final TenantContext tenantContext;
     private final JwtService jwtService;
     private final ApiKeyUsageRecorder apiKeyUsage;
+    private final TenantStatusCache tenantStatus;
 
     public TenantContextFilter(
             ApiKeyJpaRepository apiKeys,
             TenantContext tenantContext,
             JwtService jwtService,
-            ApiKeyUsageRecorder apiKeyUsage) {
+            ApiKeyUsageRecorder apiKeyUsage,
+            TenantStatusCache tenantStatus) {
         this.apiKeys = apiKeys;
         this.tenantContext = tenantContext;
         this.jwtService = jwtService;
         this.apiKeyUsage = apiKeyUsage;
+        this.tenantStatus = tenantStatus;
     }
 
     static boolean isUnauthenticatedPath(String requestUri) {
@@ -115,6 +118,10 @@ public class TenantContextFilter extends OncePerRequestFilter {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unknown or revoked API key");
             return;
         }
+        if (!tenantStatus.isActive(key.tenantId())) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Workspace is no longer active");
+            return;
+        }
         apiKeyUsage.touch(key.id());
         tenantContext.setOverrides(key.tenantId(), key.userId());
         try {
@@ -132,6 +139,10 @@ public class TenantContextFilter extends OncePerRequestFilter {
         var claims = jwtService.verifyAccessToken(token);
         if (claims.isEmpty()) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired access token");
+            return;
+        }
+        if (!tenantStatus.isActive(claims.get().tenantId())) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Workspace is no longer active");
             return;
         }
         tenantContext.setOverrides(claims.get().tenantId(), claims.get().userId());

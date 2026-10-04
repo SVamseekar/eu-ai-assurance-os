@@ -66,6 +66,20 @@ DELETE /api/v1/api-keys/{id}     # 204; revoked keys get 401 immediately
 - CI calls `GET /api/v1/ci/release-gate?systemId=…` with `X-Api-Key`. The dashboard exposes the same path
   without a session cookie and forwards it unchanged.
 
+### Workspace export and deletion
+
+```http
+GET    /api/v1/account/export   # application/zip, one JSON file per table (ADMIN, signed-in session)
+DELETE /api/v1/account          # {confirmOrganisationName} -> 202; ADMIN, signed-in session
+```
+
+- Export covers every table that holds the workspace's data, including extracted evidence text and the audit
+  ledger. Password, API-key and token hashes are left out. API keys cannot call either endpoint.
+- Deletion needs the exact organisation name. The workspace becomes `DELETION_PENDING` at once: sign-in, refresh,
+  OAuth, JWTs and API keys are all refused (`403 workspace_deleted` at sign-in, `401` elsewhere), and every admin is
+  emailed. A nightly job (03:30 UTC) erases workspaces 30 days after the request, along with their stored files.
+- Other API instances may keep serving a deleted workspace for up to 60 seconds (status cache).
+
 ### Read-only demo workspace
 
 ```http

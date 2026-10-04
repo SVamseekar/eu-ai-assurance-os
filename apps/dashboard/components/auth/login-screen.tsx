@@ -28,6 +28,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
     "Social sign-in is temporarily unavailable. Use email and password, or try again later.",
   not_configured:
     "Social sign-in is not configured in this environment. Use email and password, or request a demo.",
+  workspace_deleted:
+    "This workspace has been deleted. Contact support within 30 days if this was a mistake.",
   email_unverified:
     "Your identity provider did not confirm this email address. Sign in with your password, then link Google or Microsoft from Settings.",
 };
@@ -129,6 +131,11 @@ export function LoginScreen({
         return;
       }
       if (response.status === 403) {
+        const body = await response.json().catch(() => null);
+        if (body?.error === "workspace_deleted") {
+          setError("This workspace has been deleted. Contact support within 30 days if this was a mistake.");
+          return;
+        }
         setNeedsVerification(true);
         return;
       }

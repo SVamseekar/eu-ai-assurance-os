@@ -29,7 +29,9 @@ export async function POST(request: NextRequest) {
   }
   if (upstream.status >= 500) return serviceUnavailable();
   if (upstream.status === 403) {
-    return NextResponse.json({ error: "email_not_verified" }, { status: 403 });
+    const body = await upstream.json().catch(() => null);
+    const error = body?.error === "workspace_deleted" ? "workspace_deleted" : "email_not_verified";
+    return NextResponse.json({ error }, { status: 403 });
   }
   if (!upstream.ok) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
