@@ -8,4 +8,7 @@ description = "Test and CI secret fixtures"
 regexes = [
   '''test-key-encryption-secret-at-least-32-chars-long''',
   '''ci-jwt-key-encryption-secret-0123456789abcd''',
+  # Webhook signature test key: a fixed throwaway key so the verifier test can sign its own messages.
+  '''0123456789abcdef0123456789abcdef''',
+  '''whsec_MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=''',
 ]
