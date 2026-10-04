@@ -59,7 +59,7 @@ public class SignupService {
 
   /**
    * Always answers the same way. A new address gets a passwordless account and a link; an unverified
-   * one gets a fresh link (and the latest organisation name); a verified one is left untouched and its
+   * one gets a fresh link and is otherwise left as it was; a verified one is left untouched and its
    * owner gets a notice. The password is only ever chosen on the emailed link.
    */
   @Transactional
@@ -71,10 +71,6 @@ public class SignupService {
       createAccount(normalized, orgName);
     } else if (existing.emailVerifiedAt() == null) {
       if (tokens.canIssue(existing.id(), AuthTokenPurpose.VERIFY_EMAIL)) {
-        tenants.findById(existing.tenantId()).ifPresent(t -> {
-          t.rename(orgName);
-          tenants.save(t);
-        });
         sendVerification(existing);
       }
     } else if (tokens.canIssue(existing.id(), AuthTokenPurpose.RESET_PASSWORD)) {

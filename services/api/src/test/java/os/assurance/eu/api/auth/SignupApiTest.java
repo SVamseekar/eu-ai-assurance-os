@@ -121,7 +121,7 @@ class SignupApiTest {
   }
 
   @Test
-  void signupForUnverifiedEmailReusesTenantAndTheLatestOrgNameWins() throws Exception {
+  void signupForUnverifiedEmailReusesTenantAndNeverRenamesIt() throws Exception {
     String email = "pending-" + UUID.randomUUID() + "@acme.example";
     String attackerLink = signupToken(email);
     long tenantsAfterFirst = tenants.count();
@@ -133,7 +133,7 @@ class SignupApiTest {
     assertThat(tenants.count()).isEqualTo(tenantsAfterFirst);
     assertThat(victimLink).isNotEqualTo(attackerLink);
     var user = users.findByEmailIgnoreCase(email).orElseThrow();
-    assertThat(tenants.findById(user.tenantId()).orElseThrow().name()).isEqualTo("Real Org");
+    assertThat(tenants.findById(user.tenantId()).orElseThrow().name()).isEqualTo("Acme AI");
     verifyEmail(victimLink, PASSWORD, 200);
     verifyEmail(attackerLink, "another-long-password", 410);
   }
