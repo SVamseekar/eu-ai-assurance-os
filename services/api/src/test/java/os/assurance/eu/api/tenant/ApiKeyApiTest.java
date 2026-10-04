@@ -151,6 +151,19 @@ class ApiKeyApiTest {
   }
 
   @Test
+  void aKeyCannotInviteUsersOrProvisionTenants() throws Exception {
+    String key = createKey("Invite attempt").get("key").asText();
+    mockMvc.perform(post("/api/v1/admin/users/invites").header("X-Api-Key", key)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"email\":\"mallory@evil.example\",\"role\":\"ADMIN\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/admin/tenants").header("X-Api-Key", key)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"name\":\"Evil\",\"adminEmail\":\"a@evil.example\",\"adminPassword\":\"long-enough-password\"}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
   void malformedKeysAreBadRequests() throws Exception {
     mockMvc.perform(get("/api/v1/systems").header("X-Api-Key", "aos_too-short"))
         .andExpect(status().isBadRequest());
