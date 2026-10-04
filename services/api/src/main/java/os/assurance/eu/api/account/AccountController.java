@@ -2,10 +2,12 @@ package os.assurance.eu.api.account;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,14 +37,15 @@ public class AccountController {
   }
 
   @GetMapping(value = "/export", produces = "application/zip")
-  public ResponseEntity<byte[]> export(HttpServletRequest request) {
+  public ResponseEntity<StreamingResponseBody> export(HttpServletRequest request) {
     SessionOnly.require(request);
     authorization.requireAnyRole(UserRole.ADMIN);
-    byte[] zip = export.export(tenantContext.tenantId());
+    UUID tenantId = tenantContext.tenantId();
+    export.recordExport(tenantId);
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"assurance-os-export.zip\"")
         .contentType(MediaType.parseMediaType("application/zip"))
-        .body(zip);
+        .body(out -> export.writeTo(tenantId, out));
   }
 
   @DeleteMapping

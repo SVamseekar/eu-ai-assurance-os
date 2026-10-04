@@ -27,6 +27,8 @@ import org.springframework.test.web.servlet.MockMvc;
 class DemoWorkspaceApiTest {
   @Autowired MockMvc mockMvc;
   @Autowired ObjectMapper json;
+  @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+  @Autowired DemoQuestionCleanupJob demoCleanup;
   private String bearer;
 
   @BeforeEach
@@ -91,6 +93,24 @@ class DemoWorkspaceApiTest {
             .contentType(MediaType.APPLICATION_JSON).content("{}"))
         .andExpect(status().isForbidden())
         .andExpect(status().reason(org.hamcrest.Matchers.containsString("demo workspace is read-only")));
+  }
+
+  @Test
+  void visitorQuestionsDoNotStayInTheSharedWorkspace() throws Exception {
+    String id = idOf("Claims Triage AI (demo)");
+    for (String q : new String[] {"old question from yesterday", "question from a minute ago"}) {
+      mockMvc.perform(post("/api/v1/evidence/query").header("Authorization", bearer)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{\"systemId\":\"" + id + "\",\"question\":\"" + q + "\"}"))
+          .andExpect(status().isOk());
+    }
+    jdbc.update("update evidence_queries set created_at = ? where question = ?",
+        java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(7200)), "old question from yesterday");
+
+    demoCleanup.clearOldQuestions();
+
+    assertThat(jdbc.queryForList("select question from evidence_queries where tenant_id = ?", String.class,
+        os.assurance.eu.api.demo.DemoProperties.DEMO_TENANT_ID)).contains("question from a minute ago").doesNotContain("old question from yesterday");
   }
 
   @Test

@@ -118,8 +118,14 @@ class WorkspaceLifecycleApiTest {
     Workspace other = newWorkspace("other");
     createKey(mine);
 
-    var result = mockMvc.perform(get("/api/v1/account/export").header("Authorization", mine.bearer()))
+    // The zip is streamed, never held whole in memory, so the response completes in an async dispatch.
+    var started = mockMvc.perform(get("/api/v1/account/export").header("Authorization", mine.bearer()))
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.request().asyncStarted())
+        .andReturn();
+    var result = mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch(started))
         .andExpect(status().isOk()).andReturn().getResponse();
+    assertThat(count("audit_events", "tenant_id", mine.tenantId())).isPositive();
     assertThat(result.getContentType()).isEqualTo("application/zip");
     Map<String, String> files = unzip(result.getContentAsByteArray());
 
