@@ -36,7 +36,7 @@ export function VerifyEmailForm() {
     });
     setBusy(false);
     if (res.ok) {
-      router.replace("/command");
+      router.replace("/onboarding");
       return;
     }
     if (res.status === 410) {

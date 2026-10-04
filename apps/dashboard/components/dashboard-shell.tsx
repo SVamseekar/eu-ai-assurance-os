@@ -64,6 +64,10 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     subtitle:
       "Four EU firms reconstructed from public pages. Not customers. Evgraph fails closed when approval or dataset license is unpublished.",
   },
+  "/onboarding": {
+    title: "Get started",
+    subtitle: "Register your first AI system, see what applies, and gate your pipeline.",
+  },
   "/settings": {
     title: "Workspace",
     subtitle: "Users, invites, and workspace settings.",

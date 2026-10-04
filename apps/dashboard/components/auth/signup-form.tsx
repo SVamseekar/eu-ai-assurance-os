@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 
 import { AuthCard, FormError, authInputClassName } from "@/components/auth/auth-card";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { TurnstileWidget, turnstileEnabled } from "@/components/auth/turnstile-widget";
 import { Button } from "@/components/ui/button";
 
@@ -107,6 +108,15 @@ export function SignupForm() {
         </>
       }
     >
+      <OAuthButtons next="/onboarding" disabled={busy} />
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-3 font-medium uppercase tracking-wider text-muted-foreground">or email</span>
+        </div>
+      </div>
       <form onSubmit={onSubmit} className="space-y-4">
         <FormError message={error} />
         <div className="space-y-1.5">

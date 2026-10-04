@@ -9,37 +9,16 @@ import { RiskBadge } from "./risk-badge";
 import { SectorPackBadge } from "./sector-pack-badge";
 import { CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
-import { suggestRiskClass, toApiRiskClass } from "@/lib/risk-class";
-import { SECTOR_PACK_OPTIONS, resolveSectorPackId } from "@/lib/sector-packs";
+import { type RiskAnswers } from "@/lib/risk-class";
+import { registerSystem } from "@/lib/register-system";
+import { SECTOR_PACK_OPTIONS } from "@/lib/sector-packs";
+import { QUESTIONNAIRE, deriveRegistration, sectorAnswerDefaults } from "@/lib/system-registration";
 
 interface RegisterSystemModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRegistered?: (id: string) => void;
 }
-
-const QUESTIONNAIRE = [
-  {
-    id: "q_biometrics",
-    label: "Biometric & Critical Infrastructure",
-    text: "Is the system used for real-time remote biometric identification, or for control/safety of critical physical infrastructure (e.g., power grid)?"
-  },
-  {
-    id: "q_essential",
-    label: "Essential Services & Access Control",
-    text: "Does the system evaluate creditworthiness, compute insurance eligibility, prioritize claims routing, or routing access to essential welfare benefits?"
-  },
-  {
-    id: "q_hr",
-    label: "Employment & HR Pipelines",
-    text: "Is the system used for recruitment, screening resumes, shortlisting job applicants, or evaluating worker performance/promotions?"
-  },
-  {
-    id: "q_interaction",
-    label: "Customer Interaction & Natural Persons",
-    text: "Does the system directly interact with natural persons, or generate content that could be mistaken as human-written (e.g., chat copilots, generation tools)?"
-  }
-];
 
 export function RegisterSystemModal({ isOpen, onClose, onRegistered }: RegisterSystemModalProps) {
   const qc = useQueryClient();
@@ -51,7 +30,7 @@ export function RegisterSystemModal({ isOpen, onClose, onRegistered }: RegisterS
   const [sector, setSector] = useState("insurance");
   const [purpose, setPurpose] = useState("");
 
-  const [answers, setAnswers] = useState<Record<string, boolean>>({
+  const [answers, setAnswers] = useState<RiskAnswers>({
     q_biometrics: false,
     q_essential: false,
     q_hr: false,
@@ -65,87 +44,17 @@ export function RegisterSystemModal({ isOpen, onClose, onRegistered }: RegisterS
   function handleSectorChange(next: string) {
     setSector(next);
     // Align questionnaire defaults with sector pack hints (client-side only)
-    if (next === "insurance" || next === "finance") {
-      setAnswers((p) => ({ ...p, q_essential: true, q_hr: false }));
-    } else if (next === "hr") {
-      setAnswers((p) => ({ ...p, q_hr: true, q_essential: false }));
-    }
+    const defaults = sectorAnswerDefaults(next);
+    if (defaults) setAnswers((p) => ({ ...p, ...defaults }));
   }
 
-  const riskClass = suggestRiskClass({
-    q_biometrics: answers.q_biometrics,
-    q_essential: answers.q_essential,
-    q_hr: answers.q_hr,
-    q_interaction: answers.q_interaction,
-  });
-  let riskBasis = "No specific EU AI Act obligations suggested by these answers. Article 4 AI literacy and general law still apply.";
-
-  if (riskClass === "high") {
-    riskBasis = "Art. 6(2) Annex III — System falls under high-risk critical infrastructure, essential services, or HR hiring evaluation categories.";
-  } else if (riskClass === "limited") {
-    riskBasis = "Article 50 transparency duties may apply — the system interacts with natural persons or generates content.";
-  }
-
-  const packId = resolveSectorPackId(sector);
-  const packObligations =
-    packId === "insurance"
-      ? [
-          "Insurance pack: claims fairness testing (INS_CLAIMS_FAIRNESS)",
-          "Insurance pack: human review of adverse claim decisions",
-          "Insurance pack: claims model card documentation",
-        ]
-      : packId === "hr"
-        ? [
-            "HR pack: hiring/ranking transparency",
-            "HR pack: employment human oversight + candidate notice",
-          ]
-        : packId === "finance"
-          ? [
-              "Finance pack: elevated KYC/fraud logging intensity",
-              "Finance pack: human review of fraud/KYC flags",
-            ]
-          : [];
-
-  const obligations = riskClass === "high"
-    ? [
-        "Index Technical Documentation (Art. 11) & Model Cards",
-        "Establish Human Oversight SOP (Art. 14) with manual override route",
-        "Keep automatic event logs (Art. 12)",
-        "Run continuous evaluation runs (faithfulness, bias) and pass 85% threshold gate",
-        "Monitor data-contract drift on schema inputs",
-        ...packObligations,
-      ]
-    : riskClass === "limited"
-    ? [
-        "Disclose AI interaction and label AI-generated content (Article 50)",
-        "Identify content generation origins explicitly",
-        ...packObligations,
-      ]
-    : [
-        "Optional compliance with voluntary industry code of conduct models",
-        "Maintain baseline privacy data policies"
-      ];
+  const { riskClass, riskBasis, obligations } = deriveRegistration(answers, sector);
 
   async function handleSubmit() {
     setSaving(true);
     setError(null);
     try {
-      const apiRisk = toApiRiskClass(riskClass);
-      const created = await api.systems.create({
-        name: name.trim(),
-        owner: owner.trim(),
-        purpose: purpose.trim(),
-        riskClass: apiRisk,
-        riskBasis,
-        deploymentRegion: "EU",
-        sector: sector || undefined,
-      });
-      await api.systems.classify(created.id, {
-        riskClass: apiRisk,
-        basis: riskBasis,
-        humanOversightRequired: riskClass === "high",
-        sector: sector || undefined,
-      });
+      const created = await registerSystem({ name, owner, purpose, sector, answers });
       await qc.invalidateQueries({ queryKey: ["systems"] });
       onRegistered?.(created.id);
       setStep(1);

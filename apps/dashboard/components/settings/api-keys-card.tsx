@@ -5,15 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { releaseGateWorkflow } from "@/lib/onboarding";
 import type { ApiKeyCreated } from "@/lib/types";
-
-const WORKFLOW_SNIPPET = `# .github/workflows/ai-release-gate.yml
-- name: Assurance OS release gate
-  run: |
-    decision=$(curl -fsS -H "X-Api-Key: \${{ secrets.ASSURANCE_API_KEY }}" \\
-      "https://<your-app-domain>/api/v1/ci/release-gate?systemId=<SYSTEM_ID>")
-    echo "$decision"
-    test "$(echo "$decision" | jq -r .exitCode)" = "0"`;
 
 function formatDate(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "never";
@@ -139,7 +132,7 @@ export function ApiKeysCard() {
           </ul>
         )}
 
-        <pre className="overflow-x-auto rounded-lg bg-muted px-3 py-3 text-xs">{WORKFLOW_SNIPPET}</pre>
+        <pre className="overflow-x-auto rounded-lg bg-muted px-3 py-3 text-xs">{releaseGateWorkflow()}</pre>
       </CardContent>
     </Card>
   );
