@@ -97,6 +97,7 @@ export function LoginScreen({
   const [submitting, setSubmitting] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [resendNote, setResendNote] = useState<string | null>(null);
+  const [demoStarting, setDemoStarting] = useState(false);
   const [oauthRedirecting, setOauthRedirecting] = useState<
     "google" | "microsoft" | null
   >(null);
@@ -106,7 +107,7 @@ export function LoginScreen({
     : null;
 
   const displayError = error ?? oauthError;
-  const busy = submitting || oauthRedirecting !== null;
+  const busy = submitting || demoStarting || oauthRedirecting !== null;
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -157,6 +158,22 @@ export function LoginScreen({
       res.status === 202
         ? "If that address is waiting for confirmation, we sent a new link."
         : "Could not resend right now. Try again shortly.",
+    );
+  }
+
+  async function startDemo() {
+    setError(null);
+    setDemoStarting(true);
+    const res = await fetch("/api/auth/demo", { method: "POST" });
+    if (res.ok) {
+      router.push("/command");
+      return;
+    }
+    setDemoStarting(false);
+    setError(
+      res.status === 503
+        ? "Assurance OS is temporarily unavailable. Try again shortly."
+        : "The live demo is not available right now.",
     );
   }
 
@@ -410,6 +427,18 @@ export function LoginScreen({
               >
                 Create an account
               </Link>
+            </p>
+
+            <p className="mt-3 text-center text-sm text-muted-foreground">
+              Just looking?{" "}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={startDemo}
+                className="font-medium text-foreground underline-offset-4 hover:underline disabled:opacity-50"
+              >
+                {demoStarting ? "Opening the demo…" : "Try the live demo"}
+              </button>
             </p>
 
             <p className="mt-3 text-center text-sm text-muted-foreground">

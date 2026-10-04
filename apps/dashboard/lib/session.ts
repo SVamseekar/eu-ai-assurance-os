@@ -23,10 +23,13 @@ export function setSessionCookies(
     ...base,
     maxAge: 15 * 60,
   });
-  response.cookies.set(REFRESH_COOKIE, refreshToken, {
-    ...base,
-    maxAge: 30 * 24 * 60 * 60,
-  });
+  // The read-only demo has no refresh token: it ends when the access token does.
+  if (refreshToken) {
+    response.cookies.set(REFRESH_COOKIE, refreshToken, {
+      ...base,
+      maxAge: 30 * 24 * 60 * 60,
+    });
+  }
 }
 
 export function clearSessionCookies(response: NextResponse) {

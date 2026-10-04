@@ -1,0 +1,113 @@
+package os.assurance.eu.api.demo;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@SpringBootTest(properties = {
+    "assurance.eval.worker.enabled=false",
+    "assurance.eval.callback.secret=test-eval-callback-secret",
+    "assurance.demo.enabled=true"
+})
+@AutoConfigureMockMvc
+class DemoWorkspaceApiTest {
+  @Autowired MockMvc mockMvc;
+  @Autowired ObjectMapper json;
+  private String bearer;
+
+  @BeforeEach
+  void signInToDemo() throws Exception {
+    String body = mockMvc.perform(post("/auth/demo")).andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    JsonNode tokens = json.readTree(body);
+    assertThat(tokens.get("accessToken").asText()).isNotBlank();
+    assertThat(tokens.get("refreshToken").asText()).isEmpty();
+    bearer = "Bearer " + tokens.get("accessToken").asText();
+  }
+
+  private JsonNode systems() throws Exception {
+    return json.readTree(mockMvc.perform(get("/api/v1/systems").header("Authorization", bearer))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+  }
+
+  private String idOf(String name) throws Exception {
+    for (JsonNode s : systems()) {
+      if (name.equals(s.get("name").asText())) return s.get("id").asText();
+    }
+    throw new AssertionError("demo system not found: " + name);
+  }
+
+  @Test
+  void demoWorkspaceListsTheSeededSystemsAndNothingElse() throws Exception {
+    JsonNode all = systems();
+    assertThat(all).hasSize(2);
+    String names = all.toString();
+    assertThat(names).contains("Claims Triage AI (demo)").contains("Support Copilot (demo)");
+  }
+
+  @Test
+  void seededHighRiskSystemHasEvidenceControlsAndAnOpenWorkflow() throws Exception {
+    String id = idOf("Claims Triage AI (demo)");
+    String docs = mockMvc.perform(get("/api/v1/evidence/systems/{id}/documents", id).header("Authorization", bearer))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    assertThat(json.readTree(docs)).hasSize(2);
+    mockMvc.perform(get("/api/v1/systems/{id}/release-gate", id).header("Authorization", bearer))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void writesAreRefusedForTheDemoViewer() throws Exception {
+    String id = idOf("Claims Triage AI (demo)");
+    mockMvc.perform(post("/api/v1/systems").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(patch("/api/v1/systems/{id}", id).header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{\"owner\":\"x\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/api-keys").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"x\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(delete("/api/v1/api-keys/{id}", id).header("Authorization", bearer))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post("/api/v1/evidence/documents").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void evidenceQuestionsAreAllowed() throws Exception {
+    String id = idOf("Claims Triage AI (demo)");
+    mockMvc.perform(post("/api/v1/evidence/query").header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"systemId\":\"" + id + "\",\"question\":\"Can reviewers override automated routing?\"}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void whoAmIFlagsTheDemoWorkspace() throws Exception {
+    JsonNode me = json.readTree(mockMvc.perform(get("/api/v1/me").header("Authorization", bearer))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    assertThat(me.get("demo").asBoolean()).isTrue();
+    assertThat(me.get("role").asText()).isEqualTo("AUDITOR");
+  }
+
+  @Test
+  void demoTokenCannotBeRefreshed() throws Exception {
+    mockMvc.perform(post("/auth/refresh").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"refreshToken\":\"\"}"))
+        .andExpect(status().isUnauthorized());
+  }
+}

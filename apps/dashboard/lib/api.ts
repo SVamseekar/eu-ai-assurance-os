@@ -6,6 +6,7 @@ import type {
   AuditEvent,
   CertificationReadiness,
   Control,
+  Me,
   ControlStatus,
   DataContract,
   DeterminationQuestionnaire,
@@ -337,6 +338,7 @@ export const api = {
         body: JSON.stringify(payload),
       }),
   },
+  me: () => request<Me>("/me"),
   apiKeys: {
     list: () => request<ApiKeyView[]>("/api-keys"),
     create: (name: string) =>

@@ -66,6 +66,17 @@ DELETE /api/v1/api-keys/{id}     # 204; revoked keys get 401 immediately
 - CI calls `GET /api/v1/ci/release-gate?systemId=…` with `X-Api-Key`. The dashboard exposes the same path
   without a session cookie and forwards it unchanged.
 
+### Read-only demo workspace
+
+```http
+POST /auth/demo      # 200 {accessToken, refreshToken: "", expiresIn}; 404 unless ASSURANCE_DEMO_ENABLED=true
+GET  /api/v1/me      # {tenantId, role, email, demo}
+```
+
+- The demo is a shared workspace with two seeded systems, signed in as a password-less AUDITOR. Every
+  non-GET request from it returns 403 except `POST /api/v1/evidence/query`.
+- The demo token lasts 15 minutes and has no refresh token. Set `ASSURANCE_DEMO_ENABLED=true` to seed and serve it.
+
 ### OAuth (Google + Microsoft) — Part 4
 
 Implemented with unit/integration tests. Production smoke pending

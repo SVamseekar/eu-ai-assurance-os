@@ -272,6 +272,13 @@ export interface WorkspaceInvite {
   acceptPath: string;
 }
 
+export interface Me {
+  tenantId: string;
+  role: string;
+  email: string;
+  demo: boolean;
+}
+
 export interface ApiKeyView {
   id: string;
   name: string;
