@@ -1,6 +1,7 @@
 package os.assurance.eu.api.auth;
 
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenEnt
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from RefreshTokenEntity t where t.tokenHash = :tokenHash")
     Optional<RefreshTokenEntity> findForUpdateByTokenHash(@Param("tokenHash") String tokenHash);
+
+    List<RefreshTokenEntity> findAllByUserIdAndRevokedAtIsNull(UUID userId);
 }

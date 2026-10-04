@@ -88,6 +88,14 @@ public class RefreshTokenService {
         });
     }
 
+    @org.springframework.transaction.annotation.Transactional
+    public void revokeAllForUser(UUID userId) {
+        for (RefreshTokenEntity token : repository.findAllByUserIdAndRevokedAtIsNull(userId)) {
+            token.revoke(null);
+            repository.save(token);
+        }
+    }
+
     private void revokeChainFrom(RefreshTokenEntity entity) {
         String nextHash = entity.replacedByTokenHash();
         while (nextHash != null) {
