@@ -84,15 +84,19 @@ const inputClassName = cn(
 export function LoginScreen({
   nextPath,
   authErrorCode,
+  passwordReset = false,
 }: {
   nextPath?: string;
   authErrorCode?: string;
+  passwordReset?: boolean;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendNote, setResendNote] = useState<string | null>(null);
   const [oauthRedirecting, setOauthRedirecting] = useState<
     "google" | "microsoft" | null
   >(null);
@@ -108,6 +112,8 @@ export function LoginScreen({
     event.preventDefault();
     setSubmitting(true);
     setError(null);
+    setNeedsVerification(false);
+    setResendNote(null);
 
     const response = await fetch("/api/auth/login", {
       method: "POST",
@@ -119,6 +125,10 @@ export function LoginScreen({
     if (!response.ok) {
       if (response.status === 503) {
         setError("Assurance OS is temporarily unavailable. Try again shortly.");
+        return;
+      }
+      if (response.status === 403) {
+        setNeedsVerification(true);
         return;
       }
       if (response.status === 429) {
@@ -134,6 +144,20 @@ export function LoginScreen({
       return;
     }
     router.push(safeNextPath(nextPath));
+  }
+
+  async function resendVerification() {
+    setResendNote(null);
+    const res = await fetch("/api/auth/verify-email?resend=1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    setResendNote(
+      res.status === 202
+        ? "If that address is waiting for confirmation, we sent a new link."
+        : "Could not resend right now. Try again shortly.",
+    );
   }
 
   function startOAuth(provider: "google" | "microsoft") {
@@ -227,6 +251,38 @@ export function LoginScreen({
               </p>
             </div>
 
+            {passwordReset && !displayError && !needsVerification ? (
+              <div
+                role="status"
+                className="mb-6 flex gap-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-3 text-sm"
+              >
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <p>Password updated — sign in with your new password.</p>
+              </div>
+            ) : null}
+
+            {needsVerification ? (
+              <div
+                role="alert"
+                className="mb-6 flex gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-destructive"
+              >
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <div>
+                  <p>
+                    Confirm your email first.{" "}
+                    <button
+                      type="button"
+                      onClick={resendVerification}
+                      className="font-medium underline underline-offset-4"
+                    >
+                      Resend link
+                    </button>
+                  </p>
+                  {resendNote ? <p className="mt-1">{resendNote}</p> : null}
+                </div>
+              </div>
+            ) : null}
+
             {displayError ? (
               <div
                 role="alert"
@@ -303,9 +359,17 @@ export function LoginScreen({
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
+                <div className="flex items-baseline justify-between">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <input
                   id="password"
                   type="password"
@@ -339,6 +403,16 @@ export function LoginScreen({
             </form>
 
             <p className="mt-8 text-center text-sm text-muted-foreground">
+              New to {siteConfig.shortName}?{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Create an account
+              </Link>
+            </p>
+
+            <p className="mt-3 text-center text-sm text-muted-foreground">
               Need access for your team?{" "}
               <Link
                 href="/request-demo"

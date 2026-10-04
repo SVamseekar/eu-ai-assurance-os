@@ -17,6 +17,10 @@ const PUBLIC_PATH_PREFIXES = [
   "/msa",
   "/order-form",
   "/invite",
+  "/signup",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
 ] as const;
 
 /** Safe same-origin path for post-login redirects (`?next=` / OAuth return). */

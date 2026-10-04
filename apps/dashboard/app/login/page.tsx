@@ -22,8 +22,14 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; auth_error?: string }>;
+  searchParams: Promise<{ next?: string; auth_error?: string; reset?: string }>;
 }) {
   const params = await searchParams;
-  return <LoginScreen nextPath={params.next} authErrorCode={params.auth_error} />;
+  return (
+    <LoginScreen
+      nextPath={params.next}
+      authErrorCode={params.auth_error}
+      passwordReset={params.reset === "1"}
+    />
+  );
 }

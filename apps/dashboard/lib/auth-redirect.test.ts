@@ -24,6 +24,10 @@ describe("shouldHardRedirectToLogin", () => {
       "/msa",
       "/order-form",
       "/invite",
+      "/signup",
+      "/verify-email",
+      "/forgot-password",
+      "/reset-password",
     ]) {
       assert.equal(shouldHardRedirectToLogin(path), false, path);
     }
