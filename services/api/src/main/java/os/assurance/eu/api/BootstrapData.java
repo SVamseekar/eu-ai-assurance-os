@@ -113,14 +113,14 @@ public class BootstrapData implements CommandLineRunner {
       ensureApprovalWorkflows();
       return;
     }
-    users.findById(TenantContext.DEFAULT_USER_ID)
+    markVerified(users.findById(TenantContext.DEFAULT_USER_ID)
         .orElseGet(() -> users.save(new UserEntity(
             TenantContext.DEFAULT_USER_ID,
             TenantContext.DEFAULT_TENANT_ID,
             "compliance@example.com",
             UserRole.COMPLIANCE_OFFICER,
             passwordEncoder.encode(DemoCredentialGuard.DEV_PASSWORD),
-            now)));
+            now))), now);
     seedUser("00000000-0000-0000-0000-000000000102",
         "engineering@example.com", UserRole.AI_ENGINEERING_LEAD, now);
     seedUser("00000000-0000-0000-0000-000000000103",
@@ -207,14 +207,22 @@ public class BootstrapData implements CommandLineRunner {
 
   private void seedUser(String id, String email, UserRole role, Instant now) {
     UUID userId = UUID.fromString(id);
-    users.findById(userId)
+    markVerified(users.findById(userId)
         .orElseGet(() -> users.save(new UserEntity(
             userId,
             TenantContext.DEFAULT_TENANT_ID,
             email,
             role,
             passwordEncoder.encode(DemoCredentialGuard.DEV_PASSWORD),
-            now)));
+            now))), now);
+  }
+
+  /** Seeded dev users have no inbox to confirm, so they start verified. */
+  private void markVerified(UserEntity user, Instant now) {
+    if (user.emailVerifiedAt() == null) {
+      user.markEmailVerified(now);
+      users.save(user);
+    }
   }
 
   private void seed(
