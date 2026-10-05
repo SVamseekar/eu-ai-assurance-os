@@ -309,6 +309,9 @@ jobs:
           echo "EVGRAPH_BIN=$RUNNER_TEMP/evgraph/bin/evgraph" >> "$GITHUB_ENV"
       - name: Start API (H2, seeded demo users)
         working-directory: services/api
+        env:
+          # The public site's "Try the live demo" button is covered by the E2E suite.
+          ASSURANCE_DEMO_ENABLED: "true"
         run: |
           mvn -B -q -DskipTests package
           nohup java -jar target/api-*.jar > api.log 2>&1 &

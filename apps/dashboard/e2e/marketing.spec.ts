@@ -127,6 +127,25 @@ test.describe("public site", () => {
     await expect(page.getByRole("button", { name: "Try the live demo" }).first()).toBeVisible();
   });
 
+  test("the live demo button opens the read-only demo workspace", async ({ page, request }) => {
+    // Needs the API with ASSURANCE_DEMO_ENABLED=true, as in the CI E2E job.
+    const probe = await request.post("/api/auth/demo").catch(() => null);
+    test.skip(!probe || !probe.ok(), "demo workspace not enabled on this API");
+    await page.context().clearCookies();
+    await page.goto("/");
+    await page.getByRole("button", { name: "Try the live demo" }).first().click();
+    await expect(page).toHaveURL(/\/command/);
+    await expect(page.getByText(/read-only demo/i)).toBeVisible();
+  });
+
+  test("home lists every regulatory deadline with its source", async ({ page }) => {
+    await page.goto("/");
+    for (const label of ["Article 50(2) marking", "Automated-decision transparency", "Automated decision-making technology"]) {
+      await expect(page.getByText(label).first()).toBeVisible();
+    }
+    await expect(page.locator('a[href="https://leg.colorado.gov/bills/sb26-189"]').first()).toBeVisible();
+  });
+
   test("unknown routes show the branded 404", async ({ page }) => {
     const res = await page.goto("/does-not-exist");
     expect(res?.status()).toBe(404);
