@@ -16,6 +16,10 @@ const PAGES = [
   "/faq",
   "/method",
   "/terms",
+  "/security",
+  "/subprocessors",
+  "/tools/ai-act-check",
+  "/tools/ai-act-deadlines",
 ];
 
 test.describe("public site", () => {
@@ -158,6 +162,43 @@ test.describe("public site", () => {
       await expect(page.getByText(label).first()).toBeVisible();
     }
     await expect(page.locator('a[href="https://leg.colorado.gov/bills/sb26-189"]').first()).toBeVisible();
+  });
+
+  test("the free AI Act check works without signing in and stores nothing", async ({ page, request }) => {
+    const probe = await request.get("/api/public/determination").catch(() => null);
+    test.skip(!probe || !probe.ok(), "API not reachable");
+    await page.context().clearCookies();
+    await page.goto("/tools/ai-act-check");
+    const form = page.locator("form");
+    // A credit-scoring system: finance, eligibility decisions, profiling, essential private service.
+    const answers: Record<string, string> = {
+      operator_role: "provider",
+      sector: "finance",
+      users_affected: "many",
+      decision_impact: "eligibility",
+      essential_private_service: "true",
+      profiling: "true",
+      interacts_with_natural_persons: "false",
+    };
+    const selects = form.locator("select[required]");
+    await expect(selects.first()).toBeVisible();
+    for (const name of await selects.evaluateAll((els) => els.map((el) => (el as HTMLSelectElement).name))) {
+      await form.locator(`select[name="${name}"]`).selectOption(answers[name] ?? "false");
+    }
+    await form.getByRole("button", { name: "Check my AI system" }).click();
+    await expect(page.getByText("Likely high-risk")).toBeVisible();
+    await expect(page.getByText("not legal advice").first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Start free/ }).last()).toHaveAttribute("href", "/signup");
+  });
+
+  test("the deadline calendar downloads an .ics file", async ({ page }) => {
+    await page.goto("/tools/ai-act-deadlines");
+    await expect(page.getByRole("row")).toHaveCount(7);
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /Add all dates to your calendar/ }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("ai-regulation-deadlines.ics");
   });
 
   test("unknown routes show the branded 404", async ({ page }) => {

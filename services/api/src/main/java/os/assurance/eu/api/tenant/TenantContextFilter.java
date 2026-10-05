@@ -70,6 +70,10 @@ public class TenantContextFilter extends OncePerRequestFilter {
         if (requestUri.equals("/api/v1/billing/webhooks/dodo")) {
             return true;
         }
+        // Plan 08: free no-signup tools. Read-only, nothing persisted, rate limited per IP.
+        if (requestUri.startsWith("/api/public/")) {
+            return true;
+        }
         if (requestUri.equals("/auth/signup") || requestUri.startsWith("/auth/verify-email")
             || requestUri.startsWith("/auth/password/") || requestUri.equals("/auth/demo")) {
             return true;
