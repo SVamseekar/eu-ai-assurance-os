@@ -28,24 +28,10 @@ function asBoolean(value: unknown): boolean {
 }
 
 type ValidatedDemo = {
-  firstName: string;
-  lastName: string;
   workEmail: string;
-  phone?: string;
-  jobTitle: string;
   companyName: string;
-  companyWebsite?: string;
-  companySize: string;
-  industry: string;
-  country: string;
-  headquartersCity?: string;
-  aiSystemsCount: string;
-  highRiskExposure: string;
-  currentTooling: string;
-  primaryInterests: string[];
-  timeline: string;
-  referralSource: string;
-  message?: string;
+  jobTitle: string;
+  message: string;
   marketingConsent: boolean;
 };
 
@@ -67,21 +53,7 @@ function validateDemoRequest(
     return { ok: false, error: "Please take a moment to complete the form" };
   }
 
-  const required = [
-    "firstName",
-    "lastName",
-    "workEmail",
-    "jobTitle",
-    "companyName",
-    "companySize",
-    "industry",
-    "country",
-    "aiSystemsCount",
-    "highRiskExposure",
-    "currentTooling",
-    "timeline",
-    "referralSource",
-  ] as const;
+  const required = ["workEmail", "companyName", "jobTitle", "message"] as const;
 
   for (const field of required) {
     if (!asString(b[field])) {
@@ -98,38 +70,13 @@ function validateDemoRequest(
     return { ok: false, error: "Privacy consent is required" };
   }
 
-  const primaryInterests = Array.isArray(b.primaryInterests)
-    ? b.primaryInterests
-        .filter((item): item is string => typeof item === "string")
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
-
-  if (primaryInterests.length === 0) {
-    return { ok: false, error: "Select at least one area of interest" };
-  }
-
   return {
     ok: true,
     data: {
-      firstName: asString(b.firstName),
-      lastName: asString(b.lastName),
       workEmail,
-      phone: asString(b.phone) || undefined,
-      jobTitle: asString(b.jobTitle),
-      companyName: asString(b.companyName),
-      companyWebsite: asString(b.companyWebsite) || undefined,
-      companySize: asString(b.companySize),
-      industry: asString(b.industry),
-      country: asString(b.country),
-      headquartersCity: asString(b.headquartersCity) || undefined,
-      aiSystemsCount: asString(b.aiSystemsCount),
-      highRiskExposure: asString(b.highRiskExposure),
-      currentTooling: asString(b.currentTooling),
-      primaryInterests,
-      timeline: asString(b.timeline),
-      referralSource: asString(b.referralSource),
-      message: asString(b.message) || undefined,
+      companyName: asString(b.companyName).slice(0, 200),
+      jobTitle: asString(b.jobTitle).slice(0, 100),
+      message: asString(b.message).slice(0, 4000),
       marketingConsent: asBoolean(b.marketingConsent),
     },
   };
@@ -149,24 +96,14 @@ function buildDiscordEmbed(
     embeds: [
       {
         title: `New demo request — ${payload.companyName}`,
-        description: `${payload.firstName} ${payload.lastName} · ${payload.jobTitle}`,
+        description: `${payload.workEmail} · ${payload.jobTitle}`,
         color: 0x4f46e5,
         fields: [
           field("Work email", payload.workEmail),
-          field("Phone", payload.phone),
-          field("Company website", payload.companyWebsite),
-          field("Company size", payload.companySize),
-          field("Industry", payload.industry),
-          field("Country", payload.country),
-          field("HQ city", payload.headquartersCity),
-          field("AI systems", payload.aiSystemsCount),
-          field("High-risk exposure", payload.highRiskExposure),
-          field("Current tooling", payload.currentTooling),
-          field("Primary interests", payload.primaryInterests.join(", ")),
-          field("Timeline", payload.timeline),
-          field("Referral source", payload.referralSource),
+          field("Company", payload.companyName),
+          field("Role", payload.jobTitle),
           field("Marketing consent", payload.marketingConsent ? "Yes" : "No"),
-          { name: "Message", value: payload.message || "—", inline: false },
+          { name: "How can we help?", value: payload.message.slice(0, 1024) || "—", inline: false },
         ],
         footer: {
           text: `IP: ${meta.ip || "—"} · ${meta.userAgent || "—"}`.slice(0, 2048),

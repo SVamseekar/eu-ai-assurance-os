@@ -1,21 +1,9 @@
+/** Short demo form (storyboard frame 12): the four fields a first conversation needs. */
 export type DemoRequestInput = {
-  firstName: string;
-  lastName: string;
   workEmail: string;
-  phone: string;
-  jobTitle: string;
   companyName: string;
-  companyWebsite: string;
-  companySize: string;
-  industry: string;
-  country: string;
-  headquartersCity: string;
-  aiSystemsCount: string;
-  highRiskExposure: string;
-  currentTooling: string;
-  primaryInterests: string[];
-  timeline: string;
-  referralSource: string;
+  /** Role picked from DEMO_ROLES. */
+  jobTitle: string;
   message: string;
   marketingConsent: boolean;
   privacyConsent: boolean;
@@ -23,6 +11,17 @@ export type DemoRequestInput = {
   website: string;
   formStartedAt: number;
 };
+
+export const DEMO_ROLES = [
+  "Engineering",
+  "Data / ML",
+  "Product",
+  "Compliance / risk",
+  "Legal",
+  "Audit",
+  "Leadership",
+  "Other",
+] as const;
 
 export async function submitDemoRequest(payload: DemoRequestInput): Promise<void> {
   const response = await fetch("/api/request-demo", {

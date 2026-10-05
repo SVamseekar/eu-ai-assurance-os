@@ -1,5 +1,6 @@
 export const siteConfig = {
-  name: "EU AI Assurance OS",
+  name: "Assurance OS",
+  euName: "EU AI Assurance OS",
   shortName: "Assurance OS",
   description:
     "Fail-closed EU AI Act release gates. Register the system, map it to a pinned legal corpus, queue evidence proposals, and block release when cited evidence, evals, data contracts, or a pinned Evgraph scan do not pass. Article 50 is live. Not a notified body.",
@@ -34,6 +35,12 @@ export const dashboardRoutes = [
 export const publicRoutes = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
   { path: "/product", changeFrequency: "weekly" as const, priority: 0.9 },
+  { path: "/product/evidence", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/product/evaluations", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/product/data-contracts", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/product/release-gate", changeFrequency: "monthly" as const, priority: 0.8 },
+  { path: "/eu-ai-act", changeFrequency: "weekly" as const, priority: 0.9 },
+  { path: "/blog", changeFrequency: "weekly" as const, priority: 0.7 },
   { path: "/how-it-works", changeFrequency: "weekly" as const, priority: 0.8 },
   { path: "/who-its-for", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/pricing", changeFrequency: "monthly" as const, priority: 0.6 },

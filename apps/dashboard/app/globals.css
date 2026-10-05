@@ -63,6 +63,31 @@
   }
 }
 
+/* Public site palette (docs/ref_images/product_website). Fixed colours: marketing pages do not follow the app theme. */
+@theme {
+  --color-navy-950: #050a1c;
+  --color-navy-900: #0a1230;
+  --color-navy-850: #0d1739;
+  --color-navy-800: #121d46;
+  --color-navy-700: #1b2a5e;
+  --color-brand: #2346ff;
+  --color-brand-hover: #1a37e0;
+  --color-brand-soft: #eef1ff;
+  --color-periwinkle: #7b8cff;
+  --color-periwinkle-hover: #95a3ff;
+  --color-ink: #0b1020;
+  --color-ink-muted: #5b6478;
+  --color-mist: #f5f7fc;
+  --color-line: #e3e7f1;
+  --color-on-dark-muted: #a6b0cf;
+  --color-pass: #15803d;
+  --color-pass-soft: #ecfdf3;
+  --color-review: #b45309;
+  --color-review-soft: #fff7e8;
+  --color-blocked: #c81e1e;
+  --color-blocked-soft: #fef1f1;
+}
+
 :root {
   /* Page background — very light warm gray like the reference designs */
   --background: oklch(0.975 0.003 260);
@@ -166,4 +191,87 @@
 }
 .dark [data-slot="card"] {
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 8px -2px rgb(0 0 0 / 0.2);
+}
+/* Public site: night-sky backdrop used behind dark sections until a supplied photo replaces it. */
+.mk-night {
+  background-color: var(--color-navy-950);
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgb(255 255 255 / 0.55), transparent 60%),
+    radial-gradient(1px 1px at 27% 64%, rgb(255 255 255 / 0.35), transparent 60%),
+    radial-gradient(1.5px 1.5px at 44% 12%, rgb(255 255 255 / 0.5), transparent 60%),
+    radial-gradient(1px 1px at 58% 38%, rgb(255 255 255 / 0.3), transparent 60%),
+    radial-gradient(1px 1px at 71% 9%, rgb(255 255 255 / 0.45), transparent 60%),
+    radial-gradient(1.5px 1.5px at 83% 52%, rgb(255 255 255 / 0.35), transparent 60%),
+    radial-gradient(1px 1px at 92% 22%, rgb(255 255 255 / 0.5), transparent 60%),
+    radial-gradient(1px 1px at 6% 82%, rgb(255 255 255 / 0.3), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 78% 30%, rgb(59 91 255 / 0.28), transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% 110%, rgb(43 75 255 / 0.35), transparent 70%);
+}
+
+/* Faint blueprint grid for dark product sections (images 06, 08, 09). */
+.mk-grid {
+  background-image:
+    linear-gradient(to right, rgb(123 140 255 / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(123 140 255 / 0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Marketing pages always use the light tokens, even when the app theme is dark. */
+.mk-light {
+  /* Page background — very light warm gray like the reference designs */
+  --background: oklch(0.975 0.003 260);
+  --foreground: oklch(0.12 0.01 260);
+
+  /* Cards — pure white, elevated above background */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.12 0.01 260);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.12 0.01 260);
+
+  /* Primary — indigo (EU regulatory gravitas) */
+  --primary: oklch(0.47 0.22 264);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.955 0.005 260);
+  --secondary-foreground: oklch(0.25 0.02 260);
+
+  --muted: oklch(0.955 0.004 260);
+  --muted-foreground: oklch(0.52 0.015 260);
+
+  --accent: oklch(0.945 0.02 264);
+  --accent-foreground: oklch(0.47 0.22 264);
+
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.91 0.005 260);
+  --input: oklch(0.91 0.005 260);
+  --ring: oklch(0.47 0.22 264);
+
+  --chart-1: oklch(0.47 0.22 264);
+  --chart-2: oklch(0.62 0.18 160);
+  --chart-3: oklch(0.72 0.17 55);
+  --chart-4: oklch(0.57 0.22 25);
+  --chart-5: oklch(0.55 0.16 300);
+
+  --radius: 0.75rem;
+
+  /* Sidebar — white, matching cards */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.12 0.01 260);
+  --sidebar-primary: oklch(0.47 0.22 264);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.945 0.02 264);
+  --sidebar-accent-foreground: oklch(0.47 0.22 264);
+  --sidebar-border: oklch(0.91 0.005 260);
+  --sidebar-ring: oklch(0.47 0.22 264);
+}
+.mk-light {
+  --primary: #2346ff;
+  --ring: #2346ff;
+  --accent-foreground: #2346ff;
+  --background: #ffffff;
+  --muted: #f5f7fc;
+  --border: #e3e7f1;
+  --foreground: #0b1020;
+  --muted-foreground: #5b6478;
 }

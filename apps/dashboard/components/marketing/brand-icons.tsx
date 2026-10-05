@@ -1,0 +1,37 @@
+import type { SVGProps } from "react";
+
+/** Brand marks lucide-react no longer ships. */
+export function GithubIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z" />
+    </svg>
+  );
+}
+
+/** Assurance OS mark: hexagonal ring. Solid fill: a gradient id breaks when another copy of the mark is hidden. */
+export function AssuranceMark(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true" {...props}>
+      <path d="M16 2 28.1 9v14L16 30 3.9 23V9Z" fill="#4f63ff" />
+      <path d="M16 9.5 21.6 12.75v6.5L16 22.5l-5.6-3.25v-6.5Z" fill="#0a1230" />
+    </svg>
+  );
+}
+
+/** EU flag: twelve gold stars on blue. Used in the deadline bar and footer. */
+export function EuFlag(props: SVGProps<SVGSVGElement>) {
+  const stars = Array.from({ length: 12 }, (_, i) => {
+    const a = (i * Math.PI) / 6;
+    // Rounded: server and browser floats can differ in the last digit and break hydration.
+    return { x: Math.round((30 + 12 * Math.sin(a)) * 100) / 100, y: Math.round((20 - 12 * Math.cos(a)) * 100) / 100 };
+  });
+  return (
+    <svg viewBox="0 0 60 40" aria-hidden="true" {...props}>
+      <rect width="60" height="40" rx="3" fill="#1d3fbf" />
+      {stars.map((s, i) => (
+        <circle key={i} cx={s.x} cy={s.y} r="1.6" fill="#ffcc00" />
+      ))}
+    </svg>
+  );
+}

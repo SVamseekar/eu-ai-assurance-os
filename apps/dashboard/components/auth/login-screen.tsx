@@ -8,19 +8,17 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
-  Lock,
-  ShieldCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AuthCard } from "@/components/auth/auth-card";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { safeNextPath } from "@/lib/auth-redirect";
-import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   not_provisioned:
-    "No account is provisioned for this identity. Request a demo or contact your administrator.",
+    "No account exists for this identity. Create a workspace, or ask your administrator for an invite.",
   denied: "Sign-in was cancelled or denied by the identity provider.",
   state: "Sign-in session expired or was invalid. Please try again.",
   unsupported_provider: "That identity provider is not supported.",
@@ -28,19 +26,12 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   sign_in_unavailable:
     "Social sign-in is temporarily unavailable. Use email and password, or try again later.",
   not_configured:
-    "Social sign-in is not configured in this environment. Use email and password, or request a demo.",
+    "Social sign-in is not configured in this environment. Use email and password.",
   workspace_deleted:
     "This workspace has been deleted. Contact support within 30 days if this was a mistake.",
   email_unverified:
     "Your identity provider did not confirm this email address. Sign in with your password, then link Google or Microsoft from Settings.",
 };
-
-const TRUST_POINTS = [
-  "PASS / REVIEW / BLOCKED release decisions",
-  "Cited evidence RAG and eval gates",
-  "Hash-chained audit ledger",
-  "Google & Microsoft SSO when provisioned",
-] as const;
 
 const inputClassName = cn(
   "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm",
@@ -149,88 +140,11 @@ export function LoginScreen({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      {/* Brand panel */}
-      <aside className="relative hidden overflow-hidden border-r border-border bg-muted/40 lg:flex lg:w-[46%] lg:flex-col lg:justify-between lg:px-12 lg:py-12 xl:px-16">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-40"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 20% 20%, color-mix(in oklch, var(--primary) 22%, transparent), transparent), radial-gradient(ellipse 60% 50% at 80% 80%, color-mix(in oklch, var(--primary) 12%, transparent), transparent)",
-          }}
-        />
-        <div className="relative z-10">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 font-heading text-sm font-semibold tracking-tight"
-          >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <ShieldCheck className="size-4" aria-hidden="true" />
-            </span>
-            {siteConfig.name}
-          </Link>
-          <h1 className="mt-12 max-w-md font-heading text-3xl font-semibold tracking-tight xl:text-4xl">
-            Ship AI systems in the EU with evidence, not guesswork.
-          </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Sign in to your tenant workspace — risk classification, cited
-            evidence, eval gates, contracts, and release decisions in one
-            control plane.
-          </p>
-          <ul className="mt-10 space-y-3">
-            {TRUST_POINTS.map((point) => (
-              <li key={point} className="flex items-start gap-2.5 text-sm">
-                <CheckCircle2
-                  className="mt-0.5 size-4 shrink-0 text-primary"
-                  aria-hidden="true"
-                />
-                <span>{point}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="relative z-10 text-xs text-muted-foreground">
-          Access is provisioned per organisation.{" "}
-          <Link href="/request-demo" className="text-foreground underline-offset-4 hover:underline">
-            Request a demo
-          </Link>{" "}
-          to get set up.
-        </p>
-      </aside>
-
-      {/* Form panel */}
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b border-border px-4 sm:px-6 lg:border-0 lg:px-10 lg:pt-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 font-heading text-sm font-semibold lg:hidden"
-          >
-            <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
-            {siteConfig.shortName}
-          </Link>
-          <Link
-            href="/request-demo"
-            className="ml-auto text-sm text-muted-foreground hover:text-foreground"
-          >
-            Request a demo
-          </Link>
-        </header>
-
-        <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
-          <div className="w-full max-w-[400px]">
-            <div className="mb-8">
-              <div className="mb-4 flex size-10 items-center justify-center rounded-xl border border-border bg-card shadow-sm lg:hidden">
-                <Lock className="size-4 text-primary" aria-hidden="true" />
-              </div>
-              <h2 className="font-heading text-2xl font-semibold tracking-tight">
-                Sign in
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Use your organisation account. SSO requires a provisioned user.
-              </p>
-            </div>
-
+    <AuthCard
+      variant="signin"
+      title="Sign in to your workspace"
+      description="Use your work email, or continue with Google or Microsoft."
+    >
             {passwordReset && !displayError && !needsVerification ? (
               <div
                 role="status"
@@ -280,7 +194,7 @@ export function LoginScreen({
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-background px-3 font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="bg-white px-3 font-medium uppercase tracking-wider text-muted-foreground">
                   or email
                 </span>
               </div>
@@ -347,16 +261,6 @@ export function LoginScreen({
               </Button>
             </form>
 
-            <p className="mt-8 text-center text-sm text-muted-foreground">
-              New to {siteConfig.shortName}?{" "}
-              <Link
-                href="/signup"
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                Create an account
-              </Link>
-            </p>
-
             <p className="mt-3 text-center text-sm text-muted-foreground">
               Just looking?{" "}
               <button
@@ -367,16 +271,6 @@ export function LoginScreen({
               >
                 {demoStarting ? "Opening the demo…" : "Try the live demo"}
               </button>
-            </p>
-
-            <p className="mt-3 text-center text-sm text-muted-foreground">
-              Need access for your team?{" "}
-              <Link
-                href="/request-demo"
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                Request a demo
-              </Link>
             </p>
 
             <p className="mt-6 text-center text-xs text-muted-foreground">
@@ -390,22 +284,6 @@ export function LoginScreen({
               </Link>
               .
             </p>
-          </div>
-        </main>
-
-        <footer className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground sm:px-6">
-          <Link href="/" className="hover:text-foreground">
-            ← Back to {siteConfig.name}
-          </Link>
-          <span className="mx-2 text-border">·</span>
-          <a
-            href={`mailto:${siteConfig.supportEmail}`}
-            className="hover:text-foreground"
-          >
-            Support
-          </a>
-        </footer>
-      </div>
-    </div>
+    </AuthCard>
   );
 }

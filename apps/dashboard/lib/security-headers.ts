@@ -1,7 +1,8 @@
-export function securityHeaders() {
+/** `dev` adds 'unsafe-eval', which React needs for dev-mode call stacks; production never gets it. */
+export function securityHeaders(dev = process.env.NODE_ENV === "development") {
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://challenges.cloudflare.com",
+    `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://static.cloudflareinsights.com https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",

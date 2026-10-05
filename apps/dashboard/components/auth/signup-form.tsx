@@ -63,6 +63,7 @@ export function SignupForm() {
   if (sent) {
     return (
       <AuthCard
+        variant="signup"
         title="Check your inbox"
         footer={
           <>
@@ -97,26 +98,10 @@ export function SignupForm() {
 
   return (
     <AuthCard
-      title="Create your workspace"
-      description="Start a trial. You will choose your password from the confirmation link we email you."
-      footer={
-        <>
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
-            Sign in
-          </Link>
-        </>
-      }
+      variant="signup"
+      title="Create your free workspace"
+      description="Takes about two minutes. You choose your password from the link we email you."
     >
-      <OAuthButtons next="/onboarding" disabled={busy} />
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-3 font-medium uppercase tracking-wider text-muted-foreground">or email</span>
-        </div>
-      </div>
       <form onSubmit={onSubmit} className="space-y-4">
         <FormError message={error} />
         <div className="space-y-1.5">
@@ -184,6 +169,15 @@ export function SignupForm() {
           )}
         </Button>
       </form>
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-white px-3 font-medium uppercase tracking-wider text-muted-foreground">or sign up with</span>
+        </div>
+      </div>
+      <OAuthButtons next="/onboarding" disabled={busy} />
     </AuthCard>
   );
 }
