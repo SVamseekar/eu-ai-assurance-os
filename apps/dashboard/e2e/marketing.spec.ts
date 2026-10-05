@@ -72,6 +72,20 @@ test.describe("public site", () => {
     await expect(page.getByRole("link", { name: /Start free trial/ }).first()).toHaveAttribute("href", /interval=yearly/);
   });
 
+  test("pricing answers the plan questions and has no consulting language", async ({ page }) => {
+    await page.goto("/pricing");
+    for (const q of ["Where is my data stored?", "Do you use my data to train AI?", "Refunds?", "Can I add a VAT or tax ID?"]) {
+      await expect(page.getByText(q, { exact: true })).toBeVisible();
+    }
+    for (const path of ["/pricing", "/order-form", "/msa"]) {
+      await page.goto(path);
+      const text = await page.locator("main").innerText();
+      for (const phrase of ["scoped readiness work", "readout with the people", "written quote", "readiness sprint"]) {
+        expect(text, `${path} mentions "${phrase}"`).not.toContain(phrase);
+      }
+    }
+  });
+
   test("blog filter narrows posts and honours ?category", async ({ page }) => {
     await page.goto("/blog?category=engineering");
     await expect(page.getByRole("button", { name: "Engineering" })).toHaveAttribute("aria-pressed", "true");

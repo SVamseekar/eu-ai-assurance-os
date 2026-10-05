@@ -1,15 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 
 import { AuthCard, FormError, authInputClassName } from "@/components/auth/auth-card";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { TurnstileWidget, turnstileEnabled } from "@/components/auth/turnstile-widget";
 import { Button } from "@/components/ui/button";
+import { savePlanIntent, type PlanIntent } from "@/lib/plan-intent";
 
-export function SignupForm() {
+export function SignupForm({ planIntent = null }: { planIntent?: PlanIntent | null }) {
+  // Remember the plan picked on /pricing; onboarding offers its checkout after the first system is gated.
+  useEffect(() => {
+    if (planIntent) savePlanIntent(planIntent);
+  }, [planIntent]);
   const [email, setEmail] = useState("");
   const [organisationName, setOrganisationName] = useState("");
   const [agreed, setAgreed] = useState(false);
