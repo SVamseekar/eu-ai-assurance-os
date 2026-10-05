@@ -25,7 +25,7 @@ import {
   TextLink,
 } from "@/components/marketing/primitives";
 import { CtaBand, FrameworkList } from "@/components/marketing/sections";
-import { DEADLINES, deadlineStatus, formatDeadlineDate } from "@/lib/deadlines";
+import { DEADLINES, daysUntil, deadlineStatus, formatDeadlineDate } from "@/lib/deadlines";
 import { marketingMedia } from "@/lib/marketing-media";
 import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
@@ -63,9 +63,6 @@ const sourceLinks = [
   { icon: ListChecks, label: "Our methodology", href: "/method", external: false },
 ];
 
-function daysUntil(iso: string, today: Date) {
-  return Math.ceil((new Date(`${iso}T00:00:00Z`).getTime() - today.getTime()) / 86_400_000);
-}
 
 export default function EuAiActPage() {
   const today = new Date();
@@ -164,7 +161,7 @@ export default function EuAiActPage() {
             description="Each date links to its source. Dates reflect the Digital Omnibus on AI."
           />
           <ol className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {DEADLINES.map((d) => {
+            {DEADLINES.filter((d) => d.region === "EU").map((d) => {
               const now = deadlineStatus(d, today) === "applies-now";
               return (
                 <li key={d.id} className="flex flex-col rounded-2xl border border-line bg-white p-5">
@@ -174,7 +171,7 @@ export default function EuAiActPage() {
                       now ? "bg-review-soft text-review" : "bg-brand-soft text-brand",
                     )}
                   >
-                    {now ? "Applies now" : `In ${daysUntil(d.date, today)} days`}
+                    {now ? "Applies now" : `In ${daysUntil(d, today)} days`}
                   </span>
                   <p className="mt-4 text-2xl font-bold tracking-tight text-ink">{formatDeadlineDate(d.date)}</p>
                   <p className="mt-1 flex-1 text-sm text-ink/85">{d.label}</p>

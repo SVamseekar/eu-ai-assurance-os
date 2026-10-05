@@ -57,14 +57,14 @@ export function DeadlineBar() {
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
         <EuFlag className="hidden h-5 w-7 shrink-0 rounded-[3px] sm:block" />
         <p className="min-w-0 flex-1 text-[13px] leading-snug">
-          <span className="font-semibold">EU AI Act</span>
+          <span className="font-semibold">{target.law}</span>
           <span className="text-on-dark-muted"> · </span>
           {target.label} applies from {formatDeadlineDate(target.date)}
           <span className="mx-3 hidden text-white/20 md:inline" aria-hidden="true">
             |
           </span>
           <Link
-            href="/eu-ai-act#deadlines"
+            href="/tools/ai-act-deadlines"
             className="ml-2 inline-flex items-center gap-1 font-semibold text-periwinkle hover:underline md:ml-0"
           >
             See key deadlines
