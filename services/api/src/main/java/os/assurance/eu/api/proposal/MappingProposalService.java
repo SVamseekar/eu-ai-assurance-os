@@ -24,19 +24,22 @@ public class MappingProposalService {
   private final AuditService auditService;
   private final TenantContext tenantContext;
   private final RulesDocumentMapper rulesMapper;
+  private final SlmMapClient slm;
 
   public MappingProposalService(
       MappingProposalJpaRepository proposals,
       AiSystemRepository systems,
       CorpusQueryService corpus,
       AuditService auditService,
-      TenantContext tenantContext) {
+      TenantContext tenantContext,
+      SlmMapClient slm) {
     this.proposals = proposals;
     this.systems = systems;
     this.corpus = corpus;
     this.auditService = auditService;
     this.tenantContext = tenantContext;
     this.rulesMapper = new RulesDocumentMapper();
+    this.slm = slm;
   }
 
   @Transactional(readOnly = true)
@@ -48,7 +51,7 @@ public class MappingProposalService {
         .stream()
         .map(row -> toView(row, current))
         .toList();
-    return new ProposalListResponse(current, items);
+    return new ProposalListResponse(current, items, slm.down());
   }
 
   @Transactional
@@ -84,9 +87,25 @@ public class MappingProposalService {
     requireSystem(systemId);
     String current = corpus.currentVersionHash();
     List<LawProvision> lawIndex = lawIndex();
+    List<String> candidateIds = lawIndex.stream().map(LawProvision::provisionKey).toList();
     List<ProposalView> created = new ArrayList<>();
     for (MapDocumentRequest document : documents) {
-      MappingDraft draft = rulesMapper.map(document.title(), document.text(), lawIndex);
+      SlmMapClient.Outcome outcome = slm.map(document.title(), document.text(), candidateIds);
+      if (outcome.kind() == SlmMapClient.Kind.INVALID) {
+        auditSchemaInvalid(systemId);
+        continue;
+      }
+      MappingDraft draft;
+      String adapterVersion = null;
+      if (outcome.kind() == SlmMapClient.Kind.ABSTAIN) {
+        draft = MappingDraft.abstain(excerpt(document.text()));
+        adapterVersion = SlmMapClient.ADAPTER_VERSION;
+      } else if (outcome.kind() == SlmMapClient.Kind.CANDIDATE) {
+        draft = citeCandidate(outcome, lawIndex, document.text());
+        adapterVersion = SlmMapClient.ADAPTER_VERSION;
+      } else {
+        draft = rulesMapper.map(document.title(), document.text(), lawIndex);
+      }
       MappingProposalEntity saved = proposals.save(new MappingProposalEntity(
           UUID.randomUUID(),
           tenantContext.tenantId(),
@@ -94,7 +113,7 @@ public class MappingProposalService {
           "PENDING",
           draft.relation(),
           current,
-          null,
+          adapterVersion,
           draft.provisionKey(),
           draft.excerpt(),
           Instant.now()));
@@ -275,7 +294,35 @@ public class MappingProposalService {
     return value == null || value.isBlank() ? null : value;
   }
 
-  public record ProposalListResponse(String currentCorpusVersion, List<ProposalView> items) {
+  public record ProposalListResponse(String currentCorpusVersion, List<ProposalView> items, boolean slmDown) {
+  }
+
+  private void auditSchemaInvalid(UUID systemId) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("reason", "invalid_json");
+    auditService.append(systemId, "map.schema_invalid", "mapping_proposal", systemId.toString(), payload);
+  }
+
+  private MappingDraft citeCandidate(SlmMapClient.Outcome outcome, List<LawProvision> lawIndex, String text) {
+    for (LawProvision provision : lawIndex) {
+      if (provision.provisionKey().equals(outcome.obligationId())) {
+        return new MappingDraft(
+            outcome.relation(),
+            provision.provisionKey(),
+            provision.forceStatus(),
+            provision.forceFrom(),
+            excerpt(text));
+      }
+    }
+    return MappingDraft.abstain(excerpt(text));
+  }
+
+  private static String excerpt(String text) {
+    if (text == null || text.isBlank()) {
+      return null;
+    }
+    String trimmed = text.strip();
+    return trimmed.length() <= 500 ? trimmed : trimmed.substring(0, 500);
   }
 
   public record ProposalView(

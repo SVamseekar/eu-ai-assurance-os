@@ -99,6 +99,14 @@ export default function ProposalsPage() {
               ))}
             </select>
           </label>
+          {query.data?.slmDown && (
+            <p
+              data-testid="slm-down-banner"
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs"
+            >
+              SLM process down. The rules mapper still fills the queue.
+            </p>
+          )}
           <Button
             size="sm"
             variant="outline"

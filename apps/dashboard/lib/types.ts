@@ -558,6 +558,7 @@ export interface MappingProposal {
 export interface ProposalList {
   currentCorpusVersion: string;
   items: MappingProposal[];
+  slmDown?: boolean;
 }
 
 export interface ApprovalWorkflow {
