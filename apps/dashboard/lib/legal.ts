@@ -33,3 +33,6 @@ export const LEGAL = {
   priceChangeNoticeDays: 30,
   refundDays: 14,
 } as const;
+
+/** Version of our DPA Cover Page; stored with each workspace's acceptance (max 16 characters). */
+export const DPA_VERSION = "cp1.1-2026-10";

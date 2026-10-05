@@ -122,6 +122,8 @@ export interface ClassifyPayload {
   affectedUsers?: string[];
 }
 
+export type DpaAcceptance = { version: string | null; acceptedAt: string | null };
+
 export const api = {
   systems: {
     list: () => request<AiSystem[]>("/systems"),
@@ -374,6 +376,11 @@ export const api = {
         method: "DELETE",
         body: JSON.stringify({ confirmOrganisationName }),
       }),
+    /** The DPA version this workspace accepted, if any. */
+    dpaAcceptance: () => request<DpaAcceptance>("/account/dpa-acceptance"),
+    /** Admin accepts the DPA for the organisation. */
+    acceptDpa: (version: string) =>
+      request<DpaAcceptance>("/account/dpa-acceptance", { method: "POST", body: JSON.stringify({ version }) }),
   },
   apiKeys: {
     list: () => request<ApiKeyView[]>("/api-keys"),

@@ -37,6 +37,12 @@ public class TenantEntity {
   @Column(name = "trial_ends_at")
   private Instant trialEndsAt;
 
+  @Column(name = "dpa_accepted_at")
+  private Instant dpaAcceptedAt;
+
+  @Column(name = "dpa_version", length = 16)
+  private String dpaVersion;
+
   protected TenantEntity() {
   }
 
@@ -92,6 +98,19 @@ public class TenantEntity {
     this.status = "DELETION_PENDING";
     this.deletedAt = now;
     this.purgeAfter = purgeAt;
+  }
+
+  public Instant dpaAcceptedAt() {
+    return dpaAcceptedAt;
+  }
+
+  public String dpaVersion() {
+    return dpaVersion;
+  }
+
+  public void acceptDpa(String version, Instant at) {
+    this.dpaVersion = version;
+    this.dpaAcceptedAt = at;
   }
 
   public void setPlan(String plan) {
