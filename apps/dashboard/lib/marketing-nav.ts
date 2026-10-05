@@ -1,6 +1,7 @@
 import {
   BookOpen,
   CalendarClock,
+  CalendarDays,
   ClipboardCheck,
   Code2,
   Database,
@@ -8,10 +9,14 @@ import {
   FileText,
   FlaskConical,
   Gavel,
+  GitCompare,
   GitPullRequestArrow,
   HelpCircle,
+  History,
   Landmark,
   Layers,
+  ListChecks,
+  Lock,
   Network,
   Newspaper,
   Package,
@@ -73,7 +78,9 @@ const euAiActMenu: MegaMenu = {
   items: [
     { href: "/eu-ai-act", label: "Overview", description: "What the EU AI Act asks of AI features", icon: Landmark, tone: "violet" },
     { href: "/eu-ai-act#deadlines", label: "Key deadlines", description: "Dates and timelines, with sources", icon: CalendarClock, tone: "blue" },
-    { href: "/eu-ai-act#sources", label: "Regulatory sources", description: "What is live and what is coming", icon: BookOpen, tone: "amber" },
+    { href: "/tools/ai-act-check", label: "Free applicability check", description: "Which duties may apply, no sign-up", icon: ListChecks, tone: "green" },
+    { href: "/tools/ai-act-deadlines", label: "Deadline calendar", description: "Every date, with an .ics download", icon: CalendarDays, tone: "orange" },
+    { href: "/eu-ai-act#articles", label: "Article guides", description: "Key articles and the evidence behind them", icon: BookOpen, tone: "amber" },
     { href: "/method", label: "Methodology", description: "How we map and interpret", icon: ScanSearch, tone: "slate" },
   ],
 };
@@ -99,10 +106,13 @@ const resourcesMenu: MegaMenu = {
   blurb: "Guides, documentation and updates.",
   overview: { href: "/blog", label: "View all resources" },
   items: [
-    { href: `${siteConfig.githubUrl}/tree/main/docs`, label: "Documentation", description: "Technical docs and API", icon: FileText, tone: "blue", external: true },
+    { href: "/docs", label: "Docs", description: "Quickstart, API and evidence packs", icon: FileText, tone: "blue" },
     { href: "/blog", label: "Blog / Updates", description: "News and product updates", icon: Newspaper, tone: "red" },
+    { href: "/changelog", label: "Changelog", description: "What shipped, release by release", icon: History, tone: "violet" },
+    { href: "/security", label: "Security", description: "How we protect your data", icon: Lock, tone: "green" },
+    { href: "/compare/release-gates-vs-document-generators", label: "Compare", description: "Release gates and other approaches", icon: GitCompare, tone: "amber" },
     { href: "/faq", label: "FAQ", description: "Dates, risk class, evidence packs", icon: HelpCircle, tone: "indigo" },
-    { href: "https://github.com/SVamseekar/evgraph", label: "GitHub / evgraph", description: "Open source and CLI", icon: GithubIcon, tone: "slate", external: true },
+    { href: siteConfig.evgraphUrl, label: "GitHub / evgraph", description: "Open source and CLI", icon: GithubIcon, tone: "slate", external: true },
   ],
 };
 
@@ -132,9 +142,12 @@ export const footerColumns: FooterColumn[] = [
   {
     title: "Resources",
     links: [
-      { href: `${siteConfig.githubUrl}/tree/main/docs`, label: "Documentation", external: true },
+      { href: "/docs", label: "Docs" },
       { href: "/blog", label: "Blog / Updates" },
+      { href: "/changelog", label: "Changelog" },
       { href: "/eu-ai-act", label: "EU AI Act" },
+      { href: "/tools/ai-act-check", label: "Free AI Act check" },
+      { href: "/tools/ai-act-deadlines", label: "Deadline calendar" },
       { href: "/method", label: "Methodology" },
       { href: "/faq", label: "FAQ" },
     ],
@@ -144,7 +157,11 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { href: "/request-demo", label: "Request demo" },
       { href: `mailto:${siteConfig.supportEmail}`, label: "Contact", external: true },
-      { href: siteConfig.githubUrl, label: "Open source", external: true },
+      { href: "/security", label: "Security" },
+      { href: "/subprocessors", label: "Subprocessors" },
+      ...(siteConfig.statusUrl ? [{ href: siteConfig.statusUrl, label: "Status", external: true }] : []),
+      { href: siteConfig.githubUrl, label: "GitHub", external: true },
+      { href: siteConfig.evgraphUrl, label: "evgraph", external: true },
     ],
   },
 ];

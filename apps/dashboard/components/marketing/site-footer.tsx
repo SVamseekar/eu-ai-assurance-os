@@ -65,7 +65,7 @@ export function SiteFooter() {
         <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-on-dark-muted lg:flex-row lg:items-center lg:justify-between">
           <p className="flex items-center gap-2">
             <EuFlag className="h-4 w-6 shrink-0 rounded-[2px]" />
-            © {year} {siteConfig.shortName}. Not legal advice. Not a notified body. No certification or CE marking.
+            © {year} {siteConfig.shortName}. {siteConfig.shortName} provides evidence and readiness tooling. It is not legal advice, not a notified body, and does not certify compliance.
           </p>
           <nav aria-label="Legal">
             <ul className="flex flex-wrap gap-x-4 gap-y-1">
