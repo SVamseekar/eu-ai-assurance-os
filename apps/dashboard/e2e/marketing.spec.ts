@@ -20,6 +20,9 @@ const PAGES = [
   "/subprocessors",
   "/tools/ai-act-check",
   "/tools/ai-act-deadlines",
+  "/compare/release-gates-vs-document-generators",
+  "/compare/credo-ai-alternative",
+  "/compare/holistic-ai-alternative",
 ];
 
 test.describe("public site", () => {
