@@ -25,6 +25,8 @@ const PAGES = [
   "/compare/holistic-ai-alternative",
   "/eu-ai-act/article-50",
   "/eu-ai-act/annex-iii",
+  "/docs",
+  "/changelog",
 ];
 
 test.describe("public site", () => {

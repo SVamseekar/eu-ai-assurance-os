@@ -37,6 +37,9 @@ export const dashboardRoutes = [
   "/reg-monitor",
   "/settings",
   "/public-claims",
+  "/corpus",
+  "/proposals",
+  "/onboarding",
   "/login",
 ] as const;
 
