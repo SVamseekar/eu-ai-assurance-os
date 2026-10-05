@@ -5,9 +5,16 @@ import { useState } from "react";
 import { Play } from "lucide-react";
 
 import { mkButton } from "@/components/marketing/primitives";
+import { cn } from "@/lib/utils";
 
 /** Opens the shared read-only demo workspace, then lands on the command view. */
-export function DemoButton({ variant = "outlineOnDark" }: { variant?: keyof typeof mkButton }) {
+export function DemoButton({
+  variant = "outlineOnDark",
+  className,
+}: {
+  variant?: keyof typeof mkButton;
+  className?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +37,7 @@ export function DemoButton({ variant = "outlineOnDark" }: { variant?: keyof type
 
   return (
     <div className="flex flex-col">
-      <button type="button" className={mkButton[variant]} onClick={start} disabled={busy}>
+      <button type="button" className={cn(mkButton[variant], className)} onClick={start} disabled={busy}>
         <Play className="h-4 w-4" aria-hidden="true" />
         {busy ? "Opening demo…" : "Try the live demo"}
       </button>

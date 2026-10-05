@@ -6,6 +6,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, ChevronRight, Menu, X } from "lucide-react";
 
 import { AssuranceMark } from "@/components/marketing/brand-icons";
+import { DemoButton } from "@/components/marketing/demo-button";
 import { IconTile, type Tone } from "@/components/marketing/primitives";
 import { iconToneClass, mainNav, type MegaItem, type MegaMenu } from "@/lib/marketing-nav";
 import { siteConfig } from "@/lib/site-config";
@@ -240,12 +241,15 @@ export function SiteHeader({ tone }: { tone: Tone }) {
             <Link
               href="/login"
               className={cn(
-                "inline-flex h-10 items-center rounded-lg border px-4 text-sm font-semibold transition-colors",
-                onDark ? "border-white/20 text-white hover:bg-white/10" : "border-line text-ink hover:bg-mist",
+                "px-2 text-sm font-semibold transition-colors",
+                onDark ? "text-white/85 hover:text-white" : "text-ink hover:text-brand",
               )}
             >
               Sign in
             </Link>
+            <div className="hidden xl:block">
+              <DemoButton variant={onDark ? "outlineOnDark" : "outline"} className="h-10 px-4 text-sm" />
+            </div>
             <Link
               href="/signup"
               className={cn(
@@ -354,7 +358,10 @@ export function SiteHeader({ tone }: { tone: Tone }) {
               );
             })}
           </nav>
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-6 [&_button]:h-12 [&_button]:w-full">
+            <DemoButton />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <Link
               href="/login"
               onClick={closeAll}
