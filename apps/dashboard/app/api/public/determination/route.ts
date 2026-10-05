@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { clientIpHeaders } from "@/lib/client-ip";
+import { readLimitedText } from "@/lib/read-limited-body";
 import { fetchUpstream, serviceUnavailable } from "@/lib/upstream";
 
 const API_BASE = process.env.ASSURANCE_API_BASE_URL ?? "http://localhost:8080";
@@ -15,8 +16,9 @@ export async function GET() {
 
 /** Preview of likely obligations. Nothing is stored; the API rate-limits per visitor IP. */
 export async function POST(request: NextRequest) {
-  const body = await request.text();
-  if (body.length > MAX_BODY_BYTES) {
+  // Bounded read: an unauthenticated route must not buffer an arbitrarily large body.
+  const body = await readLimitedText(request, MAX_BODY_BYTES);
+  if (body === null) {
     return NextResponse.json({ error: "Request body too large" }, { status: 400 });
   }
   const upstream = await fetchUpstream(`${API_BASE}/api/public/v1/determination/preview`, {
