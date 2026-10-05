@@ -339,7 +339,9 @@ export function PhotoSlot({
           alt={slot.alt}
           fill
           sizes={sizes}
-          priority={priority}
+          preload={priority}
+          fetchPriority={priority ? "high" : undefined}
+          loading={priority ? "eager" : undefined}
           className="object-cover"
           style={slot.position ? { objectPosition: slot.position } : undefined}
         />
