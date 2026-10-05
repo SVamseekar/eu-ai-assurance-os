@@ -1,0 +1,183 @@
+{
+  "corpusVersion": "429d86cd714425cd60d25cb8b580323329f49f76662bbd46c034918cebf473bb",
+  "consolidationCelex": "02024R1689-20260727",
+  "attribution": "EUR-Lex text is reused under Commission Decision 2011/833/EU. Guidance is stored as an interpretation, not as a statute.",
+  "provisions": [
+    {
+      "slug": "article-4",
+      "label": "Article 4",
+      "provisionKey": "02024R1689-20260727#4:1:",
+      "title": "AI literacy",
+      "excerpt": "Providers and deployers of AI systems shall take measures to support the development of AI literacy of their staff and other persons dealing with the operation and use of AI systems on their behalf, taking into account their technical knowledge, experience, education and training and the context the AI systems are to be used in, and considering the persons or groups of persons on whom the AI systems are to be used. This obligation does not require providers or deployers to guarantee any specific level of AI literacy of any individual.",
+      "forceStatus": "IN_FORCE",
+      "forceFrom": "2025-02-02",
+      "scopeNote": null,
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_4"
+    },
+    {
+      "slug": "article-5",
+      "label": "Article 5",
+      "provisionKey": "02024R1689-20260727#5:1:",
+      "title": "Prohibited AI practices",
+      "excerpt": "The following AI practices shall be prohibited:",
+      "forceStatus": "IN_FORCE",
+      "forceFrom": "2025-02-02",
+      "scopeNote": "Article 5(1), points (ba) and (bb), and Article 5(1a) and (1b) apply from 2 Dec 2026",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_5"
+    },
+    {
+      "slug": "article-6",
+      "label": "Article 6",
+      "provisionKey": "02024R1689-20260727#6:1:",
+      "title": "Classification rules for high-risk AI systems",
+      "excerpt": "Irrespective of whether an AI system is placed on the market or put into service independently of the products referred to in points (a) and (b), that AI system shall be considered to be high-risk where both of the following conditions are fulfilled:",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_6"
+    },
+    {
+      "slug": "article-9",
+      "label": "Article 9",
+      "provisionKey": "02024R1689-20260727#9:1:",
+      "title": "Risk management system",
+      "excerpt": "A risk management system shall be established, implemented, documented and maintained in relation to high-risk AI systems.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_9"
+    },
+    {
+      "slug": "article-10",
+      "label": "Article 10",
+      "provisionKey": "02024R1689-20260727#10:1:",
+      "title": "Data and data governance",
+      "excerpt": "High-risk AI systems which make use of techniques involving the training of AI models with data shall be developed on the basis of training, validation and testing data sets that meet the quality criteria referred to in paragraphs 2, 3 and 4 of this Article and in Article 4a(1) whenever such data sets are used.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_10"
+    },
+    {
+      "slug": "article-11",
+      "label": "Article 11",
+      "provisionKey": "02024R1689-20260727#11:1:",
+      "title": "Technical documentation",
+      "excerpt": "The technical documentation of a high-risk AI system shall be drawn up before that system is placed on the market or put into service and shall be kept up-to date. That technical documentation shall be drawn up in such a way as to demonstrate that the high-risk AI system complies with the requirements set out in this Section and to provide national competent authorities and notified bodies with the necessary information in a clear and comprehensive form to assess the compliance of the AI system with those requirements. It shall contain, at a minimum, the elements set out in Annex IV. SMEs, including start-ups, and SMCs, may provide the elements of the technical documentation specified in Annex IV in a simplified manner. To that end, the Commission shall establish a simplified technical documentation form targeted at the needs of SMEs, including start-ups, and SMCs. Where an SME, including a start-up, or an SMC, opts to provide the information required in Annex IV in a simplified manner, it shall use the form referred to in this paragraph. Notified bodies shall accept the form for the purposes of the conformity assessment.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_11"
+    },
+    {
+      "slug": "article-12",
+      "label": "Article 12",
+      "provisionKey": "02024R1689-20260727#12:1:",
+      "title": "Record-keeping",
+      "excerpt": "High-risk AI systems shall technically allow for the automatic recording of events (logs) over the lifetime of the system.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_12"
+    },
+    {
+      "slug": "article-13",
+      "label": "Article 13",
+      "provisionKey": "02024R1689-20260727#13:1:",
+      "title": "Transparency and provision of information to deployers",
+      "excerpt": "High-risk AI systems shall be designed and developed in such a way as to ensure that their operation is sufficiently transparent to enable deployers to interpret a system’s output and use it appropriately. An appropriate type and degree of transparency shall be ensured with a view to achieving compliance with the relevant obligations of the provider and deployer set out in Section 3.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_13"
+    },
+    {
+      "slug": "article-14",
+      "label": "Article 14",
+      "provisionKey": "02024R1689-20260727#14:1:",
+      "title": "Human oversight",
+      "excerpt": "High-risk AI systems shall be designed and developed in such a way, including with appropriate human-machine interface tools, that they can be effectively overseen by natural persons during the period in which they are in use.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_14"
+    },
+    {
+      "slug": "article-15",
+      "label": "Article 15",
+      "provisionKey": "02024R1689-20260727#15:1:",
+      "title": "Accuracy, robustness and cybersecurity",
+      "excerpt": "High-risk AI systems shall be designed and developed in such a way that they achieve an appropriate level of accuracy, robustness, and cybersecurity, and that they perform consistently in those respects throughout their lifecycle.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_15"
+    },
+    {
+      "slug": "article-26",
+      "label": "Article 26",
+      "provisionKey": "02024R1689-20260727#26:1:",
+      "title": "Obligations of deployers of high-risk AI systems",
+      "excerpt": "Deployers of high-risk AI systems shall take appropriate technical and organisational measures to ensure they use such systems in accordance with the instructions for use accompanying the systems, pursuant to paragraphs 3 and 6.",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_26"
+    },
+    {
+      "slug": "article-27",
+      "label": "Article 27",
+      "provisionKey": "02024R1689-20260727#27:1:",
+      "title": "Fundamental rights impact assessment for high-risk AI systems",
+      "excerpt": "Prior to deploying a high-risk AI system referred to in Article 6(2), with the exception of high-risk AI systems intended to be used in the area listed in point 2 of Annex III, deployers that are bodies governed by public law, or are private entities providing public services, and deployers of high-risk AI systems referred to in points 5 (b) and (c) of Annex III, shall perform an assessment of the impact on fundamental rights that the use of such system may produce. For that purpose, deployers shall perform an assessment consisting of:",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_27"
+    },
+    {
+      "slug": "article-50",
+      "label": "Article 50",
+      "provisionKey": "02024R1689-20260727#50:1:",
+      "title": "Transparency obligations for providers and deployers of certain AI systems",
+      "excerpt": "Providers shall ensure that AI systems intended to interact directly with natural persons are designed and developed in such a way that the natural persons concerned are informed that they are interacting with an AI system, unless this is obvious from the point of view of a natural person who is reasonably well-informed, observant and circumspect, taking into account the circumstances and the context of use. This obligation shall not apply to AI systems authorised by law to detect, prevent, investigate or prosecute criminal offences, subject to appropriate safeguards for the rights and freedoms of third parties, unless those systems are available for the public to report a criminal offence.",
+      "forceStatus": "IN_FORCE",
+      "forceFrom": "2026-08-02",
+      "scopeNote": null,
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_50"
+    },
+    {
+      "slug": "article-72",
+      "label": "Article 72",
+      "provisionKey": "02024R1689-20260727#72:1:",
+      "title": "Post-market monitoring by providers and post-market monitoring plan for high-risk AI systems",
+      "excerpt": "Providers shall establish and document a post-market monitoring system in a manner that is proportionate to the nature of the AI technologies and the risks of the high-risk AI system.",
+      "forceStatus": "IN_FORCE",
+      "forceFrom": "2026-08-02",
+      "scopeNote": null,
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#art_72"
+    },
+    {
+      "slug": "annex-iii",
+      "label": "Annex III",
+      "provisionKey": "02024R1689-20260727#annexIII::",
+      "title": "High-risk AI systems referred to in Article 6(2)",
+      "excerpt": "High-risk AI systems pursuant to Article 6(2) are the AI systems listed in any of the following areas:",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": null,
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#anx_III"
+    },
+    {
+      "slug": "annex-iv",
+      "label": "Annex IV",
+      "provisionKey": "02024R1689-20260727#annexIV::",
+      "title": "Technical documentation referred to in Article 11(1)",
+      "excerpt": "The technical documentation referred to in Article 11(1) shall contain at least the following information, as applicable to the relevant AI system:",
+      "forceStatus": "FUTURE",
+      "forceFrom": "2027-12-02",
+      "scopeNote": "Applies from 2 Aug 2028 for high-risk AI systems under Article 6(1) and Annex I",
+      "sourceUrl": "https://eur-lex.europa.eu/eli/reg/2024/1689/2026-07-27#anx_IV"
+    }
+  ]
+}

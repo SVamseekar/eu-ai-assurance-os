@@ -23,6 +23,8 @@ const PAGES = [
   "/compare/release-gates-vs-document-generators",
   "/compare/credo-ai-alternative",
   "/compare/holistic-ai-alternative",
+  "/eu-ai-act/article-50",
+  "/eu-ai-act/annex-iii",
 ];
 
 test.describe("public site", () => {

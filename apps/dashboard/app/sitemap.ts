@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { COMPARE_PAGES } from "@/content/compare";
+import { PROVISIONS } from "@/lib/eu-ai-act-provisions";
 import { publicRoutes, siteConfig } from "@/lib/site-config";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -16,5 +17,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly" as const,
     priority: 0.6,
   }));
-  return [...routes, ...compare];
+  const provisions = PROVISIONS.map((p) => ({
+    url: `${siteConfig.url}/eu-ai-act/${p.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+  return [...routes, ...compare, ...provisions];
 }

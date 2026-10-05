@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Activity,
   BookOpen,
@@ -26,6 +27,7 @@ import {
 } from "@/components/marketing/primitives";
 import { CtaBand, FrameworkList } from "@/components/marketing/sections";
 import { DEADLINES, daysUntil, deadlineStatus, formatDeadlineDate } from "@/lib/deadlines";
+import { PROVISIONS } from "@/lib/eu-ai-act-provisions";
 import { marketingMedia } from "@/lib/marketing-media";
 import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
@@ -190,7 +192,34 @@ export default function EuAiActPage() {
         </Container>
       </Band>
 
-      <Band tone="light" muted id="sources" className="scroll-mt-24">
+      <Band tone="light" muted id="articles" className="scroll-mt-24">
+        <Container className="py-20 sm:py-24">
+          <SectionHeading
+            tone="light"
+            eyebrow="Article guides"
+            title="The provisions AI teams ask about most."
+            description="Each guide quotes the official text, says when it applies, and lists the evidence that usually supports it."
+          />
+          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PROVISIONS.map((p) => (
+              <li key={p.slug}>
+                <Link
+                  href={`/eu-ai-act/${p.slug}`}
+                  className="flex h-full flex-col rounded-2xl border border-line bg-white p-5 transition-colors hover:border-brand"
+                >
+                  <span className="text-sm font-semibold text-brand">{p.label}</span>
+                  <span className="mt-1 flex-1 text-sm font-medium text-ink">{p.title}</span>
+                  <span className="mt-3 text-xs text-ink-muted">
+                    {p.forceStatus === "IN_FORCE" ? "Applies now" : `From ${formatDeadlineDate(p.forceFrom)}`}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </Band>
+
+      <Band tone="light" id="sources" className="scroll-mt-24">
         <Container className="py-20 sm:py-24">
           <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
             <div>
