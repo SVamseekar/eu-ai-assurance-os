@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { securityHeaders } from "./security-headers";
 
 describe("securityHeaders", () => {
-  const byKey = Object.fromEntries(securityHeaders().map((h) => [h.key, h.value]));
+  const byKey = Object.fromEntries(securityHeaders(false).map((h) => [h.key, h.value]));
   it("forbids framing and sniffing", () => {
     assert.match(byKey["Content-Security-Policy"], /frame-ancestors 'none'/);
     assert.equal(byKey["X-Content-Type-Options"], "nosniff");
@@ -18,5 +18,10 @@ describe("securityHeaders", () => {
   });
   it("lets the Turnstile challenge frame itself and nothing else", () => {
     assert.match(byKey["Content-Security-Policy"], /frame-src https:\/\/challenges\.cloudflare\.com(;|$)/);
+  });
+  it("allows eval only in development", () => {
+    assert.doesNotMatch(byKey["Content-Security-Policy"], /unsafe-eval/);
+    const dev = Object.fromEntries(securityHeaders(true).map((h) => [h.key, h.value]));
+    assert.match(dev["Content-Security-Policy"], /script-src 'self' 'unsafe-inline' 'unsafe-eval'/);
   });
 });

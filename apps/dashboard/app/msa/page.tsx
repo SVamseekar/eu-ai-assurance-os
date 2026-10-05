@@ -1,67 +1,55 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import {
-  LegalPageShell,
-  legalWebPageJsonLd,
-} from "@/components/landing/legal-page-shell";
+import { LegalPage, LegalSection } from "@/components/landing/legal-page-shell";
+import { COMMON_PAPER } from "@/lib/legal";
 import { siteConfig } from "@/lib/site-config";
 
-const title = "Master Services Agreement (template)";
-const description =
-  "Template MSA for hosted EU AI Assurance OS and readiness sprints. Counsel must review. Not a certificate of EU AI Act conformity.";
+const title = "Master agreement";
+const description = `How ${siteConfig.shortName} Enterprise agreements are put together: the Common Paper Cloud Service Agreement, a signed order form, and the DPA.`;
+const path = "/msa";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/msa" },
-};
+export const metadata: Metadata = { title, description, alternates: { canonical: path } };
 
 export default function MsaPage() {
-  const jsonLd = legalWebPageJsonLd({
-    name: `${title} — ${siteConfig.name}`,
-    description,
-    path: "/msa",
-  });
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <LegalPageShell title={title} description={description}>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">What we supply</h2>
-          <p className="mt-2">
-            A hosted governance control plane and, if ordered, a time-boxed
-            readiness sprint. Outputs are evidence packs, obligation maps, and
-            release-gate decisions. They are <strong>assisted readiness</strong>,
-            not notified-body work, not legal advice, and not a Declaration of
-            Conformity.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Customer duties</h2>
-          <p className="mt-2">
-            Customer provides accurate system metadata, evidence, and a human
-            legal reviewer. Customer decides whether a model ships.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Liability</h2>
-          <p className="mt-2">
-            Cap and exclusions to be set in the signed MSA. Do not treat this
-            webpage as the executed agreement.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Order of documents</h2>
-          <p className="mt-2">
-            Signed order form + this MSA + DPA. Website Terms cover the public
-            site only.
-          </p>
-        </section>
-      </LegalPageShell>
-    </>
+    <LegalPage title={title} description={description} path={path}>
+      <LegalSection title="The agreement">
+        <p>
+          Enterprise subscriptions use the{" "}
+          <a href={COMMON_PAPER.cloudService.url} target="_blank" rel="noopener noreferrer">
+            {COMMON_PAPER.cloudService.name}, version {COMMON_PAPER.cloudService.version}
+          </a>{" "}
+          ({COMMON_PAPER.license.name}) as the master agreement. We do not use a separate bespoke MSA.
+        </p>
+      </LegalSection>
+      <LegalSection title="What makes up a signed agreement">
+        <ul>
+          <li>
+            The signed <Link href="/order-form">order form</Link> (the Cover Page: plan, term, systems, fees and key
+            terms).
+          </li>
+          <li>The Common Paper Cloud Service Agreement Standard Terms, version {COMMON_PAPER.cloudService.version}.</li>
+          <li>
+            The <Link href="/dpa">Data Processing Agreement</Link> and the <Link href="/security">security page</Link> as
+            the Security Policy.
+          </li>
+        </ul>
+        <p>If documents conflict, the order form wins, then the DPA, then the Standard Terms.</p>
+      </LegalSection>
+      <LegalSection title="What we supply">
+        <p>
+          A hosted software subscription: release gates, evidence records and signed evidence packs, with onboarding
+          assistance. Outputs are evidence and readiness aids. {siteConfig.shortName} is not legal advice, not a notified
+          body, and does not certify compliance; the customer decides whether a system ships.
+        </p>
+      </LegalSection>
+      <LegalSection title="Self-serve plans">
+        <p>
+          Free, Team and Business plans are covered by the <Link href="/terms">Terms of Service</Link>, which use the
+          same Standard Terms by reference.
+        </p>
+      </LegalSection>
+    </LegalPage>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,8 @@ import { RiskBadge } from "@/components/risk-badge";
 import { api, ApiError } from "@/lib/api";
 import { useCorpus } from "@/hooks/use-corpus";
 import { evidenceTypesFor, firstDutyDates, releaseGateWorkflow } from "@/lib/onboarding";
+import { clearPlanIntent, loadPlanIntent, type PlanIntent } from "@/lib/plan-intent";
+import { PLANS } from "@/lib/pricing";
 import { registerSystem } from "@/lib/register-system";
 import type { RiskAnswers } from "@/lib/risk-class";
 import { SECTOR_PACK_OPTIONS } from "@/lib/sector-packs";
@@ -278,11 +280,52 @@ function GateStep({ systemId }: { systemId: string }) {
           </div>
         )}
         <pre className="overflow-x-auto rounded-lg bg-muted px-3 py-3 text-xs">{releaseGateWorkflow(systemId)}</pre>
+        <PlanUpgradeOffer />
         <div className="flex items-center justify-between border-t border-border pt-4">
           <SkipLink />
           <Button onClick={() => router.push("/command")}>Done</Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Shown when the visitor picked Team or Business on /pricing before signing up. */
+function PlanUpgradeOffer() {
+  const [intent, setIntent] = useState<PlanIntent | null>(null);
+  useEffect(() => setIntent(loadPlanIntent()), []);
+  const checkout = useMutation({
+    mutationFn: (i: PlanIntent) => api.billing.checkout(i.plan, i.interval),
+    onSuccess: ({ checkoutUrl }) => {
+      clearPlanIntent();
+      window.location.assign(checkoutUrl);
+    },
+  });
+  if (!intent) return null;
+  const plan = PLANS.find((p) => p.code === intent.plan);
+  if (!plan) return null;
+  return (
+    <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3">
+      <p className="font-medium">You picked {plan.name} ({intent.interval === "YEARLY" ? "yearly" : "monthly"}).</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Upgrade now, or keep the free trial and upgrade later in Settings → Billing.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => checkout.mutate(intent)} disabled={checkout.isPending}>
+          {checkout.isPending ? "Opening checkout…" : `Upgrade to ${plan.name}`}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            clearPlanIntent();
+            setIntent(null);
+          }}
+        >
+          Not now
+        </Button>
+      </div>
+      {checkout.isError && <p className="mt-2 text-xs text-destructive">Checkout could not start. Try again from Settings → Billing.</p>}
+    </div>
   );
 }

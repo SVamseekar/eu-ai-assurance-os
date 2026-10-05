@@ -1,85 +1,59 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import {
-  LegalPageShell,
-  legalWebPageJsonLd,
-} from "@/components/landing/legal-page-shell";
+import { CoverTable, LegalPage, LegalSection } from "@/components/landing/legal-page-shell";
+import { COMMON_PAPER, DPA_VERSION, LEGAL } from "@/lib/legal";
 import { siteConfig } from "@/lib/site-config";
 
-const title = "Data Processing Addendum (template)";
-const description =
-  "Template DPA for EU AI Assurance OS workspaces. Have qualified counsel review before signature. Not legal advice.";
+const title = "Data Processing Agreement";
+const description = `The ${siteConfig.shortName} DPA: the Common Paper DPA Standard Terms with our Cover Page, EU SCCs and the UK Addendum.`;
+const path = "/dpa";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/dpa" },
-  openGraph: {
-    title: `${title} — ${siteConfig.name}`,
-    description,
-    url: `${siteConfig.url}/dpa`,
-    type: "website",
-  },
-};
+export const metadata: Metadata = { title, description, alternates: { canonical: path } };
 
 export default function DpaPage() {
-  const jsonLd = legalWebPageJsonLd({
-    name: `${title} — ${siteConfig.name}`,
-    description,
-    path: "/dpa",
-  });
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <LegalPageShell title={title} description={description}>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Status</h2>
-          <p className="mt-2">
-            This page is a <strong>starting template</strong> for a processor DPA
-            between {siteConfig.ownerName} ({siteConfig.name}) and a customer
-            organisation. It is <strong>not</strong> a signed contract and{" "}
-            <strong>not legal advice</strong>. Execute a counsel-reviewed DPA
-            before processing customer personal data in production.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Roles</h2>
-          <p className="mt-2">
-            Customer is the controller of account, invite, and AI-system
-            metadata they submit. {siteConfig.name} is a processor for that
-            workspace data. Evidence content uploaded by the customer remains
-            the customer&apos;s responsibility.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Processing</h2>
-          <p className="mt-2">
-            Purpose: host the governance control plane (registry, evidence,
-            evals, audit, release gates). Duration: the subscription or sprint
-            term plus backup retention. Location: EU region as specified on the
-            order form. Sub-processors: hosting, email, and error monitoring as
-            listed to the customer in writing.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Security</h2>
-          <p className="mt-2">
-            Tenant isolation by verified credentials, hashed API keys, JWT
-            sessions, hash-chained audit, and optional object storage. This is
-            not a SOC 2 report.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Contact</h2>
-          <p className="mt-2">
-            <a href={`mailto:${siteConfig.supportEmail}`}>{siteConfig.supportEmail}</a>
-          </p>
-        </section>
-      </LegalPageShell>
-    </>
+    <LegalPage title={title} description={description} path={path}>
+      <LegalSection title="Agreement">
+        <p>
+          The{" "}
+          <a href={COMMON_PAPER.dpa.url} target="_blank" rel="noopener noreferrer">
+            {COMMON_PAPER.dpa.name}, version {COMMON_PAPER.dpa.version}
+          </a>{" "}
+          ({COMMON_PAPER.license.name}) apply, with this Cover Page. Cover Page version: <code>{DPA_VERSION}</code>.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Cover Page">
+        <CoverTable
+          rows={[
+            ["Provider", LEGAL.provider],
+            ["Customer", "The organisation that holds the workspace"],
+            ["Agreement", <Link key="t" href="/terms">Terms of Service</Link>],
+            ["Subject matter", `Hosting the ${siteConfig.shortName} service`],
+            ["Duration", "The term of the Agreement plus 30 days"],
+            ["Nature and purpose", "Storage, indexing and retrieval of workspace content to provide the service"],
+            ["Data subjects", "Customer's staff, and any individuals named in uploaded evidence"],
+            ["Categories of personal data", "Contact data; the content of uploaded documents"],
+            ["Special categories", "None intended; Customer should not upload them"],
+            ["Approved subprocessors", <Link key="s" href="/subprocessors">Subprocessors list</Link>],
+            ["Security Policy", <Link key="sec" href="/security">Security</Link>],
+            [
+              "Restricted transfers",
+              "EU Standard Contractual Clauses Module Two (Customer as controller) and Module Three (Customer as processor), and the UK Addendum, are incorporated",
+            ],
+            ["Governing Member State (SCCs)", "Ireland"],
+            ["Provider contact", LEGAL.noticeEmail],
+          ]}
+        />
+      </LegalSection>
+
+      <LegalSection title="Accepting the DPA">
+        <p>
+          Admins accept this DPA on behalf of their organisation in <strong>Settings → Legal</strong>. We record the
+          accepted version and the date. Enterprise customers can sign it with their order form instead.
+        </p>
+      </LegalSection>
+    </LegalPage>
   );
 }

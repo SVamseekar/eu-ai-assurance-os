@@ -1,126 +1,96 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import {
-  LegalPageShell,
-  legalWebPageJsonLd,
-} from "@/components/landing/legal-page-shell";
+import { CoverTable, LegalPage, LegalSection } from "@/components/landing/legal-page-shell";
+import { COMMON_PAPER, LEGAL } from "@/lib/legal";
 import { siteConfig } from "@/lib/site-config";
 
 const title = "Terms of Service";
-const description =
-  "Terms governing access to the EU AI Assurance OS website, demo requests, and provisioned AI governance workspaces.";
+const description = `The terms for using ${siteConfig.shortName}: a Cover Page on the Common Paper Cloud Service Agreement Standard Terms.`;
+const path = "/terms";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/terms" },
-  openGraph: {
-    title: `${title} — ${siteConfig.name}`,
-    description,
-    url: `${siteConfig.url}/terms`,
-    type: "website",
-  },
-};
+export const metadata: Metadata = { title, description, alternates: { canonical: path } };
 
 export default function TermsPage() {
-  const jsonLd = legalWebPageJsonLd({
-    name: `${title} — ${siteConfig.name}`,
-    description,
-    path: "/terms",
-  });
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <LegalPageShell title={title} description={description}>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Agreement</h2>
-          <p className="mt-2">
-            These Terms govern your use of the {siteConfig.name} marketing website
-            and any provisioned governance workspace made available to your
-            organisation. By using the site or submitting a demo request, you
-            agree to these Terms.
-          </p>
-        </section>
+    <LegalPage title={title} description={description} path={path}>
+      <LegalSection title="Agreement">
+        <p>
+          These Terms are our Cover Page. They incorporate the{" "}
+          <a href={COMMON_PAPER.cloudService.url} target="_blank" rel="noopener noreferrer">
+            {COMMON_PAPER.cloudService.name}, version {COMMON_PAPER.cloudService.version}
+          </a>
+          , licensed under{" "}
+          <a href={COMMON_PAPER.license.url} target="_blank" rel="noopener noreferrer">
+            {COMMON_PAPER.license.name}
+          </a>
+          . Capitalised words not defined here have the meaning given in the Standard Terms. By creating a workspace or
+          using the service, you accept these Terms on behalf of your organisation (the Customer).
+        </p>
+      </LegalSection>
 
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Service scope</h2>
-          <p className="mt-2">
-            {siteConfig.name} is a governance control plane for evidence, eval
-            gates, data contracts, approvals, and audit-ready release decisions. It
-            helps organisations organise controls and readiness artefacts. It is{" "}
-            <strong>not</strong> legal advice, <strong>not</strong> a notified-body
-            service, and <strong>does not</strong> issue legal certifications or
-            final determinations of EU AI Act obligations. See also our{" "}
-            <a href="/disclaimer" className="text-primary hover:underline">
-              Disclaimer
-            </a>
-            .
-          </p>
-        </section>
+      <LegalSection title="Cover Page">
+        <CoverTable
+          rows={[
+            ["Provider", LEGAL.provider],
+            ["Cloud Service", LEGAL.service],
+            ["Subscription Period", "Monthly or yearly, as chosen at checkout; Free plans run until cancelled"],
+            ["Cloud Service Fees", <Link key="p" href="/pricing">As listed on the pricing page at purchase</Link>],
+            ["Payment Process", LEGAL.merchantOfRecord],
+            ["Non-Renewal Notice Period", "Cancel any time before the renewal date in the customer portal"],
+            ["Technical Support", `Email ${siteConfig.supportEmail}`],
+            ["Governing Law", LEGAL.governingLaw],
+            ["Chosen Courts", LEGAL.chosenCourts],
+            ["General Cap Amount", LEGAL.liabilityCap],
+            ["DPA", <Link key="d" href="/dpa">Data Processing Agreement</Link>],
+            ["Security Policy", <Link key="s" href="/security">Security</Link>],
+            ["Notice Address", LEGAL.noticeEmail],
+          ]}
+        />
+      </LegalSection>
 
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Accounts &amp; access</h2>
-          <p className="mt-2">
-            Workspace access is provided to organisations under a commercial
-            arrangement (order form, statement of work, or equivalent). You must
-            keep credentials confidential and ensure only authorised personnel use
-            your tenant. You are responsible for content uploaded into your
-            workspace.
-          </p>
-        </section>
+      <LegalSection title="Additional Terms" id="additional-terms">
+        <ul>
+          <li>
+            <strong>Not legal advice.</strong> {siteConfig.shortName} provides evidence and readiness tooling. It is not
+            legal advice, not a notified body, and does not certify compliance. Outputs (risk suggestions, obligation
+            maps, release decisions, evidence packs) are evidence and readiness aids. Customer remains responsible for its
+            compliance decisions.
+          </li>
+          <li>
+            <strong>Demo workspace.</strong> The live demo is a shared, read-only workspace with sample data. Do not enter
+            personal or confidential data in it.
+          </li>
+          <li>
+            <strong>Acceptable use.</strong> No unlawful content, no probing or attempting to bypass tenant isolation,
+            no security testing without written permission, and no reverse engineering beyond what the law allows.
+          </li>
+          <li>
+            <strong>Data export.</strong> After termination you can export your workspace data for {LEGAL.exportDays}{" "}
+            days; then we delete it, except for backups that expire on their normal schedule.
+          </li>
+          <li>
+            <strong>Price changes.</strong> We give {LEGAL.priceChangeNoticeDays} days&apos; notice of price changes,
+            effective at your next renewal.
+          </li>
+          <li>
+            <strong>Refunds.</strong> See the <Link href="/refunds">refund policy</Link>.
+          </li>
+          <li>
+            <strong>Payments.</strong> {LEGAL.merchantOfRecord}
+          </li>
+          <li>
+            <strong>Enterprise.</strong> A signed <Link href="/order-form">order form</Link> overrides these Terms where
+            they differ.
+          </li>
+        </ul>
+      </LegalSection>
 
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Acceptable use</h2>
-          <p className="mt-2">
-            You may not misuse the service (including probing for vulnerabilities
-            without authorisation, reverse engineering beyond applicable law,
-            attempting to bypass tenant isolation, or submitting unlawful content).
-            Demo forms must not be used for spam or automated abuse.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Intellectual property</h2>
-          <p className="mt-2">
-            The product, branding, and site content remain the property of{" "}
-            {siteConfig.ownerName} and licensors. Your organisation retains rights
-            to data you submit, subject to the licence needed for us to host and
-            process it to provide the service.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="font-heading text-lg font-semibold">
-            Liability &amp; warranties
-          </h2>
-          <p className="mt-2">
-            The website and product are provided on an &quot;as available&quot;
-            basis. To the fullest extent permitted by law, we disclaim warranties
-            that the product ensures regulatory conformity. Commercial liability
-            caps and indemnities, if any, are set out in your organisation&apos;s
-            order form or statement of work.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Contact</h2>
-          <p className="mt-2">
-            Questions:{" "}
-            <a
-              href={`mailto:${siteConfig.supportEmail}`}
-              className="text-primary hover:underline"
-            >
-              {siteConfig.supportEmail}
-            </a>
-            .
-          </p>
-        </section>
-      </LegalPageShell>
-    </>
+      <LegalSection title="Contact">
+        <p>
+          Questions about these Terms: <a href={`mailto:${siteConfig.supportEmail}`}>{siteConfig.supportEmail}</a>.
+        </p>
+      </LegalSection>
+    </LegalPage>
   );
 }

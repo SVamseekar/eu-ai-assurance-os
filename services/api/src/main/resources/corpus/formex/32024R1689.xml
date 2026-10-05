@@ -1,21 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Excerpts from the consolidated text of Regulation (EU) 2024/1689 (CELEX 02024R1689-20260727), paragraph 1 of each
+     pinned article and the opening of each pinned annex, in Formex-style markup. Source: EUR-Lex, retrieved 2026-10-05. -->
 <DOC>
   <ACT>
     <ENACTING.TERMS>
+      <ARTICLE IDENTIFIER="004">
+        <TI.ART>Article 4</TI.ART>
+        <STI.ART>AI literacy</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>Providers and deployers of AI systems shall take measures to support the development of AI literacy of their staff and other persons dealing with the operation and use of AI systems on their behalf, taking into account their technical knowledge, experience, education and training and the context the AI systems are to be used in, and considering the persons or groups of persons on whom the AI systems are to be used. This obligation does not require providers or deployers to guarantee any specific level of AI literacy of any individual.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="005">
+        <TI.ART>Article 5</TI.ART>
+        <STI.ART>Prohibited AI practices</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>The following AI practices shall be prohibited:</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="006">
+        <TI.ART>Article 6</TI.ART>
+        <STI.ART>Classification rules for high-risk AI systems</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>Irrespective of whether an AI system is placed on the market or put into service independently of the products referred to in points (a) and (b), that AI system shall be considered to be high-risk where both of the following conditions are fulfilled:</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="009">
+        <TI.ART>Article 9</TI.ART>
+        <STI.ART>Risk management system</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>A risk management system shall be established, implemented, documented and maintained in relation to high-risk AI systems.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="010">
+        <TI.ART>Article 10</TI.ART>
+        <STI.ART>Data and data governance</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>High-risk AI systems which make use of techniques involving the training of AI models with data shall be developed on the basis of training, validation and testing data sets that meet the quality criteria referred to in paragraphs 2, 3 and 4 of this Article and in Article 4a(1) whenever such data sets are used.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="011">
+        <TI.ART>Article 11</TI.ART>
+        <STI.ART>Technical documentation</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>The technical documentation of a high-risk AI system shall be drawn up before that system is placed on the market or put into service and shall be kept up-to date.  That technical documentation shall be drawn up in such a way as to demonstrate that the high-risk AI system complies with the requirements set out in this Section and to provide national competent authorities and notified bodies with the necessary information in a clear and comprehensive form to assess the compliance of the AI system with those requirements. It shall contain, at a minimum, the elements set out in Annex IV. SMEs, including start-ups, and SMCs, may provide the elements of the technical documentation specified in Annex IV in a simplified manner. To that end, the Commission shall establish a simplified technical documentation form targeted at the needs of SMEs, including start-ups, and SMCs. Where an SME, including a start-up, or an SMC, opts to provide the information required in Annex IV in a simplified manner, it shall use the form referred to in this paragraph. Notified bodies shall accept the form for the purposes of the conformity assessment.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="012">
+        <TI.ART>Article 12</TI.ART>
+        <STI.ART>Record-keeping</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>High-risk AI systems shall technically allow for the automatic recording of events (logs) over the lifetime of the system.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="013">
+        <TI.ART>Article 13</TI.ART>
+        <STI.ART>Transparency and provision of information to deployers</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>High-risk AI systems shall be designed and developed in such a way as to ensure that their operation is sufficiently transparent to enable deployers to interpret a system’s output and use it appropriately. An appropriate type and degree of transparency shall be ensured with a view to achieving compliance with the relevant obligations of the provider and deployer set out in Section 3.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="014">
+        <TI.ART>Article 14</TI.ART>
+        <STI.ART>Human oversight</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>High-risk AI systems shall be designed and developed in such a way, including with appropriate human-machine interface tools, that they can be effectively overseen by natural persons during the period in which they are in use.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="015">
+        <TI.ART>Article 15</TI.ART>
+        <STI.ART>Accuracy, robustness and cybersecurity</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>High-risk AI systems shall be designed and developed in such a way that they achieve an appropriate level of accuracy, robustness, and cybersecurity, and that they perform consistently in those respects throughout their lifecycle.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="026">
+        <TI.ART>Article 26</TI.ART>
+        <STI.ART>Obligations of deployers of high-risk AI systems</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>Deployers of high-risk AI systems shall take appropriate technical and organisational measures to ensure they use such systems in accordance with the instructions for use accompanying the systems, pursuant to paragraphs 3 and 6.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="027">
+        <TI.ART>Article 27</TI.ART>
+        <STI.ART>Fundamental rights impact assessment for high-risk AI systems</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>Prior to deploying a high-risk AI system referred to in Article 6(2), with the exception of high-risk AI systems intended to be used in the area listed in point 2 of Annex III, deployers that are bodies governed by public law, or are private entities providing public services, and deployers of high-risk AI systems referred to in points 5 (b) and (c) of Annex III, shall perform an assessment of the impact on fundamental rights that the use of such system may produce. For that purpose, deployers shall perform an assessment consisting of:</ALINEA>
+        </PARAG>
+      </ARTICLE>
       <ARTICLE IDENTIFIER="050">
         <TI.ART>Article 50</TI.ART>
+        <STI.ART>Transparency obligations for providers and deployers of certain AI systems</STI.ART>
         <PARAG IDENTIFIER="001">
-          <ALINEA>Providers shall ensure that natural persons are informed that they interact with an AI system.</ALINEA>
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>Providers shall ensure that AI systems intended to interact directly with natural persons are designed and developed in such a way that the natural persons concerned are informed that they are interacting with an AI system, unless this is obvious from the point of view of a natural person who is reasonably well-informed, observant and circumspect, taking into account the circumstances and the context of use. This obligation shall not apply to AI systems authorised by law to detect, prevent, investigate or prosecute criminal offences, subject to appropriate safeguards for the rights and freedoms of third parties, unless those systems are available for the public to report a criminal offence.</ALINEA>
+        </PARAG>
+      </ARTICLE>
+      <ARTICLE IDENTIFIER="072">
+        <TI.ART>Article 72</TI.ART>
+        <STI.ART>Post-market monitoring by providers and post-market monitoring plan for high-risk AI systems</STI.ART>
+        <PARAG IDENTIFIER="001">
+          <NO.PARAG>1.</NO.PARAG>
+          <ALINEA>Providers shall establish and document a post-market monitoring system in a manner that is proportionate to the nature of the AI technologies and the risks of the high-risk AI system.</ALINEA>
         </PARAG>
       </ARTICLE>
     </ENACTING.TERMS>
   </ACT>
   <ANNEXES>
     <ANNEX IDENTIFIER="ANX_I">
-      <ALINEA>Union harmonisation legislation listed for high-risk AI systems under Article 6(1).</ALINEA>
+      <TI.ANNEX>ANNEX I</TI.ANNEX>
+      <STI.ANNEX>List of Union harmonisation legislation</STI.ANNEX>
+      <ALINEA>Section A. List of Union harmonisation legislation based on the New Legislative Framework.</ALINEA>
     </ANNEX>
     <ANNEX IDENTIFIER="ANX_III">
-      <ALINEA>High-risk AI systems pursuant to Article 6(2).</ALINEA>
+      <TI.ANNEX>ANNEX III</TI.ANNEX>
+      <STI.ANNEX>High-risk AI systems referred to in Article 6(2)</STI.ANNEX>
+      <ALINEA>High-risk AI systems pursuant to Article 6(2) are the AI systems listed in any of the following areas:</ALINEA>
+    </ANNEX>
+    <ANNEX IDENTIFIER="ANX_IV">
+      <TI.ANNEX>ANNEX IV</TI.ANNEX>
+      <STI.ANNEX>Technical documentation referred to in Article 11(1)</STI.ANNEX>
+      <ALINEA>The technical documentation referred to in Article 11(1) shall contain at least the following information, as applicable to the relevant AI system:</ALINEA>
     </ANNEX>
   </ANNEXES>
 </DOC>

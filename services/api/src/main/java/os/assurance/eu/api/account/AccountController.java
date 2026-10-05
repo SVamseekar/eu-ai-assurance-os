@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -27,14 +28,32 @@ public class AccountController {
   private final WorkspaceDeletionService deletion;
   private final TenantAuthorizationService authorization;
   private final TenantContext tenantContext;
+  private final DpaAcceptanceService dpa;
 
   public AccountController(WorkspaceExportService export, WorkspaceDeletionService deletion,
-      TenantAuthorizationService authorization, TenantContext tenantContext) {
+      TenantAuthorizationService authorization, TenantContext tenantContext, DpaAcceptanceService dpa) {
     this.export = export;
     this.deletion = deletion;
     this.authorization = authorization;
     this.tenantContext = tenantContext;
+    this.dpa = dpa;
   }
+
+  /** Which DPA version this workspace accepted, if any. Any member may read it. */
+  @GetMapping("/dpa-acceptance")
+  public DpaAcceptanceService.DpaAcceptance dpaAcceptance() {
+    return dpa.current(tenantContext.tenantId());
+  }
+
+  /** An admin accepts the DPA for the organisation, from a signed-in session. Audited as account.dpa_accepted. */
+  @PostMapping("/dpa-acceptance")
+  public DpaAcceptanceService.DpaAcceptance acceptDpa(HttpServletRequest request, @RequestBody DpaBody body) {
+    SessionOnly.require(request);
+    authorization.requireAnyRole(UserRole.ADMIN);
+    return dpa.accept(tenantContext.tenantId(), body == null ? null : body.version());
+  }
+
+  public record DpaBody(String version) {}
 
   @GetMapping(value = "/export", produces = "application/zip")
   public ResponseEntity<StreamingResponseBody> export(HttpServletRequest request) {

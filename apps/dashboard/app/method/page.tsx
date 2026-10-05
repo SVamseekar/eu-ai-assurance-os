@@ -1,39 +1,61 @@
-import Link from "next/link";
+import { BookOpen, CheckCircle2, ListChecks, ScanSearch, SlidersHorizontal, UserCheck } from "lucide-react";
 
-import { CtaSection } from "@/components/landing/cta-section";
-import {
-  MarketingPageShell,
-  PageIntro,
-} from "@/components/landing/marketing-page-shell";
-import { RelatedPages } from "@/components/landing/related-pages";
-import {
-  methodLimits,
-  methodSteps,
-  publicClaimsMarketing,
-} from "@/lib/landing-content";
+import { MarketingPageShell } from "@/components/landing/marketing-page-shell";
+import { Band, Container, IconTile, PageHeader, SectionHeading } from "@/components/marketing/primitives";
 import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 
-const title = "How we read public AI claims";
+const title = "Methodology";
 const description =
-  "What a pinned evgraph-cli 0.1.3 scan sees from pages a company already published. A missing approval timestamp stays inconclusive. Named organisations are examples, not customers.";
+  "How Assurance OS maps AI systems to the EU AI Act: a pinned legal corpus, mappings a person accepts, control modes for provisions in force, and checks that fail closed when evidence is missing.";
 const path = "/method";
-const crumbs = [
-  { name: "Home", path: "/" },
-  { name: "Method", path },
-];
 
 export const metadata = marketingMetadata({
-  title,
+  title: "Methodology — how we map and interpret",
   description,
   path,
-  keywords: [
-    "public AI claims",
-    "EU AI Act examples",
-    "fail-closed promotion check",
-    "AI Act Article 50",
-  ],
+  keywords: ["EU AI Act methodology", "pinned legal corpus", "fail-closed release gate", "AI control mapping"],
 });
+
+const principles = [
+  {
+    icon: BookOpen,
+    title: "A pinned legal corpus",
+    body: "Systems are read against a fixed, versioned copy of the legal text from EUR-Lex, including the Digital Omnibus on AI. The pin is the text the classification reads, so a result can be reproduced later.",
+  },
+  {
+    icon: ListChecks,
+    title: "Mappings are proposals",
+    body: "Links between a system and the obligations that may apply arrive in a queue. A person accepts or rejects each one. Nothing is applied automatically.",
+  },
+  {
+    icon: SlidersHorizontal,
+    title: "Control modes",
+    body: "Each control on a provision in force has a mode: INFORMATIONAL, WARNING, APPROVAL_REQUIRED or BLOCKING. The mode decides whether a gap warns, waits for a person, or stops the release.",
+  },
+  {
+    icon: ScanSearch,
+    title: "Fail closed",
+    body: "Missing evidence, a failed evaluation or an open data-contract breach never passes. If the decision cannot be read, the gate returns BLOCKED.",
+  },
+  {
+    icon: UserCheck,
+    title: "People decide",
+    body: "Risk class is never changed automatically. Engineering, compliance and legal sign off, and every decision is written to a hash-chained ledger.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Checkable outside the platform",
+    body: "Evidence exports can be scanned with the open-source evgraph-cli. The evidence pack and the scan report the same gaps.",
+  },
+];
+
+const limits = [
+  "We do not invent a missing approval timestamp or dataset licence. The finding stays inconclusive.",
+  "We do not decide whether a system meets the law. Counsel makes that determination.",
+  "We do not certify systems or act as a notified body.",
+  "We do not send your content to a language model by default.",
+];
 
 export default function MethodPage() {
   return (
@@ -42,129 +64,50 @@ export default function MethodPage() {
         name: `${title} — ${siteConfig.name}`,
         description,
         path,
-        crumbs,
+        crumbs: [
+          { name: "Home", path: "/" },
+          { name: title, path },
+        ],
       })}
     >
-      <PageIntro
-        eyebrow="Method"
-        title="What a fail-closed check sees from pages already published"
-        description={description}
-        crumbs={[
-          { href: "/", label: "Home" },
-          { href: path, label: "Method" },
-        ]}
-      />
+      <Band tone="light" muted className="border-b border-line">
+        <Container className="pt-10 pb-12 sm:pt-12 sm:pb-16">
+          <PageHeader
+            tone="light"
+            eyebrow="Methodology"
+            title="How we map and interpret."
+            description="Evidence and readiness you can reproduce: a pinned corpus, mappings a person accepts, and checks that fail closed."
+          />
+        </Container>
+      </Band>
 
-      <section className="border-b border-border bg-amber-500/10">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-          <p className="text-sm text-foreground/90">
-            Named organisations are <strong>not customers</strong>. The examples
-            below are reconstructed from cited public pages only. This is not an
-            accusation of non-compliance, not a notified-body assessment, and
-            not a claim that they use this product. Annex III high-risk duties
-            apply <strong>2 December 2027</strong>. Article 50 has applied since{" "}
-            <strong>2 August 2026</strong>.
-          </p>
-        </div>
-      </section>
+      <Band tone="light">
+        <Container className="py-20 sm:py-24">
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {principles.map((p) => (
+              <li key={p.title} className="rounded-2xl border border-line bg-white p-6">
+                <IconTile icon={p.icon} className="bg-brand-soft text-brand" />
+                <h2 className="mt-5 text-lg font-semibold text-ink">{p.title}</h2>
+                <p className="mt-2 text-sm text-ink-muted">{p.body}</p>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </Band>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-          How the check works
-        </h2>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Same check as a customer system. Risk is read against a pinned legal
-          corpus. Control mappings stay proposals until a person accepts them.
-          In-force controls use INFORMATIONAL, WARNING, APPROVAL_REQUIRED, or
-          BLOCKING. The evidence pack and a live evgraph-cli 0.1.3 scan report
-          the same gap. Public pages often yield a model card. They rarely yield
-          an approval timestamp, and that field stays inconclusive.
-        </p>
-        <ol className="mt-8 grid gap-6 md:grid-cols-3">
-          {methodSteps.map((step, index) => (
-            <li key={step.title}>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {index + 1}
-              </div>
-              <h3 className="mt-3 font-heading text-base font-semibold">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {step.description}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="border-y border-border bg-muted/30">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <h2 className="font-heading text-2xl font-semibold tracking-tight">
-            What we do not infer
-          </h2>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-            {methodLimits.map((item) => (
-              <li
-                key={item}
-                className="rounded-lg border border-border bg-card px-4 py-3 text-sm"
-              >
+      <Band tone="light" muted className="border-t border-line">
+        <Container className="py-20 sm:py-24">
+          <SectionHeading tone="light" eyebrow="Limits" title="What we do not infer." />
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+            {limits.map((item) => (
+              <li key={item} className="rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink/85">
                 {item}
               </li>
             ))}
           </ul>
-        </div>
-      </section>
+        </Container>
+      </Band>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-          Four public examples
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm text-muted-foreground">
-          Quotes and URLs come from pages those firms already published. A
-          BLOCKED example is not a finding that the organisation is illegal.
-        </p>
-        <ul className="mt-8 grid gap-4 lg:grid-cols-2">
-          {publicClaimsMarketing.map((item) => (
-            <li
-              key={item.slug}
-              className="rounded-xl border border-border bg-card p-5 shadow-sm"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {item.hq}
-              </p>
-              <h3 className="mt-1 font-heading text-base font-semibold">
-                {item.legalName}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">{item.hook}</p>
-              <blockquote className="mt-4 border-l-2 border-primary/40 pl-3 text-sm italic text-foreground/90">
-                {item.quote}
-              </blockquote>
-              <p className="mt-3 text-sm text-muted-foreground">{item.evgraphNote}</p>
-              <a
-                href={item.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-block text-sm font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Source: {item.sourceTitle}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-10 max-w-3xl text-sm text-muted-foreground">
-          Questions? See the{" "}
-          <Link href="/faq" className="underline-offset-2 hover:underline">
-            FAQ
-          </Link>{" "}
-          and{" "}
-          <Link href="/disclaimer" className="underline-offset-2 hover:underline">
-            Disclaimer
-          </Link>
-          .
-        </p>
-      </section>
-      <RelatedPages path={path} />
-      <CtaSection />
     </MarketingPageShell>
   );
 }

@@ -1,72 +1,80 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import {
-  LegalPageShell,
-  legalWebPageJsonLd,
-} from "@/components/landing/legal-page-shell";
+import { CoverTable, LegalPage, LegalSection } from "@/components/landing/legal-page-shell";
+import { COMMON_PAPER, LEGAL } from "@/lib/legal";
 import { siteConfig } from "@/lib/site-config";
 
-const title = "Order form — release readiness sprint";
-const description =
-  "Template order form for a scoped EU AI Act release-readiness engagement. Fees are those in the written quote. Not a certificate.";
+const title = "Enterprise order form";
+const description = `Order form template for an ${siteConfig.shortName} Enterprise software subscription, on the Common Paper Cloud Service Agreement.`;
+const path = "/order-form";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/order-form" },
-};
+export const metadata: Metadata = { title, description, alternates: { canonical: path } };
 
 export default function OrderFormPage() {
-  const jsonLd = legalWebPageJsonLd({
-    name: `${title} — ${siteConfig.name}`,
-    description,
-    path: "/order-form",
-  });
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <LegalPageShell title={title} description={description}>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Engagement</h2>
-          <p className="mt-2">
-            <strong>EU AI Act release readiness sprint</strong> — one named AI
-            system. Fees, extra systems, term, and payment schedule are those
-            set out in the written quote.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Deliverables</h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Pinned evgraph-cli 0.1.3 scan (approval-before-deploy, dataset license). The pack and the scan share the current gap. You keep the CLI.</li>
-            <li>System registered in {siteConfig.name}: risk class, obligation map (assisted), PASS / REVIEW / BLOCKED</li>
-            <li>Sealed evidence pack (JSON + PDF hash) including Annex IV-shaped checklist</li>
-            <li>Optional CI snippets for both gates</li>
-            <li>60-minute readout</li>
-          </ul>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">Not included</h2>
-          <p className="mt-2">
-            Legal certification, notified-body assessment, Annex IV as a legal
-            instrument, FRIA as legal advice, EU database registration, Stripe
-            self-serve subscription.
-          </p>
-        </section>
-        <section>
-          <h2 className="font-heading text-lg font-semibold">How to order</h2>
-          <p className="mt-2">
-            Email {siteConfig.supportEmail} with the system name and billing
-            entity. After a demo we send a written quote, then an invoice and a
-            workspace invite. Execute the{" "}
-            <a href="/msa">MSA</a> and <a href="/dpa">DPA</a> templates after
-            counsel review.
-          </p>
-        </section>
-      </LegalPageShell>
-    </>
+    <LegalPage title={title} description={description} path={path}>
+      <p>
+        Enterprise customers sign this order form for a <strong>software subscription</strong>. It is the Cover Page to the{" "}
+        <a href={COMMON_PAPER.cloudService.url} target="_blank" rel="noopener noreferrer">
+          {COMMON_PAPER.cloudService.name}, version {COMMON_PAPER.cloudService.version}
+        </a>
+        , licensed under{" "}
+        <a href={COMMON_PAPER.license.url} target="_blank" rel="noopener noreferrer">
+          {COMMON_PAPER.license.name}
+        </a>
+        . Self-serve plans need no order form; they are bought on the{" "}
+        <Link href="/pricing">pricing page</Link> under the <Link href="/terms">Terms</Link>.
+      </p>
+
+      <LegalSection title="Order details">
+        <CoverTable
+          rows={[
+            ["Cloud Service", LEGAL.service],
+            ["Plan", "Enterprise"],
+            ["Subscription Period", "12 months from the Order Date, unless the signed order states another term"],
+            ["Gated AI systems and editors", "As stated in the signed order (Enterprise includes unlimited viewers)"],
+            ["Cloud Service Fees", "As stated in the signed order, in USD or EUR, excluding tax"],
+            ["Payment Process", "Annual in advance, by invoice or card through Dodo Payments, due within 30 days"],
+            ["Non-Renewal Notice Period", "30 days before the end of the Subscription Period"],
+            ["Technical Support", `Email support at ${siteConfig.supportEmail} on business days`],
+            ["Onboarding", "Onboarding assistance is included in the subscription"],
+            ["Professional Services", "None"],
+          ]}
+        />
+      </LegalSection>
+
+      <LegalSection title="Key terms">
+        <CoverTable
+          rows={[
+            ["Provider", LEGAL.provider],
+            ["Governing Law", LEGAL.governingLaw],
+            ["Chosen Courts", LEGAL.chosenCourts],
+            ["General Cap Amount", LEGAL.liabilityCap],
+            ["DPA", <Link key="dpa" href="/dpa">Data Processing Agreement</Link>],
+            ["Security Policy", <Link key="sec" href="/security">Security</Link>],
+            ["Notice Address", LEGAL.noticeEmail],
+          ]}
+        />
+      </LegalSection>
+
+      <LegalSection title="Additional terms">
+        <ul>
+          <li>
+            {siteConfig.shortName} provides evidence and readiness tooling. It is not legal advice, not a notified body,
+            and does not certify compliance. Customer remains responsible for its compliance decisions.
+          </li>
+          <li>The <Link href="/terms#additional-terms">Additional Terms in the Terms of Service</Link> apply.</li>
+          <li>Where this order form and the self-serve Terms differ, this order form wins.</li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection title="How to order">
+        <p>
+          <Link href="/request-demo">Request a demo</Link> or email {siteConfig.supportEmail} with the number of AI systems
+          you want to gate and your billing entity. We send this form with the fees filled in for signature.
+        </p>
+      </LegalSection>
+    </LegalPage>
   );
 }

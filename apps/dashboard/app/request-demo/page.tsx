@@ -1,69 +1,74 @@
-import Link from "next/link";
-
 import { DemoRequestForm } from "@/components/landing/demo-request-form";
 import { MarketingPageShell } from "@/components/landing/marketing-page-shell";
-import { RelatedPages } from "@/components/landing/related-pages";
+import { DemoButton } from "@/components/marketing/demo-button";
+import { Band, CheckDot, Container, PageHeader } from "@/components/marketing/primitives";
 import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
 
 const title = "Request a demo";
 const description =
-  "Walk through a release gate on one named system: a pinned corpus, a proposal queue, and a sealed pack whose gap matches evgraph-cli 0.1.3. Work is scoped after the call. Not legal certification.";
+  "Walk through a release decision on one of your own AI systems with the team that builds Assurance OS. For Enterprise plans, order forms and security reviews.";
 const path = "/request-demo";
-const crumbs = [
-  { name: "Home", path: "/" },
-  { name: "Request a demo", path },
-];
 
 export const metadata = marketingMetadata({
   title,
   description,
   path,
-  keywords: [
-    "EU AI Act demo",
-    "AI governance demo",
-    "request demo release gate",
-  ],
+  keywords: ["EU AI Act demo", "AI governance demo", "AI release gate demo"],
 });
+
+const promises = [
+  "Personalised walkthrough",
+  "Your specific requirements",
+  "Technical and compliance discussion",
+  "No commitment",
+];
 
 export default function RequestDemoPage() {
   return (
     <MarketingPageShell
       jsonLd={webPageJsonLd({
-        name: `${title} — ${siteConfig.name}`,
+        name: `${title} — ${siteConfig.shortName}`,
         description,
         path,
-        crumbs,
+        crumbs: [
+          { name: "Home", path: "/" },
+          { name: title, path },
+        ],
       })}
     >
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-        <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
-          <ol className="flex flex-wrap items-center gap-1.5">
-            <li>
-              <Link href="/" className="hover:text-foreground">
-                Home
-              </Link>
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden>/</span>
-              <span className="text-foreground">Request a demo</span>
-            </li>
-          </ol>
-        </nav>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          Request a demo
-        </h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>
-        <ul className="mt-6 space-y-2 text-sm text-foreground/90">
-          <li>One named system — owner, purpose, data, where it runs.</li>
-          <li>A PASS / REVIEW / BLOCKED walkthrough, including what fails closed.</li>
-          <li>Written quote after the call. No public price list.</li>
-        </ul>
-        <div className="mt-8">
-          <DemoRequestForm />
-        </div>
-      </div>
-      <RelatedPages path={path} />
+      <Band tone="light" muted>
+        <Container className="pt-10 pb-24 sm:pt-12">
+          <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <PageHeader
+                tone="light"
+                eyebrow="Request a demo"
+                title="Let's walk through your use case."
+                description={`See how ${siteConfig.shortName} can help you ship AI features with confidence.`}
+              />
+              <ul className="mt-8 space-y-3">
+                {promises.map((p) => (
+                  <li key={p} className="flex items-center gap-3 text-ink/85">
+                    <CheckDot className="h-6 w-6 [&>svg]:h-3.5 [&>svg]:w-3.5" />
+                    {p}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-10 rounded-2xl border border-line bg-white p-5">
+                <p className="text-sm font-semibold text-ink">Prefer to look first?</p>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Open the read-only demo workspace now, no sign-up needed.
+                </p>
+                <div className="mt-4">
+                  <DemoButton variant="outline" />
+                </div>
+              </div>
+            </div>
+            <DemoRequestForm />
+          </div>
+        </Container>
+      </Band>
     </MarketingPageShell>
   );
 }

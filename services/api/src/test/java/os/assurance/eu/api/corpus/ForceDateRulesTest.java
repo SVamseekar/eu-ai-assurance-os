@@ -61,6 +61,26 @@ class ForceDateRulesTest {
   }
 
   @Test
+  void aiActArticlesFollowArticle113AsAmended() {
+    ForceAssignment literacy = rules.assign("02024R1689-20260727", provision("", "4", "1", ""), asOf);
+    ForceAssignment prohibited = rules.assign("02024R1689-20260727", provision("", "5", "1", ""), asOf);
+    ForceAssignment oversight = rules.assign("02024R1689-20260727", provision("", "14", "1", ""), asOf);
+    ForceAssignment technicalDocs = rules.assign("02024R1689-20260727", provision("annexIV", "", "", ""), asOf);
+    ForceAssignment monitoring = rules.assign("02024R1689-20260727", provision("", "72", "1", ""), asOf);
+
+    assertThat(literacy.forceFrom()).isEqualTo(LocalDate.of(2025, 2, 2));
+    assertThat(literacy.status()).isEqualTo(ForceStatus.IN_FORCE);
+    assertThat(prohibited.forceFrom()).isEqualTo(LocalDate.of(2025, 2, 2));
+    assertThat(prohibited.scopeNote()).contains("2 Dec 2026");
+    assertThat(oversight.forceFrom()).isEqualTo(LocalDate.of(2027, 12, 2));
+    assertThat(oversight.status()).isEqualTo(ForceStatus.FUTURE);
+    assertThat(oversight.scopeNote()).contains("2 Aug 2028");
+    assertThat(technicalDocs.forceFrom()).isEqualTo(LocalDate.of(2027, 12, 2));
+    assertThat(monitoring.forceFrom()).isEqualTo(LocalDate.of(2026, 8, 2));
+    assertThat(monitoring.scopeNote()).isNull();
+  }
+
+  @Test
   void otherActsUseTheirApplicationDates() {
     assertThat(rules.assign("02016R0679-20160504", provision("", "5", "1", ""), asOf).forceFrom())
         .isEqualTo(LocalDate.of(2018, 5, 25));

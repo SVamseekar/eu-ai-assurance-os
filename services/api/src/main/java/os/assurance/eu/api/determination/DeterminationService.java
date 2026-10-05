@@ -64,17 +64,7 @@ public class DeterminationService {
     }
 
     String rulesetVersion = DeterminationDisclaimers.RULESET_VERSION;
-    List<ObligationRule> activeRules = rules
-        .findAllByRulesetVersionAndActiveTrueOrderByCodeAsc(rulesetVersion)
-        .stream()
-        .map(ObligationRuleEntity::toDomain)
-        .toList();
-    if (activeRules.isEmpty()) {
-      throw new ResponseStatusException(
-          HttpStatus.SERVICE_UNAVAILABLE, "No obligation rules seeded for " + rulesetVersion);
-    }
-
-    List<DeterminationObligation> evaluated = ruleEngine.evaluate(activeRules, answers);
+    List<DeterminationObligation> evaluated = evaluate(answers, rulesetVersion);
     Map<String, Object> riskSuggestion = suggestRiskClass(evaluated, answers, system.riskClass());
 
     UUID runId = UUID.randomUUID();
@@ -135,6 +125,48 @@ public class DeterminationService {
         auditPayload);
 
     return toRun(runEntity, saved);
+  }
+
+  /**
+   * Public, no-signup preview for the free applicability check: the same rules and risk suggestion as a run,
+   * with nothing persisted, audited, or tied to a workspace.
+   */
+  @Transactional(readOnly = true)
+  public Map<String, Object> preview(Map<String, Object> answers) {
+    if (answers == null || answers.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Questionnaire answers are required");
+    }
+    String rulesetVersion = DeterminationDisclaimers.RULESET_VERSION;
+    List<DeterminationObligation> evaluated = evaluate(answers, rulesetVersion);
+    Map<String, Object> riskSuggestion = suggestRiskClass(evaluated, answers, null);
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("obligations", evaluated.stream().map(o -> {
+      Map<String, Object> item = new LinkedHashMap<>();
+      item.put("ruleCode", o.ruleCode());
+      item.put("title", o.title());
+      item.put("applicability", o.applicability().name());
+      item.put("basis", o.rationale());
+      item.put("legalRefs", o.legalRefs());
+      item.put("severity", o.severity());
+      return item;
+    }).toList());
+    result.put("riskSuggestion", riskSuggestion);
+    result.put("rulesetVersion", rulesetVersion);
+    result.put("disclaimer", DeterminationDisclaimers.FULL);
+    return result;
+  }
+
+  private List<DeterminationObligation> evaluate(Map<String, Object> answers, String rulesetVersion) {
+    List<ObligationRule> activeRules = rules
+        .findAllByRulesetVersionAndActiveTrueOrderByCodeAsc(rulesetVersion)
+        .stream()
+        .map(ObligationRuleEntity::toDomain)
+        .toList();
+    if (activeRules.isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.SERVICE_UNAVAILABLE, "No obligation rules seeded for " + rulesetVersion);
+    }
+    return ruleEngine.evaluate(activeRules, answers);
   }
 
   @Transactional(readOnly = true)

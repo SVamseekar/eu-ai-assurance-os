@@ -1,81 +1,51 @@
-import { CtaSection } from "@/components/landing/cta-section";
-import {
-  MarketingPageShell,
-  PageIntro,
-} from "@/components/landing/marketing-page-shell";
-import { PersonasSection } from "@/components/landing/personas-section";
-import { RelatedPages } from "@/components/landing/related-pages";
-import { typicalSectors } from "@/lib/landing-content";
+import { MarketingPageShell } from "@/components/landing/marketing-page-shell";
+import { Band, Container, PageHeader } from "@/components/marketing/primitives";
+import { CtaBand } from "@/components/marketing/sections";
+import { UseCaseTabs } from "@/components/marketing/use-case-tabs";
 import { marketingMetadata, webPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
+import { useCases } from "@/lib/use-cases";
 
-const title = "Who EU AI Act release gates are for";
+const title = "Use cases";
 const description =
-  "Engineering, compliance, legal, data, product, and audit on the same release path. Typical first systems: claims, credit, recruiting, and internal assistants.";
+  "Built for the teams that ship and assure AI: engineering, compliance, legal, data, product and audit share one source of truth for every release.";
 const path = "/who-its-for";
-const crumbs = [
-  { name: "Home", path: "/" },
-  { name: "Who it's for", path },
-];
 
 export const metadata = marketingMetadata({
   title,
   description,
   path,
-  keywords: [
-    "EU AI Act compliance team",
-    "AI governance roles",
-    "high-risk AI employment",
-    "AI in insurance credit recruitment",
-  ],
+  keywords: ["AI governance for engineering teams", "EU AI Act compliance team", "AI audit trail"],
 });
 
 export default function WhoItsForPage() {
   return (
     <MarketingPageShell
       jsonLd={webPageJsonLd({
-        name: `${title} — ${siteConfig.name}`,
+        name: `${title} — ${siteConfig.shortName}`,
         description,
         path,
-        crumbs,
+        crumbs: [
+          { name: "Home", path: "/" },
+          { name: title, path },
+        ],
       })}
     >
-      <PageIntro
-        eyebrow="Roles"
-        title={title}
-        description={description}
-        crumbs={[
-          { href: "/", label: "Home" },
-          { href: path, label: "Who it's for" },
-        ]}
-      />
-      <PersonasSection />
-
-      <section className="border-y border-border bg-muted/40">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-            Where teams usually start
-          </h2>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            One named system, not the whole estate. These are common first
-            systems in the EU market — not a list of customers.
-          </p>
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-            {typicalSectors.map((item) => (
-              <li
-                key={item.title}
-                className="rounded-xl border border-border bg-card p-5 shadow-sm"
-              >
-                <h3 className="font-heading text-base font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{item.body}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <RelatedPages path={path} />
-      <CtaSection />
+      <Band tone="light">
+        <Container className="pt-10 pb-20 sm:pt-12 sm:pb-24">
+          <PageHeader
+            tone="light"
+            eyebrow="Use cases"
+            title="Built for the teams that ship and assure AI."
+            description="Different teams, one shared source of truth."
+            className="max-w-5xl"
+          />
+          <div className="mt-10">
+            <UseCaseTabs cases={useCases} />
+          </div>
+        </Container>
+      </Band>
+      <CtaBand />
     </MarketingPageShell>
   );
 }

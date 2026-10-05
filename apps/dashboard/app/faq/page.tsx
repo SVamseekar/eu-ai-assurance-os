@@ -1,4 +1,3 @@
-import { CtaSection } from "@/components/landing/cta-section";
 import { FaqSection } from "@/components/landing/faq-section";
 import {
   MarketingPageShell,
@@ -74,14 +73,9 @@ export default function FaqPage() {
         eyebrow="FAQ"
         title="Frequently asked questions"
         description={description}
-        crumbs={[
-          { href: "/", label: "Home" },
-          { href: path, label: "FAQ" },
-        ]}
       />
       <FaqSection showHeading={false} />
       <RelatedPages path={path} />
-      <CtaSection />
     </MarketingPageShell>
   );
 }

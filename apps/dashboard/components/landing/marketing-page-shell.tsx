@@ -1,17 +1,20 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 
-import { LandingFooter } from "@/components/landing/landing-footer";
-import { LandingHeader } from "@/components/landing/landing-header";
+import { DeadlineBar } from "@/components/marketing/deadline-bar";
+import { Band, Container, PageHeader, type Tone } from "@/components/marketing/primitives";
+import { SiteFooter } from "@/components/marketing/site-footer";
+import { SiteHeader } from "@/components/marketing/site-header";
 
 type MarketingPageShellProps = {
   children: ReactNode;
   jsonLd?: unknown;
+  /** Colour of the first band on the page; the header starts transparent over dark tops. */
+  tone?: Tone;
 };
 
-export function MarketingPageShell({ children, jsonLd }: MarketingPageShellProps) {
+export function MarketingPageShell({ children, jsonLd, tone = "light" }: MarketingPageShellProps) {
   return (
-    <>
+    <div className="mk-light flex min-h-full flex-col bg-white font-sans text-ink [&_.font-heading]:font-sans">
       {jsonLd ? (
         <script
           type="application/ld+json"
@@ -21,17 +24,21 @@ export function MarketingPageShell({ children, jsonLd }: MarketingPageShellProps
       ) : null}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-md focus:outline-none focus:ring-2 focus:ring-ring"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:text-ink focus:shadow-md focus:outline-none focus:ring-2 focus:ring-brand"
       >
         Skip to content
       </a>
-      <LandingHeader />
-      <main id="main-content">{children}</main>
-      <LandingFooter />
-    </>
+      <DeadlineBar />
+      <SiteHeader tone={tone} />
+      <main id="main-content" className="flex-1">
+        {children}
+      </main>
+      <SiteFooter />
+    </div>
   );
 }
 
+/** Light page header band for content pages (design board item 15). */
 export function PageIntro({
   eyebrow,
   title,
@@ -44,39 +51,10 @@ export function PageIntro({
   crumbs?: { href: string; label: string }[];
 }) {
   return (
-    <section className="border-b border-border">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-        {crumbs?.length ? (
-          <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
-            <ol className="flex flex-wrap items-center gap-1.5">
-              {crumbs.map((crumb, index) => {
-                const last = index === crumbs.length - 1;
-                return (
-                  <li key={crumb.href} className="flex items-center gap-1.5">
-                    {index > 0 ? <span aria-hidden>/</span> : null}
-                    {last ? (
-                      <span className="text-foreground">{crumb.label}</span>
-                    ) : (
-                      <Link href={crumb.href} className="hover:text-foreground">
-                        {crumb.label}
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
-        ) : null}
-        {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h1 className="mt-2 max-w-3xl font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          {title}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{description}</p>
-      </div>
-    </section>
+    <Band tone="light" muted className="border-b border-line">
+      <Container className="pt-10 pb-12 sm:pt-12 sm:pb-16">
+        <PageHeader tone="light" eyebrow={eyebrow} title={title} description={description} crumbs={crumbs} />
+      </Container>
+    </Band>
   );
 }

@@ -20,7 +20,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
   // /auth/refresh is not IP-limited: it needs a 256-bit token, and all BFF traffic shares one IP.
   static final List<String> LIMITED_PREFIXES = List.of(
       "/auth/login", "/auth/accept-invite", "/auth/oauth/",
-      "/auth/signup", "/auth/password/", "/auth/verify-email", "/auth/demo");
+      "/auth/signup", "/auth/password/", "/auth/verify-email", "/auth/demo", "/api/public/");
 
   private final SlidingWindowRateLimiter perIp;
   private final boolean trustClientIpHeader;
