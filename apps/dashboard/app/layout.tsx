@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { CookieConsent } from "@/components/cookie-consent";
 import { Providers } from "@/components/providers";
 import { siteConfig } from "@/lib/site-config";
 
@@ -110,6 +111,9 @@ export default function RootLayout({
             src="https://static.cloudflareinsights.com/beacon.min.js"
             data-cf-beacon={JSON.stringify({ token: process.env.NEXT_PUBLIC_CF_BEACON_TOKEN })}
           />
+        ) : null}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ? (
+          <CookieConsent measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         ) : null}
       </body>
     </html>

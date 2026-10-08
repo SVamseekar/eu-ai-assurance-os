@@ -21,7 +21,7 @@ export const siteConfig = {
   evgraphUrl: "https://github.com/SVamseekar/evgraph",
   /** Public status page; the footer shows a Status link only when this is set. */
   statusUrl: process.env.NEXT_PUBLIC_STATUS_URL?.trim() || null,
-  legalLastUpdated: "5 October 2026",
+  legalLastUpdated: "8 October 2026",
 };
 
 /** Authenticated dashboard routes — excluded from sitemap, disallowed in robots.txt */
