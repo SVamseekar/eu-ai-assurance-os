@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CookieSettingsButton } from "@/components/cookie-consent";
 import { LegalPage, LegalSection } from "@/components/landing/legal-page-shell";
 import { siteConfig } from "@/lib/site-config";
 
@@ -38,7 +39,8 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Website analytics</strong>: Cloudflare Web Analytics, which is cookieless and builds no personal
-            profiles. We do not use advertising or tracking cookies.
+            profiles. If you accept analytics cookies, also Google Analytics: a pseudonymous cookie identifier, pages
+            viewed, device and browser data and approximate location. We do not use advertising cookies.
           </li>
         </ul>
       </LegalSection>
@@ -49,6 +51,7 @@ export default function PrivacyPage() {
           <li>Security, abuse prevention, product improvement and answering demo requests: legitimate interests.</li>
           <li>Tax and accounting records: legal obligation.</li>
           <li>Product update emails: consent, which you can withdraw at any time.</li>
+          <li>Google Analytics: consent, which you can withdraw at any time.</li>
         </ul>
       </LegalSection>
 
@@ -74,6 +77,15 @@ export default function PrivacyPage() {
           <li>Billing records: as long as Dodo Payments and tax law require.</li>
           <li>Demo requests: 12 months after our last contact.</li>
         </ul>
+      </LegalSection>
+
+      <LegalSection title="Cookies">
+        <p>
+          We set strictly necessary cookies for sign-in and security. Google Analytics cookies (<code>_ga</code>,{" "}
+          <code>_ga_*</code>, up to 2 years) are set only after you accept them in the cookie banner. Google receives
+          this data in the US under the EU-US Data Privacy Framework, with Google signals and ad personalisation
+          turned off. <CookieSettingsButton />.
+        </p>
       </LegalSection>
 
       <LegalSection title="Your rights">

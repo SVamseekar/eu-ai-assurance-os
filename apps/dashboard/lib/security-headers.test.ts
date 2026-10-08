@@ -9,12 +9,15 @@ describe("securityHeaders", () => {
     assert.equal(byKey["X-Content-Type-Options"], "nosniff");
     assert.equal(byKey["Referrer-Policy"], "strict-origin-when-cross-origin");
   });
-  it("allows only Cloudflare (analytics beacon, Turnstile) as third-party script", () => {
+  it("allows only Cloudflare (analytics beacon, Turnstile) and consent-gated gtag.js as third-party script", () => {
     assert.match(
       byKey["Content-Security-Policy"],
-      /script-src 'self' 'unsafe-inline' https:\/\/static\.cloudflareinsights\.com https:\/\/challenges\.cloudflare\.com/,
+      /script-src 'self' 'unsafe-inline' https:\/\/static\.cloudflareinsights\.com https:\/\/challenges\.cloudflare\.com https:\/\/www\.googletagmanager\.com;/,
     );
-    assert.doesNotMatch(byKey["Content-Security-Policy"], /googletagmanager/);
+  });
+  it("lets GA4 send hits only to Google Analytics endpoints", () => {
+    assert.match(byKey["Content-Security-Policy"], /connect-src [^;]*https:\/\/\*\.google-analytics\.com/);
+    assert.doesNotMatch(byKey["Content-Security-Policy"], /doubleclick/);
   });
   it("lets the Turnstile challenge frame itself and nothing else", () => {
     assert.match(byKey["Content-Security-Policy"], /frame-src https:\/\/challenges\.cloudflare\.com(;|$)/);

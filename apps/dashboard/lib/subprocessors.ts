@@ -26,6 +26,13 @@ export const SUBPROCESSORS: Subprocessor[] = [
     link: "https://www.cloudflare.com/",
   },
   {
+    name: "Google Analytics",
+    purpose: "Website usage analytics, only for visitors who accept analytics cookies",
+    location: "US (EU-US Data Privacy Framework)",
+    dataCategories: "Pseudonymous cookie identifier, pages viewed, device and browser data, approximate location",
+    link: "https://policies.google.com/privacy",
+  },
+  {
     name: "Dodo Payments",
     purpose: "Merchant of record: checkout, tax, invoices",
     location: "See provider",

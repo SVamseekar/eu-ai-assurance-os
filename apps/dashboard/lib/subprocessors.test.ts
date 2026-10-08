@@ -23,6 +23,7 @@ const configuredProviders: [string, RegExp][] = [
   ["Oracle Cloud Infrastructure", /oci\.oraclecloud\.com/],
   ["Dodo Payments", /dodopayments\.com/],
   ["Cloudflare", /TURNSTILE|CF_BEACON/],
+  ["Google Analytics", /GA_MEASUREMENT_ID/],
   ["Discord", /DISCORD_(DEMO_)?WEBHOOK_URL/],
   ["Google / Microsoft", /OAUTH_(GOOGLE|MICROSOFT)_CLIENT_ID/],
 ];
