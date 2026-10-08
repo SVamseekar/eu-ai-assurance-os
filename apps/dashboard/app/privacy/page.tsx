@@ -39,8 +39,8 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Website analytics</strong>: Cloudflare Web Analytics, which is cookieless and builds no personal
-            profiles. If you accept analytics cookies, also Google Analytics: a pseudonymous cookie identifier, pages
-            viewed, device and browser data and approximate location. We do not use advertising cookies.
+            profiles. If you accept analytics cookies, also Google Analytics on our public pages (never sign-in pages
+            or your workspace): a pseudonymous cookie identifier, pages viewed without query strings, device and browser data and approximate location. We do not use advertising cookies.
           </li>
         </ul>
       </LegalSection>

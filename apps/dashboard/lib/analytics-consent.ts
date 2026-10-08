@@ -9,6 +9,43 @@ export const CONSENT_STORAGE_KEY = "eu-ai-analytics-consent";
 /** Fired on window to reopen the banner, e.g. from the privacy page. */
 export const OPEN_CONSENT_EVENT = "eu-ai:open-cookie-settings";
 
+/**
+ * Routes Google Analytics never sees: sign-in and token links (reset, verify, invite carry secrets in the
+ * query string) and every signed-in workspace route under app/(dashboard).
+ * lib/analytics-consent.test.ts fails when a new (dashboard) route is missing here.
+ */
+export const ANALYTICS_EXCLUDED_PREFIXES = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/invite",
+  "/approvals",
+  "/audit",
+  "/command",
+  "/contracts",
+  "/corpus",
+  "/evals",
+  "/evidence",
+  "/onboarding",
+  "/proposals",
+  "/public-claims",
+  "/readiness",
+  "/reg-monitor",
+  "/settings",
+  "/systems",
+] as const;
+
+export function isAnalyticsExcluded(pathname: string): boolean {
+  return ANALYTICS_EXCLUDED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** The URL GA receives: origin and path only, never the query string or fragment. */
+export function analyticsLocation(origin: string, pathname: string): string {
+  return `${origin}${pathname}`;
+}
+
 export function parseConsent(value: string | null | undefined): AnalyticsConsent | null {
   return value === "granted" || value === "denied" ? value : null;
 }
