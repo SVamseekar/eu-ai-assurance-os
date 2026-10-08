@@ -24,11 +24,41 @@ declare global {
 }
 
 /**
+ * gtag.js remembers the previous full URL and reports it as the referrer on client-side navigations,
+ * query string included. So a document that has loaded gtag.js never shows an excluded route: navigating
+ * there becomes a full page load, and gtag.js is gone before the token URL exists. Installed before
+ * gtag.js loads, so these wrappers and listener run ahead of its own.
+ */
+function guardExcludedRoutes(measurementId: string) {
+  for (const method of ["pushState", "replaceState"] as const) {
+    const original = window.history[method].bind(window.history);
+    window.history[method] = (data: unknown, unused: string, url?: string | URL | null) => {
+      if (url != null) {
+        const next = new URL(url, window.location.href);
+        if (isAnalyticsExcluded(next.pathname)) {
+          // The address bar never changes here, so gtag.js can still flush its queued hits on unload.
+          window.location.assign(next.href);
+          return;
+        }
+      }
+      original(data, unused, url);
+    };
+  }
+  window.addEventListener("popstate", () => {
+    if (!isAnalyticsExcluded(window.location.pathname)) return;
+    // Back/forward has already changed the address: silence gtag.js before it reads it.
+    window[`ga-disable-${measurementId}`] = true;
+    window.location.reload();
+  });
+}
+
+/**
  * Injects gtag.js. Called only after the visitor accepts, so no Google request precedes consent.
  * Page views are sent by hand with a query-free URL; automatic ones would carry the full address.
  */
 function loadGoogleAnalytics(measurementId: string) {
   if (window.gtag) return;
+  guardExcludedRoutes(measurementId);
   window.dataLayer = window.dataLayer || [];
   window.gtag = function gtag() {
     // gtag.js reads the `arguments` object, not an array.
